@@ -50,6 +50,7 @@ public class TwitchListener : MonoBehaviour
     [SerializeField] private LayerMask spawnOnLayers;
     [SerializeField]
     private LayerMask linecastBlockLayers;
+    
 
 
     [Header("Repositioning")]
@@ -182,9 +183,6 @@ public class TwitchListener : MonoBehaviour
         Debug.LogWarning("[TwitchListener] Could not find valid spawn position.");
         return null;
     }
-
-
-
 
     private void OnChatMessage(Chatter chatter)
     {

@@ -18,6 +18,7 @@ public class Snappy2DController : MonoBehaviour
     [SerializeField] private Slider dashSlider;
 
     [Header("Dash")]
+    [SerializeField] private bool enableDash = true;
     [SerializeField] private float dashSpeed = 12f;
     [SerializeField] private float dashDuration = 0.15f;
     [SerializeField] private float dashCooldown = 0.5f;
@@ -65,12 +66,17 @@ public class Snappy2DController : MonoBehaviour
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         bodyCollider = GetComponent<Collider2D>();
+
+        if(enableDash == false)
+        {
+            dashSlider.fillRect.gameObject.SetActive(false);
+        }
     }
 
     private void Update()
     {
         // Handle dash input
-        if (!isDashing && Time.time >= nextDashTime && Input.GetKeyDown(KeyCode.Space))
+        if (!isDashing && Time.time >= nextDashTime && Input.GetKeyDown(KeyCode.Space) && enableDash)
         {
             if (input != Vector2.zero) // dash only if moving
             {

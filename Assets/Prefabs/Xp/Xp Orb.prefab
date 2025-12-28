@@ -14,7 +14,6 @@ GameObject:
   - component: {fileID: 8639102625082144121}
   - component: {fileID: 305872218719834409}
   - component: {fileID: 3088107068291830051}
-  - component: {fileID: -8108310305721098290}
   - component: {fileID: 717073246176508110}
   m_Layer: 2
   m_Name: Xp Orb
@@ -230,21 +229,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spinSpeed: 90
   clockwise: 1
---- !u!114 &-8108310305721098290
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4469264671267830397}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1bd7b2caf905e154d891da6af2c6a5c9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  targetTag: Player
-  searchRadius: 2
-  moveSpeed: 5
 --- !u!114 &717073246176508110
 MonoBehaviour:
   m_ObjectHideFlags: 0
