@@ -12,7 +12,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     public Button nextButton;
 
     [Header("Action Buttons (Optional, in order)")]
-    [Tooltip("0=Reroll Rarity+Stats, 1=Reroll Stats, 2=Reroll Random Stat, 3=Reroll Into Another, 4=Upgrade Random Tier, 5=Upgrade Rarity (keep stats, add unique), 6=Remove Random Upgrade, 7=Add Random Upgrade")]
+    [Tooltip("0=Reroll Rarity+Stats, 1=Reroll Stats, 2=Reroll Random Stat, 3=Reroll Into Another, 4=Reroll All Tiers, 5=Upgrade Rarity (keep stats, add unique), 6=Remove Random Upgrade, 7=Add Random Upgrade")]
     public Button[] actionButtons;
 
     [Header("Labels & Icon (Optional)")]
@@ -204,7 +204,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
         if (shooter != null)
         {
             shooter.UpdateStatsText();
-            return shooter.statsTextInstance.text;
+            return shooter.statsTextInstance != null ? shooter.statsTextInstance.text : "";
         }
 
 
@@ -213,7 +213,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
         if (knife != null)
         {
             knife.UpdateStatsText();
-            return knife.statsTextInstance.text;
+            return knife.statsTextInstance != null ? knife.statsTextInstance.text : "";
         }
         // Accessory support
         var accessory = controller.GetComponent<Accessory>();

@@ -23,7 +23,7 @@ public class WeaponRarityController : MonoBehaviour
     [SerializeField] private TierSystem tiers = new TierSystem();
 
     [Header("References")]
-    [SerializeField] private SimpleHealth healthSystem; // optional explicit reference (falls back to parent)
+    [SerializeField] private SimpleHealth healthSystem; // optional explicit reference; falls back to parent
 
     // Cached adapters
     private KnifeAdapter knife;
@@ -74,6 +74,7 @@ public class WeaponRarityController : MonoBehaviour
         if (s) { shooter = new ShooterAdapter(s); if (uiSink == null) uiSink = shooter; }
         if (acc) { var accSink = new AccessoryAdapter(acc); if (uiSink == null) uiSink = accSink; }
         if (t) { tick = new TickAdapter(t); }
+        if (!healthSystem) healthSystem = GetComponentInParent<SimpleHealth>();
         if (healthSystem) { health = new HealthAdapter(healthSystem); }
 
         rng = rngSeed == 0 ? new System.Random() : new System.Random(rngSeed);
@@ -182,8 +183,8 @@ public class WeaponRarityController : MonoBehaviour
     /// </summary>
     public bool RemoveRandomUpgrade()
     {
-        // Allow going down to exactly 1 upgrade
-        if (applied.Count <= 0) return false;
+        // Keep at least one upgrade on the weapon.
+        if (applied.Count <= 1) return false;
 
         int idx = NextInt(rng, 0, applied.Count);
         applied[idx].undo?.Invoke();
@@ -204,7 +205,7 @@ public class WeaponRarityController : MonoBehaviour
         {
             if (applied.Count > 0)
             {
-                int index = UnityEngine.Random.Range(0, applied.Count);
+                int index = NextInt(rng, 0, applied.Count);
                 return RerollStatIntoAnotherAt(index);
             }
             return false;
@@ -235,7 +236,7 @@ public class WeaponRarityController : MonoBehaviour
         {
             if (applied.Count > 0)
             {
-                int index = UnityEngine.Random.Range(0, applied.Count);
+                int index = NextInt(rng, 0, applied.Count);
                 return RerollStatIntoAnotherAt(index);
             }
             return false;
@@ -380,15 +381,22 @@ public class WeaponRarityController : MonoBehaviour
 
         var ctx = BuildContext();
 
+        var previous = new List<AppliedUpgrade>(applied);
+
+        // Remove every old effect first so percent upgrades calculate from clean base stats.
+        for (int i = previous.Count - 1; i >= 0; i--)
+            previous[i].undo?.Invoke();
+
+        applied.Clear();
+
         // Re-apply each selected upgrade with the new tiers (no additional tier rerolls).
-        for (int i = 0; i < applied.Count; i++)
+        for (int i = 0; i < previous.Count; i++)
         {
-            var prev = applied[i];
-            prev.undo?.Invoke();
+            var prev = previous[i];
 
             var sb = new StringBuilder();
             var undo = prev.upgrade.Apply(ctx, sb);
-            applied[i] = new AppliedUpgrade(prev.upgrade, undo, sb.ToString().Trim());
+            applied.Add(new AppliedUpgrade(prev.upgrade, undo, sb.ToString().Trim()));
         }
 
         RebuildUIFromApplied();
@@ -397,8 +405,7 @@ public class WeaponRarityController : MonoBehaviour
     }
 
     /// <summary>
-    /// Upgrades rarity by one step (max Legendary) without adding any new upgrades.
-    /// Keeps all current applied upgrades exactly as they are.
+    /// Upgrades rarity by one step (max Legendary), keeps current stats, and tries to add one unique upgrade.
     /// </summary>
     public bool UpgradeRarityKeepStats()
     {
@@ -412,7 +419,9 @@ public class WeaponRarityController : MonoBehaviour
         // This does NOT change already-applied values.
         tiers.RollAll(rng);
 
-        // Refresh UI & restart tick so the new rarity shows.
+        AddRandomUpgrade();
+
+        // Refresh UI & restart tick so the new rarity shows even if no upgrade could be added.
         RebuildUIFromApplied();
         tick?.ResetAndStartIfPlaying();
         return true;

@@ -32,6 +32,20 @@ public sealed class WeaponContext
         return n switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", _ => "V" };
     }
 
+    public int RangeIntInclusive(int minInclusive, int maxInclusive)
+    {
+        if (maxInclusive < minInclusive) (minInclusive, maxInclusive) = (maxInclusive, minInclusive);
+        return rng.Next(minInclusive, maxInclusive + 1);
+    }
+
+    public float RangeFloat(float minInclusive, float maxInclusive)
+    {
+        if (maxInclusive < minInclusive) (minInclusive, maxInclusive) = (maxInclusive, minInclusive);
+        return minInclusive + (float)rng.NextDouble() * (maxInclusive - minInclusive);
+    }
+
+    public bool Chance(float probability) => rng.NextDouble() < Mathf.Clamp01(probability);
+
     public static string BlueWrap(string inner) => $"<color=#00AEEF>{inner}</color>";
     public static string FormatRarity(Rarity r) => r switch
     {
@@ -50,7 +64,7 @@ public sealed class HpFlatUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.hpFlatAdd, c.tiers.hpFlat, 0);
-        int add = UnityEngine.Random.Range(r.x, r.y + 1);
+        int add = c.RangeIntInclusive(r.x, r.y);
         c.health.IncreaseMaxHealth(add);
         notes.AppendLine($"+{add} Max Health ({c.Roman(c.tiers.hpFlat)})");
         return () => c.health.IncreaseMaxHealth(-add);
@@ -63,7 +77,7 @@ public sealed class HpPercentUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.hpMult, c.tiers.hpPercent);
-        float mult = UnityEngine.Random.Range(r.x, r.y);
+        float mult = c.RangeFloat(r.x, r.y);
         int baseHp = c.health.MaxHealth;
         int delta = Mathf.RoundToInt(baseHp * (mult - 1f));
         if (delta <= 0) delta = 1;
@@ -79,7 +93,7 @@ public sealed class RegenUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.regenAdd, c.tiers.regen);
-        float add = Mathf.Max(0f, UnityEngine.Random.Range(r.x, r.y));
+        float add = Mathf.Max(0f, c.RangeFloat(r.x, r.y));
         float before = c.health.RegenRate;
         float after = Mathf.Max(0f, before + add);
         float actually = after - before;
@@ -95,7 +109,7 @@ public sealed class ArmorUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.armorAdd, c.tiers.armor);
-        int add = Mathf.Max(0, Mathf.RoundToInt(UnityEngine.Random.Range(r.x, r.y)));
+        int add = Mathf.Max(0, Mathf.RoundToInt(c.RangeFloat(r.x, r.y)));
         c.health.Armor = Mathf.Max(0f, c.health.Armor + add);
         notes.AppendLine($"+{add} Armor ({c.Roman(c.tiers.armor)})");
         return () => c.health.Armor = Mathf.Max(0f, c.health.Armor - add);
@@ -108,7 +122,7 @@ public sealed class EvasionUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.evasionAdd, c.tiers.evasion);
-        int add = Mathf.Max(0, Mathf.RoundToInt(UnityEngine.Random.Range(r.x, r.y)));
+        int add = Mathf.Max(0, Mathf.RoundToInt(c.RangeFloat(r.x, r.y)));
         c.health.Evasion = Mathf.Max(0f, c.health.Evasion + add);
         notes.AppendLine($"+{add} Evasion ({c.Roman(c.tiers.evasion)})");
         return () => c.health.Evasion = Mathf.Max(0f, c.health.Evasion - add);
@@ -121,7 +135,7 @@ public sealed class ArmorPercentUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.armorMult, c.tiers.armorPercent);
-        float mult = UnityEngine.Random.Range(r.x, r.y);
+        float mult = c.RangeFloat(r.x, r.y);
         float before = Mathf.Max(0f, c.health.Armor);
         if (before <= 0f) { notes.AppendLine("+0% Armor (no base)"); return () => { }; }
         float delta = before * (mult - 1f);
@@ -137,7 +151,7 @@ public sealed class EvasionPercentUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.evasionMult, c.tiers.evasionPercent);
-        float mult = UnityEngine.Random.Range(r.x, r.y);
+        float mult = c.RangeFloat(r.x, r.y);
         float before = Mathf.Max(0f, c.health.Evasion);
         if (before <= 0f) { notes.AppendLine("+0% Evasion (no base)"); return () => { }; }
         float delta = before * (mult - 1f);
@@ -157,7 +171,7 @@ public abstract class ResistUpgradeBase : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.resistAdd, c.tiers.resist);
-        float add = Mathf.Max(0f, UnityEngine.Random.Range(r.x, r.y));
+        float add = Mathf.Max(0f, c.RangeFloat(r.x, r.y));
         float before = Mathf.Clamp(Get(c), 0f, 0.95f);
         float after = Mathf.Clamp(before + add, 0f, 0.95f);
         float actually = after - before;
@@ -201,7 +215,7 @@ public sealed class DamageFlatUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.damageFlatAdd, c.tiers.damageFlat, 0);
-        int add = UnityEngine.Random.Range(r.x, r.y + 1);
+        int add = c.RangeIntInclusive(r.x, r.y);
         int before = c.damage.Damage;
         c.damage.Damage = before + add;
         notes.AppendLine($"+{add} Damage ({c.Roman(c.tiers.damageFlat)})");
@@ -219,7 +233,7 @@ public sealed class DamagePercentAsFlatUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.damageMult, c.tiers.damagePercent);
-        float mult = UnityEngine.Random.Range(r.x, r.y);
+        float mult = c.RangeFloat(r.x, r.y);
         int baseDmg = c.damage.Damage;
         int delta = Mathf.RoundToInt(baseDmg * (mult - 1f));
         c.damage.Damage = baseDmg + delta;
@@ -234,7 +248,7 @@ public sealed class AttackSpeedUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.atkSpeedFrac, c.tiers.attackSpeed);
-        float frac = Mathf.Clamp01(UnityEngine.Random.Range(r.x, r.y));
+        float frac = Mathf.Clamp01(c.RangeFloat(r.x, r.y));
         float before = c.attack.Interval;
         float reduceBy = before * frac;
         float newInterval = Mathf.Max(0.05f, before - reduceBy);
@@ -256,11 +270,11 @@ public sealed class CritUpgrade : IUpgrade
     public bool IsApplicable(WeaponContext c) => c.crit != null;
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
-        bool chance = UnityEngine.Random.value < 0.6f;
+        bool chance = c.Chance(0.6f);
         if (chance)
         {
             var r = c.tiers.Scale(c.ranges.critChanceAdd, c.tiers.critChance);
-            float add = Mathf.Clamp01(UnityEngine.Random.Range(r.x, r.y));
+            float add = Mathf.Clamp01(c.RangeFloat(r.x, r.y));
             c.crit.CritChance = Mathf.Clamp01(c.crit.CritChance + add);
             notes.AppendLine($"+{add * 100f:F0}% Crit Chance ({c.Roman(c.tiers.critChance)})");
             return () => c.crit.CritChance = Mathf.Clamp01(c.crit.CritChance - add);
@@ -268,7 +282,7 @@ public sealed class CritUpgrade : IUpgrade
         else
         {
             var r = c.tiers.Scale(c.ranges.critMultAdd, c.tiers.critMultiplier);
-            float add = UnityEngine.Random.Range(r.x, r.y);
+            float add = c.RangeFloat(r.x, r.y);
             c.crit.CritMultiplier += add;
             notes.AppendLine($"+{add:F2} Crit Mult ({c.Roman(c.tiers.critMultiplier)})");
             return () => c.crit.CritMultiplier -= add;
@@ -283,7 +297,7 @@ public sealed class KnifeRadiusUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.knifeRadiusMult, c.tiers.knifeRadius);
-        float mult = UnityEngine.Random.Range(r.x, r.y);
+        float mult = c.RangeFloat(r.x, r.y);
         float before = c.knife.Radius;
         float delta = before * (mult - 1f);
         c.knife.Radius = before + delta;
@@ -298,7 +312,7 @@ public sealed class KnifeSplashUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.knifeSplashRadiusMult, c.tiers.knifeSplashRadius);
-        float mult = UnityEngine.Random.Range(r.x, r.y);
+        float mult = c.RangeFloat(r.x, r.y);
         float before = c.knife.SplashRadius;
         float delta = before * (mult - 1f);
         c.knife.SplashRadius = before + delta;
@@ -315,7 +329,7 @@ public sealed class ShooterRangeUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.shooterForceAdd, c.tiers.shooterForce);
-        float add = Mathf.Max(0f, UnityEngine.Random.Range(r.x, r.y));
+        float add = Mathf.Max(0f, c.RangeFloat(r.x, r.y));
         c.shooter.ShootForce += add;
         notes.AppendLine($"+{add:F1} Projectile Speed ({c.Roman(c.tiers.shooterForce)})");
         return () => c.shooter.ShootForce -= add;
@@ -328,7 +342,7 @@ public sealed class ShooterAccuracyUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.shooterSpreadReduceFrac, c.tiers.shooterAccuracy);
-        float frac = Mathf.Clamp01(UnityEngine.Random.Range(r.x, r.y));
+        float frac = Mathf.Clamp01(c.RangeFloat(r.x, r.y));
         float before = c.shooter.SpreadAngle;
         float delta = before * frac;
         float newSpread = Mathf.Max(0f, before - delta);
