@@ -23,8 +23,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     // Cached active controllers
     private readonly List<WeaponRarityController> controllers = new List<WeaponRarityController>();
     private int index = -1;
-
-    // CTRL overlay removed; no toggle state needed
+    private bool showRanges;
 
     private void Awake()
     {
@@ -62,7 +61,14 @@ public class WeaponRerollUIHelper : MonoBehaviour
         }
     }
 
-    // CTRL functionality removed; no per-frame input checks needed
+    private void Update()
+    {
+        bool ctrlHeld = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        if (ctrlHeld == showRanges) return;
+
+        showRanges = ctrlHeld;
+        UpdateSelectionUI();
+    }
 
     [ContextMenu("Refresh Controllers")]
     public void RefreshControllers()
@@ -134,8 +140,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
             }
             else
             {
-                // Always show the weapon's own extra text
-                selectedExtraLabel.text = GetExtraText(target);
+                selectedExtraLabel.text = showRanges ? target.GetRangesSummaryText() : GetExtraText(target);
             }
         }
 
@@ -190,11 +195,6 @@ public class WeaponRerollUIHelper : MonoBehaviour
             // No automatic text setting; you control button visuals in the Inspector
         }
     }
-
-    // CTRL overlay helpers removed
-
-
-
 
     private string GetExtraText(WeaponRarityController controller)
     {

@@ -608,7 +608,137 @@ public class WeaponRarityController : MonoBehaviour
 
         return list;
     }
-    // CTRL ranges overlay removed; no ranges summary exposed
+
+    public string GetRangesSummaryText()
+    {
+        var lines = new List<string>
+        {
+            "<b>Roll Ranges</b>",
+            $"<b>Rarity:</b> {WeaponContext.FormatRarity(current)}"
+        };
+
+        if (applied == null || applied.Count == 0)
+        {
+            lines.Add("<i>No selected rolls.</i>");
+            return string.Join("\n", lines);
+        }
+
+        for (int i = 0; i < applied.Count; i++)
+        {
+            AddSelectedRangeLine(lines, applied[i].upgrade);
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    private void AddSelectedRangeLine(List<string> lines, IUpgrade upgrade)
+    {
+        if (upgrade is DamageFlatUpgrade)
+        {
+            var r = tiers.Scale(ranges.damageFlatAdd, tiers.damageFlat, 0);
+            AddRangeLine(lines, "Damage", r.x, r.y, "", tiers.damageFlat);
+        }
+        else if (upgrade is DamagePercentAsFlatUpgrade)
+        {
+            var r = tiers.ScaleMultiplierLike(ranges.damageMult, tiers.damagePercent);
+            AddPercentRangeLine(lines, "Damage", r.x - 1f, r.y - 1f, tiers.damagePercent);
+        }
+        else if (upgrade is AttackSpeedUpgrade)
+        {
+            var r = tiers.Scale(ranges.atkSpeedFrac, tiers.attackSpeed);
+            AddPercentRangeLine(lines, "Attack Speed", r.x, r.y, tiers.attackSpeed);
+        }
+        else if (upgrade is CritUpgrade)
+        {
+            var chance = tiers.Scale(ranges.critChanceAdd, tiers.critChance);
+            var mult = tiers.Scale(ranges.critMultAdd, tiers.critMultiplier);
+            AddPercentRangeLine(lines, "Crit Chance", chance.x, chance.y, tiers.critChance);
+            AddRangeLine(lines, "Crit Mult", mult.x, mult.y, "", tiers.critMultiplier, "F2");
+        }
+        else if (upgrade is HpFlatUpgrade)
+        {
+            var r = tiers.Scale(ranges.hpFlatAdd, tiers.hpFlat, 0);
+            AddRangeLine(lines, "Max Health", r.x, r.y, "", tiers.hpFlat);
+        }
+        else if (upgrade is HpPercentUpgrade)
+        {
+            var r = tiers.ScaleMultiplierLike(ranges.hpMult, tiers.hpPercent);
+            AddPercentRangeLine(lines, "Max Health", r.x - 1f, r.y - 1f, tiers.hpPercent);
+        }
+        else if (upgrade is RegenUpgrade)
+        {
+            var r = tiers.Scale(ranges.regenAdd, tiers.regen);
+            AddRangeLine(lines, "Regen", r.x, r.y, "/s", tiers.regen, "F2");
+        }
+        else if (upgrade is ArmorUpgrade)
+        {
+            var r = tiers.Scale(ranges.armorAdd, tiers.armor);
+            AddRangeLine(lines, "Armor", r.x, r.y, "", tiers.armor);
+        }
+        else if (upgrade is EvasionUpgrade)
+        {
+            var r = tiers.Scale(ranges.evasionAdd, tiers.evasion);
+            AddRangeLine(lines, "Evasion", r.x, r.y, "", tiers.evasion);
+        }
+        else if (upgrade is ArmorPercentUpgrade)
+        {
+            var r = tiers.ScaleMultiplierLike(ranges.armorMult, tiers.armorPercent);
+            AddPercentRangeLine(lines, "Armor", r.x - 1f, r.y - 1f, tiers.armorPercent);
+        }
+        else if (upgrade is EvasionPercentUpgrade)
+        {
+            var r = tiers.ScaleMultiplierLike(ranges.evasionMult, tiers.evasionPercent);
+            AddPercentRangeLine(lines, "Evasion", r.x - 1f, r.y - 1f, tiers.evasionPercent);
+        }
+        else if (upgrade is FireResistUpgrade || upgrade is ColdResistUpgrade || upgrade is LightningResistUpgrade || upgrade is PoisonResistUpgrade)
+        {
+            var r = tiers.Scale(ranges.resistAdd, tiers.resist);
+            AddPercentRangeLine(lines, "Resist", r.x, r.y, tiers.resist);
+        }
+        else if (upgrade is KnifeRadiusUpgrade)
+        {
+            var r = tiers.ScaleMultiplierLike(ranges.knifeRadiusMult, tiers.knifeRadius);
+            AddPercentRangeLine(lines, "Range", r.x - 1f, r.y - 1f, tiers.knifeRadius);
+        }
+        else if (upgrade is KnifeSplashUpgrade)
+        {
+            var r = tiers.ScaleMultiplierLike(ranges.knifeSplashRadiusMult, tiers.knifeSplashRadius);
+            AddPercentRangeLine(lines, "AOE", r.x - 1f, r.y - 1f, tiers.knifeSplashRadius);
+        }
+        else if (upgrade is ShooterRangeUpgrade)
+        {
+            var r = tiers.Scale(ranges.shooterForceAdd, tiers.shooterForce);
+            AddRangeLine(lines, "Projectile Speed", r.x, r.y, "", tiers.shooterForce, "F1");
+        }
+        else if (upgrade is ShooterAccuracyUpgrade)
+        {
+            var r = tiers.Scale(ranges.shooterSpreadReduceFrac, tiers.shooterAccuracy);
+            AddPercentRangeLine(lines, "Accuracy", r.x, r.y, tiers.shooterAccuracy);
+        }
+    }
+
+    private static void AddRangeLine(List<string> lines, string label, int min, int max, string suffix, int tier)
+    {
+        lines.Add($"+{min}-{max}{suffix} {label} ({RomanStatic(tier)})");
+    }
+
+    private static void AddRangeLine(List<string> lines, string label, float min, float max, string suffix, int tier, string format = "F0")
+    {
+        if (min > max) (min, max) = (max, min);
+        lines.Add($"+{min.ToString(format)}-{max.ToString(format)}{suffix} {label} ({RomanStatic(tier)})");
+    }
+
+    private static void AddPercentRangeLine(List<string> lines, string label, float min, float max, int tier)
+    {
+        if (min > max) (min, max) = (max, min);
+        lines.Add($"+{min * 100f:F0}-{max * 100f:F0}% {label} ({RomanStatic(tier)})");
+    }
+
+    private static string RomanStatic(int n)
+    {
+        n = Mathf.Clamp(n, 1, 5);
+        return n switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", _ => "V" };
+    }
 
 
 
