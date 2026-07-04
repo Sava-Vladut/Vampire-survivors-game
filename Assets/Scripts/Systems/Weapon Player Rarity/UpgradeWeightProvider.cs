@@ -4,6 +4,9 @@ using UnityEngine;
 
 /// <summary>
 /// Public enum to tag each concrete upgrade type (no reflection).
+/// Specific to the rarity/reroll system in this folder - unrelated to (and not to be
+/// confused with) WeaponUpgrades.UpgradeType or AccessoriesUpgrades.UpgradeType, the
+/// nested enums used by the separate level-up power-up system.
 /// </summary>
 public enum UpgradeType
 {

@@ -7,6 +7,8 @@ public interface IUpgrade
     bool IsApplicable(WeaponContext ctx);
     /// <summary>Apply and return an undo action.</summary>
     Action Apply(WeaponContext ctx, StringBuilder notes);
+    /// <summary>Describe the roll range this upgrade would draw from, without applying it.</summary>
+    string DescribeRange(WeaponContext ctx);
 }
 
 public sealed class WeaponContext
@@ -55,6 +57,24 @@ public sealed class WeaponContext
         Rarity.Legendary => "<color=#FFB347>Legendary</color>",
         _ => "Common"
     };
+
+    // Shared by IUpgrade.DescribeRange implementations below, so every upgrade formats
+    // its own range preview next to its own Apply() logic instead of a separate
+    // controller-side type-check chain having to reproduce the same math.
+    public static string FormatFlatRange(string label, int min, int max, string suffix, string roman) =>
+        $"+{min}-{max}{suffix} {label} ({roman})";
+
+    public static string FormatFlatRange(string label, float min, float max, string suffix, string roman, string format = "F0")
+    {
+        if (min > max) (min, max) = (max, min);
+        return $"+{min.ToString(format)}-{max.ToString(format)}{suffix} {label} ({roman})";
+    }
+
+    public static string FormatPercentRange(string label, float min, float max, string roman)
+    {
+        if (min > max) (min, max) = (max, min);
+        return $"+{min * 100f:F0}-{max * 100f:F0}% {label} ({roman})";
+    }
 }
 
 // ===== Concrete upgrades =====
@@ -68,6 +88,11 @@ public sealed class HpFlatUpgrade : IUpgrade
         c.health.IncreaseMaxHealth(add);
         notes.AppendLine($"+{add} Max Health ({c.Roman(c.tiers.hpFlat)})");
         return () => c.health.IncreaseMaxHealth(-add);
+    }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.hpFlatAdd, c.tiers.hpFlat, 0);
+        return WeaponContext.FormatFlatRange("Max Health", r.x, r.y, "", c.Roman(c.tiers.hpFlat));
     }
 }
 
@@ -85,6 +110,11 @@ public sealed class HpPercentUpgrade : IUpgrade
         notes.AppendLine($"+{(mult - 1f) * 100f:F0}% Max Health ({c.Roman(c.tiers.hpPercent)})");
         return () => c.health.IncreaseMaxHealth(-delta);
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.ScaleMultiplierLike(c.ranges.hpMult, c.tiers.hpPercent);
+        return WeaponContext.FormatPercentRange("Max Health", r.x - 1f, r.y - 1f, c.Roman(c.tiers.hpPercent));
+    }
 }
 
 public sealed class RegenUpgrade : IUpgrade
@@ -101,6 +131,11 @@ public sealed class RegenUpgrade : IUpgrade
         notes.AppendLine($"+{actually:F2}/s Regen ({c.Roman(c.tiers.regen)})");
         return () => c.health.RegenRate = Mathf.Max(0f, c.health.RegenRate - actually);
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.regenAdd, c.tiers.regen);
+        return WeaponContext.FormatFlatRange("Regen", r.x, r.y, "/s", c.Roman(c.tiers.regen), "F2");
+    }
 }
 
 public sealed class ArmorUpgrade : IUpgrade
@@ -114,6 +149,11 @@ public sealed class ArmorUpgrade : IUpgrade
         notes.AppendLine($"+{add} Armor ({c.Roman(c.tiers.armor)})");
         return () => c.health.Armor = Mathf.Max(0f, c.health.Armor - add);
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.armorAdd, c.tiers.armor);
+        return WeaponContext.FormatFlatRange("Armor", r.x, r.y, "", c.Roman(c.tiers.armor));
+    }
 }
 
 public sealed class EvasionUpgrade : IUpgrade
@@ -126,6 +166,11 @@ public sealed class EvasionUpgrade : IUpgrade
         c.health.Evasion = Mathf.Max(0f, c.health.Evasion + add);
         notes.AppendLine($"+{add} Evasion ({c.Roman(c.tiers.evasion)})");
         return () => c.health.Evasion = Mathf.Max(0f, c.health.Evasion - add);
+    }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.evasionAdd, c.tiers.evasion);
+        return WeaponContext.FormatFlatRange("Evasion", r.x, r.y, "", c.Roman(c.tiers.evasion));
     }
 }
 
@@ -143,6 +188,11 @@ public sealed class ArmorPercentUpgrade : IUpgrade
         notes.AppendLine($"+{(mult - 1f) * 100f:F0}% Armor ({c.Roman(c.tiers.armorPercent)})");
         return () => c.health.Armor = Mathf.Max(0f, c.health.Armor - delta);
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.ScaleMultiplierLike(c.ranges.armorMult, c.tiers.armorPercent);
+        return WeaponContext.FormatPercentRange("Armor", r.x - 1f, r.y - 1f, c.Roman(c.tiers.armorPercent));
+    }
 }
 
 public sealed class EvasionPercentUpgrade : IUpgrade
@@ -158,6 +208,11 @@ public sealed class EvasionPercentUpgrade : IUpgrade
         c.health.Evasion = Mathf.Max(0f, before + delta);
         notes.AppendLine($"+{(mult - 1f) * 100f:F0}% Evasion ({c.Roman(c.tiers.evasionPercent)})");
         return () => c.health.Evasion = Mathf.Max(0f, c.health.Evasion - delta);
+    }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.ScaleMultiplierLike(c.ranges.evasionMult, c.tiers.evasionPercent);
+        return WeaponContext.FormatPercentRange("Evasion", r.x - 1f, r.y - 1f, c.Roman(c.tiers.evasionPercent));
     }
 }
 
@@ -178,6 +233,11 @@ public abstract class ResistUpgradeBase : IUpgrade
         Set(c, after);
         notes.AppendLine($"+{actually * 100f:F0}% {Label} Resist ({c.Roman(Tier(c))})");
         return () => Set(c, Mathf.Clamp(Get(c) - actually, 0f, 0.95f));
+    }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.resistAdd, Tier(c));
+        return WeaponContext.FormatPercentRange($"{Label} Resist", r.x, r.y, c.Roman(Tier(c)));
     }
 }
 
@@ -221,6 +281,11 @@ public sealed class DamageFlatUpgrade : IUpgrade
         notes.AppendLine($"+{add} Damage ({c.Roman(c.tiers.damageFlat)})");
         return () => c.damage.Damage -= add;
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.damageFlatAdd, c.tiers.damageFlat, 0);
+        return WeaponContext.FormatFlatRange("Damage", r.x, r.y, "", c.Roman(c.tiers.damageFlat));
+    }
 }
 
 
@@ -240,6 +305,11 @@ public sealed class DamagePercentAsFlatUpgrade : IUpgrade
         notes.AppendLine($"+{(mult - 1f) * 100f:F0}% Damage ({c.Roman(c.tiers.damagePercent)})");
         return () => c.damage.Damage -= delta;
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.ScaleMultiplierLike(c.ranges.damageMult, c.tiers.damagePercent);
+        return WeaponContext.FormatPercentRange("Damage", r.x - 1f, r.y - 1f, c.Roman(c.tiers.damagePercent));
+    }
 }
 
 public sealed class AttackSpeedUpgrade : IUpgrade
@@ -256,6 +326,11 @@ public sealed class AttackSpeedUpgrade : IUpgrade
         c.attack.Interval = newInterval;
         notes.AppendLine($"+{frac * 100f:F0}% Attack Speed ({c.Roman(c.tiers.attackSpeed)})");
         return () => c.attack.Interval += actuallyReduced;
+    }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.atkSpeedFrac, c.tiers.attackSpeed);
+        return WeaponContext.FormatPercentRange("Attack Speed", r.x, r.y, c.Roman(c.tiers.attackSpeed));
     }
 }
 
@@ -288,6 +363,14 @@ public sealed class CritUpgrade : IUpgrade
             return () => c.crit.CritMultiplier -= add;
         }
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var chance = c.tiers.Scale(c.ranges.critChanceAdd, c.tiers.critChance);
+        var mult = c.tiers.Scale(c.ranges.critMultAdd, c.tiers.critMultiplier);
+        string chanceLine = WeaponContext.FormatPercentRange("Crit Chance", chance.x, chance.y, c.Roman(c.tiers.critChance));
+        string multLine = WeaponContext.FormatFlatRange("Crit Mult", mult.x, mult.y, "", c.Roman(c.tiers.critMultiplier), "F2");
+        return $"{chanceLine}\n{multLine}";
+    }
 }
 
 
@@ -304,6 +387,11 @@ public sealed class KnifeRadiusUpgrade : IUpgrade
         notes.AppendLine($"+{(mult - 1f) * 100f:F0}% Range ({c.Roman(c.tiers.knifeRadius)})");
         return () => c.knife.Radius -= delta;
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.ScaleMultiplierLike(c.ranges.knifeRadiusMult, c.tiers.knifeRadius);
+        return WeaponContext.FormatPercentRange("Range", r.x - 1f, r.y - 1f, c.Roman(c.tiers.knifeRadius));
+    }
 }
 
 public sealed class KnifeSplashUpgrade : IUpgrade
@@ -319,6 +407,11 @@ public sealed class KnifeSplashUpgrade : IUpgrade
         notes.AppendLine($"+{(mult - 1f) * 100f:F0}% AOE ({c.Roman(c.tiers.knifeSplashRadius)})");
         return () => c.knife.SplashRadius -= delta;
     }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.ScaleMultiplierLike(c.ranges.knifeSplashRadiusMult, c.tiers.knifeSplashRadius);
+        return WeaponContext.FormatPercentRange("AOE", r.x - 1f, r.y - 1f, c.Roman(c.tiers.knifeSplashRadius));
+    }
 }
 
 
@@ -333,6 +426,11 @@ public sealed class ShooterRangeUpgrade : IUpgrade
         c.shooter.ShootForce += add;
         notes.AppendLine($"+{add:F1} Projectile Speed ({c.Roman(c.tiers.shooterForce)})");
         return () => c.shooter.ShootForce -= add;
+    }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.shooterForceAdd, c.tiers.shooterForce);
+        return WeaponContext.FormatFlatRange("Projectile Speed", r.x, r.y, "", c.Roman(c.tiers.shooterForce), "F1");
     }
 }
 
@@ -350,5 +448,10 @@ public sealed class ShooterAccuracyUpgrade : IUpgrade
         c.shooter.SpreadAngle = newSpread;
         notes.AppendLine($"+{frac * 100f:F0}% Accuracy ({c.Roman(c.tiers.shooterAccuracy)})");
         return () => c.shooter.SpreadAngle += actuallyReduced;
+    }
+    public string DescribeRange(WeaponContext c)
+    {
+        var r = c.tiers.Scale(c.ranges.shooterSpreadReduceFrac, c.tiers.shooterAccuracy);
+        return WeaponContext.FormatPercentRange("Accuracy", r.x, r.y, c.Roman(c.tiers.shooterAccuracy));
     }
 }

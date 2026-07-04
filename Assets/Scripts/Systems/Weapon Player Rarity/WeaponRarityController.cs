@@ -36,7 +36,8 @@ public class WeaponRarityController : MonoBehaviour
     private System.Random rng;
 
     // ===== Selected Upgrades Tracking =====
-    [System.Serializable]
+    // Not Unity-serializable (Action/IUpgrade aren't), so this is a plain runtime-only
+    // list rather than something the Inspector can meaningfully show.
     private sealed class AppliedUpgrade
     {
         public IUpgrade upgrade;   // upgrade behavior
@@ -44,7 +45,7 @@ public class WeaponRarityController : MonoBehaviour
         public string note;        // human-readable line(s) for UI
         public AppliedUpgrade(IUpgrade u, Action un, string n) { upgrade = u; undo = un; note = n; }
     }
-    [SerializeField] private List<AppliedUpgrade> applied = new();
+    private List<AppliedUpgrade> applied = new();
 
     public int SelectedUpgradeCount => applied.Count;
 
@@ -428,108 +429,6 @@ public class WeaponRarityController : MonoBehaviour
     }
 
     // ===================== Internal helpers =====================
-    private bool RandomizeTierSlot(int slotIndex)
-    {
-        int newTier = rng.Next(1, 6); // inclusive 1..5
-        switch (slotIndex)
-        {
-            case 0: return SetTier(ref tiers.damagePercent, newTier);
-            case 1: return SetTier(ref tiers.damageFlat, newTier);
-            case 2: return SetTier(ref tiers.attackSpeed, newTier);
-            case 3: return SetTier(ref tiers.critChance, newTier);
-            case 4: return SetTier(ref tiers.critMultiplier, newTier);
-            case 5: return SetTier(ref tiers.knifeRadius, newTier);
-            case 6: return SetTier(ref tiers.knifeSplashRadius, newTier);
-            // removed lifesteal and max targets
-            case 9: return SetTier(ref tiers.shooterLifetime, newTier);
-            case 10: return SetTier(ref tiers.shooterForce, newTier);
-            // removed shooter projectiles
-            case 12: return SetTier(ref tiers.shooterAccuracy, newTier);
-            case 13: return SetTier(ref tiers.hpFlat, newTier);
-            case 14: return SetTier(ref tiers.hpPercent, newTier);
-            case 15: return SetTier(ref tiers.regen, newTier);
-            case 16: return SetTier(ref tiers.armor, newTier);
-            case 17: return SetTier(ref tiers.evasion, newTier);
-            case 18: return SetTier(ref tiers.resist, newTier);
-            case 19: return SetTier(ref tiers.armorPercent, newTier);
-            case 20: return SetTier(ref tiers.evasionPercent, newTier);
-            default: return false;
-        }
-    }
-
-    private bool ImproveTierSlot(int slotIndex, int steps)
-    {
-        switch (slotIndex)
-        {
-            case 0: return ClampTier(ref tiers.damagePercent, steps);
-            case 1: return ClampTier(ref tiers.damageFlat, steps);
-            case 2: return ClampTier(ref tiers.attackSpeed, steps);
-            case 3: return ClampTier(ref tiers.critChance, steps);
-            case 4: return ClampTier(ref tiers.critMultiplier, steps);
-            case 5: return ClampTier(ref tiers.knifeRadius, steps);
-            case 6: return ClampTier(ref tiers.knifeSplashRadius, steps);
-            // removed lifesteal and max targets
-            case 9: return ClampTier(ref tiers.shooterLifetime, steps);
-            case 10: return ClampTier(ref tiers.shooterForce, steps);
-            // removed shooter projectiles
-            case 12: return ClampTier(ref tiers.shooterAccuracy, steps);
-            case 13: return ClampTier(ref tiers.hpFlat, steps);
-            case 14: return ClampTier(ref tiers.hpPercent, steps);
-            case 15: return ClampTier(ref tiers.regen, steps);
-            case 16: return ClampTier(ref tiers.armor, steps);
-            case 17: return ClampTier(ref tiers.evasion, steps);
-            case 18: return ClampTier(ref tiers.resist, steps);
-            case 19: return ClampTier(ref tiers.armorPercent, steps);
-            case 20: return ClampTier(ref tiers.evasionPercent, steps);
-            default: return false;
-        }
-    }
-
-    private int FindAppliedIndexUsingSlot(int slotIndex)
-    {
-        for (int i = 0; i < applied.Count; i++)
-        {
-            var list = new List<int>(2);
-            CollectSlotsForUpgrade(applied[i].upgrade, list);
-            for (int j = 0; j < list.Count; j++)
-                if (list[j] == slotIndex) return i;
-        }
-        return -1;
-    }
-
-    private static void CollectSlotsForUpgrade(IUpgrade up, List<int> into)
-    {
-        if (up == null || into == null) return;
-        // Map upgrade type -> related tier slot indices
-        if (up is DamageFlatUpgrade) into.Add(1);
-        else if (up is DamagePercentAsFlatUpgrade) into.Add(0);
-        else if (up is AttackSpeedUpgrade) into.Add(2);
-        else if (up is CritUpgrade) { into.Add(3); into.Add(4); }
-        else if (up is KnifeRadiusUpgrade) into.Add(5);
-        else if (up is KnifeSplashUpgrade) into.Add(6);
-        else if (up is ShooterRangeUpgrade) { into.Add(9); into.Add(10); }
-        else if (up is ShooterAccuracyUpgrade) into.Add(12);
-        else if (up is HpFlatUpgrade) into.Add(13);
-        else if (up is HpPercentUpgrade) into.Add(14);
-        else if (up is RegenUpgrade) into.Add(15);
-        else if (up is ArmorUpgrade) into.Add(16);
-        else if (up is EvasionUpgrade) into.Add(17);
-        else if (up is FireResistUpgrade || up is ColdResistUpgrade || up is LightningResistUpgrade || up is PoisonResistUpgrade) into.Add(18);
-    }
-
-    private static bool SetTier(ref int tierField, int newValue)
-    {
-        int before = tierField;
-        tierField = Mathf.Clamp(newValue, 1, 5);
-        return tierField != before;
-    }
-
-    private static bool ClampTier(ref int tierField, int steps)
-    {
-        int before = tierField;
-        tierField = Mathf.Clamp(tierField - steps, 1, 5);
-        return tierField != before;
-    }
 
     private void ApplyAndRecord(WeaponContext ctx, IUpgrade up)
     {
@@ -552,8 +451,8 @@ public class WeaponRarityController : MonoBehaviour
             rarity = current,
             tiers = tiers,
             ranges = ranges,
-            damage = (IDamageModule)(object)(knife ?? (object)shooter ?? null),
-            crit = (ICritModule)(object)(knife ?? (object)shooter ?? null),
+            damage = (IDamageModule)knife ?? (IDamageModule)shooter,
+            crit = (ICritModule)knife ?? (ICritModule)shooter,
             attack = (IAttackSpeedModule)tick,
             knife = knife,
             shooter = shooter,
@@ -564,6 +463,28 @@ public class WeaponRarityController : MonoBehaviour
     }
 
 
+    // Every IUpgrade implementation is stateless, so one shared instance per type is
+    // enough - avoids re-allocating all of these on every reroll/add/replace action.
+    private static readonly DamageFlatUpgrade DamageFlat = new();
+    private static readonly DamagePercentAsFlatUpgrade DamagePercentAsFlat = new();
+    private static readonly AttackSpeedUpgrade AttackSpeedUpg = new();
+    private static readonly CritUpgrade CritUpg = new();
+    private static readonly HpFlatUpgrade HpFlat = new();
+    private static readonly HpPercentUpgrade HpPercent = new();
+    private static readonly RegenUpgrade Regen = new();
+    private static readonly ArmorUpgrade ArmorUpg = new();
+    private static readonly EvasionUpgrade EvasionUpg = new();
+    private static readonly ArmorPercentUpgrade ArmorPercentUpg = new();
+    private static readonly EvasionPercentUpgrade EvasionPercentUpg = new();
+    private static readonly FireResistUpgrade FireResist = new();
+    private static readonly ColdResistUpgrade ColdResist = new();
+    private static readonly LightningResistUpgrade LightningResist = new();
+    private static readonly PoisonResistUpgrade PoisonResist = new();
+    private static readonly KnifeSplashUpgrade KnifeSplash = new();
+    private static readonly KnifeRadiusUpgrade KnifeRadiusUpg = new();
+    private static readonly ShooterRangeUpgrade ShooterRangeUpg = new();
+    private static readonly ShooterAccuracyUpgrade ShooterAccuracyUpg = new();
+
     private List<UpgradeWeightProvider.Candidate> BuildCandidates(WeaponContext c)
     {
         var list = new List<UpgradeWeightProvider.Candidate>(12);
@@ -571,39 +492,39 @@ public class WeaponRarityController : MonoBehaviour
 
         if (c.damage != null)
         {
-            Add(true, new DamageFlatUpgrade(), UpgradeType.DamageFlat);
-            Add(true, new DamagePercentAsFlatUpgrade(), UpgradeType.DamagePercentAsFlat);
+            Add(true, DamageFlat, UpgradeType.DamageFlat);
+            Add(true, DamagePercentAsFlat, UpgradeType.DamagePercentAsFlat);
         }
 
-        Add(c.attack != null, new AttackSpeedUpgrade(), UpgradeType.AttackSpeed);
-        Add(c.crit != null, new CritUpgrade(), UpgradeType.Crit);
+        Add(c.attack != null, AttackSpeedUpg, UpgradeType.AttackSpeed);
+        Add(c.crit != null, CritUpg, UpgradeType.Crit);
 
         // Health / Defense candidates (if SimpleHealth available)
         if (c.health != null)
         {
-            Add(true, new HpFlatUpgrade(), UpgradeType.HpFlat);
-            Add(true, new HpPercentUpgrade(), UpgradeType.HpPercent);
-            Add(true, new RegenUpgrade(), UpgradeType.HpRegen);
-            Add(true, new ArmorUpgrade(), UpgradeType.Armor);
-            Add(true, new EvasionUpgrade(), UpgradeType.Evasion);
-            Add(c.health.Armor > 0f, new ArmorPercentUpgrade(), UpgradeType.ArmorPercent);
-            Add(c.health.Evasion > 0f, new EvasionPercentUpgrade(), UpgradeType.EvasionPercent);
-            Add(true, new FireResistUpgrade(), UpgradeType.FireResist);
-            Add(true, new ColdResistUpgrade(), UpgradeType.ColdResist);
-            Add(true, new LightningResistUpgrade(), UpgradeType.LightningResist);
-            Add(true, new PoisonResistUpgrade(), UpgradeType.PoisonResist);
+            Add(true, HpFlat, UpgradeType.HpFlat);
+            Add(true, HpPercent, UpgradeType.HpPercent);
+            Add(true, Regen, UpgradeType.HpRegen);
+            Add(true, ArmorUpg, UpgradeType.Armor);
+            Add(true, EvasionUpg, UpgradeType.Evasion);
+            Add(c.health.Armor > 0f, ArmorPercentUpg, UpgradeType.ArmorPercent);
+            Add(c.health.Evasion > 0f, EvasionPercentUpg, UpgradeType.EvasionPercent);
+            Add(true, FireResist, UpgradeType.FireResist);
+            Add(true, ColdResist, UpgradeType.ColdResist);
+            Add(true, LightningResist, UpgradeType.LightningResist);
+            Add(true, PoisonResist, UpgradeType.PoisonResist);
         }
 
         if (c.knife != null)
         {
-            Add(true, new KnifeSplashUpgrade(), UpgradeType.KnifeSplash);
-            Add(true, new KnifeRadiusUpgrade(), UpgradeType.KnifeRadius);
+            Add(true, KnifeSplash, UpgradeType.KnifeSplash);
+            Add(true, KnifeRadiusUpg, UpgradeType.KnifeRadius);
         }
 
         if (c.shooter != null)
         {
-            Add(true, new ShooterRangeUpgrade(), UpgradeType.ShooterRange);
-            Add(true, new ShooterAccuracyUpgrade(), UpgradeType.ShooterAccuracy);
+            Add(true, ShooterRangeUpg, UpgradeType.ShooterRange);
+            Add(true, ShooterAccuracyUpg, UpgradeType.ShooterAccuracy);
         }
 
         return list;
@@ -623,125 +544,15 @@ public class WeaponRarityController : MonoBehaviour
             return string.Join("\n", lines);
         }
 
+        var ctx = BuildContext();
         for (int i = 0; i < applied.Count; i++)
         {
-            AddSelectedRangeLine(lines, applied[i].upgrade);
+            var line = applied[i].upgrade?.DescribeRange(ctx);
+            if (!string.IsNullOrEmpty(line)) lines.Add(line);
         }
 
         return string.Join("\n", lines);
     }
-
-    private void AddSelectedRangeLine(List<string> lines, IUpgrade upgrade)
-    {
-        if (upgrade is DamageFlatUpgrade)
-        {
-            var r = tiers.Scale(ranges.damageFlatAdd, tiers.damageFlat, 0);
-            AddRangeLine(lines, "Damage", r.x, r.y, "", tiers.damageFlat);
-        }
-        else if (upgrade is DamagePercentAsFlatUpgrade)
-        {
-            var r = tiers.ScaleMultiplierLike(ranges.damageMult, tiers.damagePercent);
-            AddPercentRangeLine(lines, "Damage", r.x - 1f, r.y - 1f, tiers.damagePercent);
-        }
-        else if (upgrade is AttackSpeedUpgrade)
-        {
-            var r = tiers.Scale(ranges.atkSpeedFrac, tiers.attackSpeed);
-            AddPercentRangeLine(lines, "Attack Speed", r.x, r.y, tiers.attackSpeed);
-        }
-        else if (upgrade is CritUpgrade)
-        {
-            var chance = tiers.Scale(ranges.critChanceAdd, tiers.critChance);
-            var mult = tiers.Scale(ranges.critMultAdd, tiers.critMultiplier);
-            AddPercentRangeLine(lines, "Crit Chance", chance.x, chance.y, tiers.critChance);
-            AddRangeLine(lines, "Crit Mult", mult.x, mult.y, "", tiers.critMultiplier, "F2");
-        }
-        else if (upgrade is HpFlatUpgrade)
-        {
-            var r = tiers.Scale(ranges.hpFlatAdd, tiers.hpFlat, 0);
-            AddRangeLine(lines, "Max Health", r.x, r.y, "", tiers.hpFlat);
-        }
-        else if (upgrade is HpPercentUpgrade)
-        {
-            var r = tiers.ScaleMultiplierLike(ranges.hpMult, tiers.hpPercent);
-            AddPercentRangeLine(lines, "Max Health", r.x - 1f, r.y - 1f, tiers.hpPercent);
-        }
-        else if (upgrade is RegenUpgrade)
-        {
-            var r = tiers.Scale(ranges.regenAdd, tiers.regen);
-            AddRangeLine(lines, "Regen", r.x, r.y, "/s", tiers.regen, "F2");
-        }
-        else if (upgrade is ArmorUpgrade)
-        {
-            var r = tiers.Scale(ranges.armorAdd, tiers.armor);
-            AddRangeLine(lines, "Armor", r.x, r.y, "", tiers.armor);
-        }
-        else if (upgrade is EvasionUpgrade)
-        {
-            var r = tiers.Scale(ranges.evasionAdd, tiers.evasion);
-            AddRangeLine(lines, "Evasion", r.x, r.y, "", tiers.evasion);
-        }
-        else if (upgrade is ArmorPercentUpgrade)
-        {
-            var r = tiers.ScaleMultiplierLike(ranges.armorMult, tiers.armorPercent);
-            AddPercentRangeLine(lines, "Armor", r.x - 1f, r.y - 1f, tiers.armorPercent);
-        }
-        else if (upgrade is EvasionPercentUpgrade)
-        {
-            var r = tiers.ScaleMultiplierLike(ranges.evasionMult, tiers.evasionPercent);
-            AddPercentRangeLine(lines, "Evasion", r.x - 1f, r.y - 1f, tiers.evasionPercent);
-        }
-        else if (upgrade is FireResistUpgrade || upgrade is ColdResistUpgrade || upgrade is LightningResistUpgrade || upgrade is PoisonResistUpgrade)
-        {
-            var r = tiers.Scale(ranges.resistAdd, tiers.resist);
-            AddPercentRangeLine(lines, "Resist", r.x, r.y, tiers.resist);
-        }
-        else if (upgrade is KnifeRadiusUpgrade)
-        {
-            var r = tiers.ScaleMultiplierLike(ranges.knifeRadiusMult, tiers.knifeRadius);
-            AddPercentRangeLine(lines, "Range", r.x - 1f, r.y - 1f, tiers.knifeRadius);
-        }
-        else if (upgrade is KnifeSplashUpgrade)
-        {
-            var r = tiers.ScaleMultiplierLike(ranges.knifeSplashRadiusMult, tiers.knifeSplashRadius);
-            AddPercentRangeLine(lines, "AOE", r.x - 1f, r.y - 1f, tiers.knifeSplashRadius);
-        }
-        else if (upgrade is ShooterRangeUpgrade)
-        {
-            var r = tiers.Scale(ranges.shooterForceAdd, tiers.shooterForce);
-            AddRangeLine(lines, "Projectile Speed", r.x, r.y, "", tiers.shooterForce, "F1");
-        }
-        else if (upgrade is ShooterAccuracyUpgrade)
-        {
-            var r = tiers.Scale(ranges.shooterSpreadReduceFrac, tiers.shooterAccuracy);
-            AddPercentRangeLine(lines, "Accuracy", r.x, r.y, tiers.shooterAccuracy);
-        }
-    }
-
-    private static void AddRangeLine(List<string> lines, string label, int min, int max, string suffix, int tier)
-    {
-        lines.Add($"+{min}-{max}{suffix} {label} ({RomanStatic(tier)})");
-    }
-
-    private static void AddRangeLine(List<string> lines, string label, float min, float max, string suffix, int tier, string format = "F0")
-    {
-        if (min > max) (min, max) = (max, min);
-        lines.Add($"+{min.ToString(format)}-{max.ToString(format)}{suffix} {label} ({RomanStatic(tier)})");
-    }
-
-    private static void AddPercentRangeLine(List<string> lines, string label, float min, float max, int tier)
-    {
-        if (min > max) (min, max) = (max, min);
-        lines.Add($"+{min * 100f:F0}-{max * 100f:F0}% {label} ({RomanStatic(tier)})");
-    }
-
-    private static string RomanStatic(int n)
-    {
-        n = Mathf.Clamp(n, 1, 5);
-        return n switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", _ => "V" };
-    }
-
-
-
 
 
     private void RebuildUIFromApplied()

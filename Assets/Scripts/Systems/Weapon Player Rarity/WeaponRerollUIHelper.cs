@@ -52,13 +52,6 @@ public class WeaponRerollUIHelper : MonoBehaviour
             index = 0;
 
         UpdateSelectionUI();
-
-        Debug.Log($"[WeaponRerollUIHelper] Cached {controllers.Count} active WeaponRarityController(s).");
-        for (int i = 0; i < controllers.Count; i++)
-        {
-            var c = controllers[i];
-            Debug.Log($" - #{i}: {c.name} | Extra: \"{GetExtraText(c)}\"");
-        }
     }
 
     private void Update()
@@ -169,20 +162,24 @@ public class WeaponRerollUIHelper : MonoBehaviour
     {
         if (actionButtons == null || actionButtons.Length == 0) return;
 
+        // No RefreshControllers() here: the cached list is already kept current by
+        // OnEnable/prev/next, and CurrentTarget() safely no-ops via Unity's overridden
+        // null check if the selected controller was destroyed in between. Rescanning
+        // the whole scene on every single button click was redundant with that cache.
         UnityAction[] actions =
         {
-            () => { RefreshControllers(); CurrentTarget()?.RerollRarityAndStats(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RerollStats(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RerollRandomStat(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RerollRandomStatIntoAnother(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RandomizeRandomTier(true); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.UpgradeRarityKeepStats(); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.RerollRarityAndStats(); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.RerollStats(); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.RerollRandomStat(); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.RerollRandomStatIntoAnother(); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.RandomizeRandomTier(true); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.UpgradeRarityKeepStats(); UpdateSelectionUI(); },
 
             // NEW 6: Remove a random applied upgrade
-            () => { RefreshControllers(); CurrentTarget()?.RemoveRandomUpgrade(); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.RemoveRandomUpgrade(); UpdateSelectionUI(); },
 
             // NEW 7: Add a random applicable upgrade
-            () => { RefreshControllers(); CurrentTarget()?.AddRandomUpgrade(); UpdateSelectionUI(); },
+            () => { CurrentTarget()?.AddRandomUpgrade(); UpdateSelectionUI(); },
         };
 
         for (int i = 0; i < actionButtons.Length; i++)
