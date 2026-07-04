@@ -9,14 +9,10 @@ public class AccessoriesUpgrades : MonoBehaviour
     [Tooltip("Autofilled: next sibling with AccessoriesUpgrades in the same parent.")]
     public AccessoriesUpgrades nextUpgrade;
 
-    private PowerUpChooser powerUpChooser;
-
     // ---------------------- Lifecycle ----------------------
 
     private void Awake()
     {
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
-
         AutoAssignNextUpgrade();   // keep next wired
         EnqueueNextUpgradeOnce();  // push next's Upgrade into chooser once
     }
@@ -64,22 +60,7 @@ public class AccessoriesUpgrades : MonoBehaviour
     private void AutoAssignNextUpgrade()
     {
         var old = nextUpgrade;
-        nextUpgrade = null;
-
-        if (transform.parent == null) return;
-
-        int myIndex = transform.GetSiblingIndex();
-        var parent = transform.parent;
-
-        for (int i = myIndex + 1; i < parent.childCount; i++)
-        {
-            var candidate = parent.GetChild(i).GetComponent<AccessoriesUpgrades>();
-            if (candidate != null)
-            {
-                nextUpgrade = candidate;
-                break;
-            }
-        }
+        nextUpgrade = UpgradeChainUtil.FindNextSibling<AccessoriesUpgrades>(transform);
 
 #if UNITY_EDITOR
         if (old != nextUpgrade)
@@ -91,26 +72,11 @@ public class AccessoriesUpgrades : MonoBehaviour
 
     /// <summary>
     /// Adds the nextUpgrade's PowerUp asset to the chooser list once.
-    /// Requires PowerUpChooser.powerUps to be a List&lt;PowerUp&gt;.
-    /// Safely avoids duplicates and nulls.
     /// </summary>
     private void EnqueueNextUpgradeOnce()
     {
-        if (powerUpChooser == null) return;
-        if (nextUpgrade == null || nextUpgrade.Upgrade == null) return;
-
-        try
-        {
-            var list = powerUpChooser.powerUps;
-            if (list != null && !list.Contains(nextUpgrade.Upgrade))
-            {
-                list.Add(nextUpgrade.Upgrade);
-            }
-        }
-        catch (System.Exception)
-        {
-            // If PowerUpChooser isn't backed by a List<PowerUp>, ignore silently.
-        }
+        if (nextUpgrade == null) return;
+        UpgradeChainUtil.EnqueueOnce(UpgradeChainUtil.GetChooser(), nextUpgrade.Upgrade);
     }
 
 #if UNITY_EDITOR

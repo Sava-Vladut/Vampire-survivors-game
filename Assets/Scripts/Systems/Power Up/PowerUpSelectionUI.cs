@@ -32,7 +32,7 @@ public class PowerUpSelectionUI : MonoBehaviour
     [Tooltip("Default icon to use when a power-up has no icon.")]
     [SerializeField] public Sprite defaultIcon;
 
-    private int[] shownIndices;
+    private PowerUp[] shownPowerUps;
     private bool warnedNoDefault;
     [Header("Behavior")]
     [SerializeField] private bool isFirstSelection = true; // first selection shows weapons only
@@ -134,7 +134,14 @@ public class PowerUpSelectionUI : MonoBehaviour
 
         int desired = isFirstSelection ? Mathf.Max(1, firstSelectionCount) : 3;
         int slotCount = Mathf.Min(desired, selectButtons.Length, candidates.Count);
-        shownIndices = PickRandomUnique(candidates, slotCount);
+        int[] shownIndices = PickRandomUnique(candidates, slotCount);
+
+        // Snapshot the actual PowerUp references now, not just their indices: the
+        // chooser's list can be mutated (e.g. by a PowerUpInserter) while this panel
+        // is open, which would make stale indices point at the wrong entry.
+        shownPowerUps = new PowerUp[shownIndices.Length];
+        for (int i = 0; i < shownIndices.Length; i++)
+            shownPowerUps[i] = powerUpChooser.powerUps[shownIndices[i]];
 
         // After first presentation, subsequent selections are normal
         if (isFirstSelection)
@@ -149,18 +156,18 @@ public class PowerUpSelectionUI : MonoBehaviour
         // Fill visible slots
         for (int i = 0; i < selectButtons.Length; i++)
         {
-            bool has = i < shownIndices.Length;
+            bool has = i < shownPowerUps.Length;
 
             // Name
             if (nameTexts != null && i < nameTexts.Length && nameTexts[i] != null)
-                nameTexts[i].text = has ? powerUpChooser.powerUps[shownIndices[i]].powerUpName : string.Empty;
+                nameTexts[i].text = has ? shownPowerUps[i].powerUpName : string.Empty;
 
             // Description (with bold [weight] prefix)
             if (descriptionTexts != null && i < descriptionTexts.Length && descriptionTexts[i] != null)
             {
                 if (has)
                 {
-                    var pu = powerUpChooser.powerUps[shownIndices[i]];
+                    var pu = shownPowerUps[i];
                     string weightStr = pu.weight.ToString("0.##");
                     descriptionTexts[i].text = $"<b>[<sprite name=\"chest\">{weightStr}] </b>";
 
@@ -185,7 +192,7 @@ public class PowerUpSelectionUI : MonoBehaviour
                 var img = iconImages[i];
                 if (has)
                 {
-                    var pu = powerUpChooser.powerUps[shownIndices[i]];
+                    var pu = shownPowerUps[i];
                     img.sprite = pu.powerUpIcon != null ? pu.powerUpIcon : defaultIcon;
                     img.enabled = true;
                     img.gameObject.SetActive(true);
@@ -222,18 +229,14 @@ public class PowerUpSelectionUI : MonoBehaviour
 
     private void SelectPowerUp(int buttonSlot)
     {
-        if (shownIndices == null || buttonSlot < 0 || buttonSlot >= shownIndices.Length) return;
+        if (shownPowerUps == null || buttonSlot < 0 || buttonSlot >= shownPowerUps.Length) return;
 
-        int powerUpIndex = shownIndices[buttonSlot];
-        if (powerUpChooser == null || powerUpChooser.powerUps == null ||
-            powerUpIndex < 0 || powerUpIndex >= powerUpChooser.powerUps.Count)
+        var pu = shownPowerUps[buttonSlot];
+        if (powerUpChooser == null || !powerUpChooser.TryChoosePowerUp(pu))
         {
-            Debug.LogWarning("[PowerUpSelectionUI] Selected power-up index is no longer valid.");
-            ClosePanel();
-            return;
+            Debug.LogWarning("[PowerUpSelectionUI] Selected power-up is no longer available.");
         }
 
-        powerUpChooser.TryChoosePowerUp(powerUpIndex);
         ClosePanel();
     }
 
@@ -250,7 +253,7 @@ public class PowerUpSelectionUI : MonoBehaviour
         Time.timeScale = 1f;
         if (slowMoVolume) slowMoVolume.weight = 0f;
 
-        shownIndices = null;
+        shownPowerUps = null;
 
         if (skipButton != null)
         {

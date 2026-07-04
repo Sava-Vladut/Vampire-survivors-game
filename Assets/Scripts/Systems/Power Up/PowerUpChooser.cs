@@ -84,6 +84,18 @@ public class PowerUpChooser : MonoBehaviour
         index >= 0 && index < powerUps.Count && CanSelect(powerUps[index]);
 
     /// <summary>
+    /// Choose a specific PowerUp by reference rather than by index. Safer than
+    /// TryChoosePowerUp(int) when the caller only holds onto the PowerUp itself
+    /// (e.g. a UI that snapshotted candidates earlier), since the underlying
+    /// powerUps list may have been mutated in between.
+    /// </summary>
+    public bool TryChoosePowerUp(PowerUp pu)
+    {
+        int index = pu != null ? powerUps.IndexOf(pu) : -1;
+        return index >= 0 && TryChoosePowerUp(index);
+    }
+
+    /// <summary>
     /// Choose the power-up at index. Spawns/enables its object,
     /// moves it to selected list, and removes it from available list.
     /// </summary>
