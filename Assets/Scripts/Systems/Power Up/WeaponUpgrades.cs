@@ -360,17 +360,82 @@ public class WeaponUpgrades : MonoBehaviour
 #endif
     }
 
+    // Selecting WHICH damage type / WHICH status effect / whether status is enabled at
+    // all is a one-time choice, not a magnitude that makes sense to scale up - so these
+    // never participate in the tiered level-up path (they can still be picked fresh once).
+    private static readonly HashSet<UpgradeType> NonScalingSelectorTypes = new()
+    {
+        UpgradeType.KnifeDamageTypeIndex, UpgradeType.ShooterDamageTypeIndex,
+        UpgradeType.KnifeEnableStatusEffect, UpgradeType.ShooterEnableStatusEffect,
+        UpgradeType.KnifeStatusEffectIndex, UpgradeType.ShooterStatusEffectIndex,
+    };
+
+    /// <summary>All non-None/Custom upgrade types valid for this instance's parent.</summary>
+    private List<UpgradeType> AllowedTypesForParent()
+    {
+        var all = (UpgradeType[])System.Enum.GetValues(typeof(UpgradeType));
+        var allowed = new List<UpgradeType>();
+        foreach (var t in all)
+        {
+            if (t == UpgradeType.None || t == UpgradeType.Custom) continue;
+            if (IsTypeAllowedForParent(t)) allowed.Add(t);
+        }
+        return allowed;
+    }
+
+    /// <summary>How many existing siblings (authored or generated) already have this type.</summary>
+    private static int CountExistingTier(Transform parent, UpgradeType type)
+    {
+        int count = 0;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var wu = parent.GetChild(i).GetComponent<WeaponUpgrades>();
+            if (wu != null && wu.upgradeType == type) count++;
+        }
+        return count;
+    }
+
     /// <summary>
-    /// Synthesizes one more upgrade as a new sibling under the same parent, reusing
-    /// the exact same random-roll/name/description logic as the editor-only
-    /// "Generate Random Upgrade" tool. Once parented, UpgradeChainUtil.FindNextSibling
-    /// picks it up like any authored upgrade on future calls, so no extra bookkeeping
-    /// is needed to avoid re-generating it.
+    /// Synthesizes one more upgrade as a new sibling under the same parent. Rolls either
+    /// a stat type this weapon has never had before, or - rarer, per UpgradeChainUtil.LevelUpChance -
+    /// levels up one it already owns, scaling the roll by its next tier via
+    /// UpgradeChainUtil.TierMultiplier. Once parented, UpgradeChainUtil.FindNextSibling
+    /// picks it up like any authored upgrade on future calls, so no extra bookkeeping is
+    /// needed to avoid re-generating it.
     /// </summary>
     private WeaponUpgrades CreateGeneratedNextUpgrade()
     {
         if (transform.parent == null) return null;
         if (generatedDepth >= MaxGeneratedDepth) return null;
+
+        var allowed = AllowedTypesForParent();
+        if (allowed.Count == 0) return null;
+
+        List<UpgradeType> fresh = null;
+        List<UpgradeType> levelable = null;
+        foreach (var t in allowed)
+        {
+            int tier = CountExistingTier(transform.parent, t);
+            if (tier <= 0) (fresh ??= new List<UpgradeType>()).Add(t);
+            else if (tier < UpgradeChainUtil.MaxUpgradeTier && !NonScalingSelectorTypes.Contains(t))
+                (levelable ??= new List<UpgradeType>()).Add(t);
+        }
+
+        bool hasFresh = fresh != null && fresh.Count > 0;
+        bool hasLevelable = levelable != null && levelable.Count > 0;
+        if (!hasFresh && !hasLevelable) return null; // everything already taken and maxed
+
+        bool doLevelUp = hasLevelable && (!hasFresh || Random.value < UpgradeChainUtil.LevelUpChance);
+        var chosenType = doLevelUp
+            ? levelable[Random.Range(0, levelable.Count)]
+            : fresh[Random.Range(0, fresh.Count)];
+
+        if (!Specs.TryGetValue(chosenType, out var spec)) return null;
+
+        int newTier = CountExistingTier(transform.parent, chosenType) + 1;
+        float raw = Random.Range(spec.RollMin, spec.RollMax);
+        float scaled = raw * UpgradeChainUtil.TierMultiplier(newTier);
+        float rolled = spec.RollIsInt ? Mathf.Round(scaled) : scaled;
 
         var go = new GameObject($"{transform.parent.name} - Generated Upgrade");
         go.SetActive(false); // must precede AddComponent so Awake never fires prematurely
@@ -379,6 +444,8 @@ public class WeaponUpgrades : MonoBehaviour
         var wu = go.AddComponent<WeaponUpgrades>();
         wu.isGenerated = true;
         wu.generatedDepth = generatedDepth + 1;
+        wu.upgradeType = chosenType;
+        wu.value = rolled;
         wu.Upgrade = new PowerUp
         {
             IsWeapon = false,
@@ -388,13 +455,9 @@ public class WeaponUpgrades : MonoBehaviour
         };
 
         wu.TryAssignIconFromParent();
-        wu.GenerateRandomUpgrade();
-
-        if (wu.upgradeType == UpgradeType.None)
-        {
-            Destroy(go);
-            return null;
-        }
+        wu.SetUpgradeInfo();
+        if (newTier > 1)
+            wu.Upgrade.powerUpName += $" (Tier {UpgradeChainUtil.TierRoman(newTier)})";
 
         return wu;
     }
@@ -606,15 +669,7 @@ public class WeaponUpgrades : MonoBehaviour
     [ContextMenu("Generate Random Upgrade")]
     private void GenerateRandomUpgrade()
     {
-        // Build allowed list excluding None/Custom
-        var all = (UpgradeType[])System.Enum.GetValues(typeof(UpgradeType));
-        System.Collections.Generic.List<UpgradeType> allowed = new();
-        for (int i = 0; i < all.Length; i++)
-        {
-            var t = all[i];
-            if (t == UpgradeType.None || t == UpgradeType.Custom) continue;
-            if (IsTypeAllowedForParent(t)) allowed.Add(t);
-        }
+        var allowed = AllowedTypesForParent();
         if (allowed.Count == 0)
         {
             Debug.LogWarning("[WeaponUpgrades] No valid upgrade types for this parent.");

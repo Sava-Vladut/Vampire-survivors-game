@@ -240,6 +240,25 @@ public class AccessoriesUpgrades : MonoBehaviour
     /// it up like any authored upgrade on future calls, so no extra bookkeeping is needed
     /// to avoid re-generating it.
     /// </summary>
+    /// <summary>How many existing siblings (authored or generated) already have this type.</summary>
+    private static int CountExistingTier(Transform parent, UpgradeType type)
+    {
+        int count = 0;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var au = parent.GetChild(i).GetComponent<AccessoriesUpgrades>();
+            if (au != null && au.upgradeType == type) count++;
+        }
+        return count;
+    }
+
+    /// <summary>
+    /// Synthesizes one more upgrade as a new sibling, rolling either a stat from the
+    /// accessory's family it doesn't have yet, or - rarer, per UpgradeChainUtil.LevelUpChance -
+    /// leveling up one it already owns (scaling the roll by its next tier). For
+    /// single-stat families (most rings) every generation after the first is
+    /// necessarily a level-up, since there's nothing else in the family to offer.
+    /// </summary>
     private AccessoriesUpgrades CreateGeneratedNextUpgrade()
     {
         if (transform.parent == null) return null;
@@ -251,21 +270,37 @@ public class AccessoriesUpgrades : MonoBehaviour
         // Filter to types Specs actually knows how to roll before picking, rather than
         // picking blind and bailing out - a stray None/Custom in an authored family
         // array would otherwise cost the roll entirely instead of just being ignored.
-        List<UpgradeType> rollable = null;
+        List<UpgradeType> rollableFamily = null;
         foreach (var t in family)
         {
             if (!Specs.ContainsKey(t)) continue;
-            rollable ??= new List<UpgradeType>(family.Length);
-            rollable.Add(t);
+            (rollableFamily ??= new List<UpgradeType>(family.Length)).Add(t);
         }
-        if (rollable == null || rollable.Count == 0) return null;
+        if (rollableFamily == null || rollableFamily.Count == 0) return null;
 
-        var chosenType = rollable[Random.Range(0, rollable.Count)];
+        List<UpgradeType> fresh = null;
+        List<UpgradeType> levelable = null;
+        foreach (var t in rollableFamily)
+        {
+            int tier = CountExistingTier(transform.parent, t);
+            if (tier <= 0) (fresh ??= new List<UpgradeType>()).Add(t);
+            else if (tier < UpgradeChainUtil.MaxUpgradeTier) (levelable ??= new List<UpgradeType>()).Add(t);
+        }
+
+        bool hasFresh = fresh != null && fresh.Count > 0;
+        bool hasLevelable = levelable != null && levelable.Count > 0;
+        if (!hasFresh && !hasLevelable) return null; // everything already taken and maxed
+
+        bool doLevelUp = hasLevelable && (!hasFresh || Random.value < UpgradeChainUtil.LevelUpChance);
+        var chosenType = doLevelUp
+            ? levelable[Random.Range(0, levelable.Count)]
+            : fresh[Random.Range(0, fresh.Count)];
+
         var spec = Specs[chosenType];
-
-        float rolled = spec.RollIsInt
-            ? Mathf.Round(Random.Range(spec.RollMin, spec.RollMax))
-            : Random.Range(spec.RollMin, spec.RollMax);
+        int newTier = CountExistingTier(transform.parent, chosenType) + 1;
+        float raw = Random.Range(spec.RollMin, spec.RollMax);
+        float scaled = raw * UpgradeChainUtil.TierMultiplier(newTier);
+        float rolled = spec.RollIsInt ? Mathf.Round(scaled) : scaled;
 
         var go = new GameObject($"{transform.parent.name} - Generated Upgrade");
         go.SetActive(false); // must precede AddComponent so Awake never fires prematurely
@@ -280,9 +315,12 @@ public class AccessoriesUpgrades : MonoBehaviour
         string rootName = GetComponent<Accessory>()?.AccesoryName;
         if (string.IsNullOrEmpty(rootName)) rootName = transform.parent.name;
 
+        string displayName = $"{rootName} - {spec.NameSuffix(rolled)}";
+        if (newTier > 1) displayName += $" (Tier {UpgradeChainUtil.TierRoman(newTier)})";
+
         au.Upgrade = new PowerUp
         {
-            powerUpName = $"{rootName} - {spec.NameSuffix(rolled)}",
+            powerUpName = displayName,
             powerUpDescription = spec.DescFormat(rolled),
             IsWeapon = false,
             IsAccessory = false,

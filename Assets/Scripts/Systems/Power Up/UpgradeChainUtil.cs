@@ -61,4 +61,22 @@ public static class UpgradeChainUtil
             cachedController = Object.FindAnyObjectByType<Snappy2DController>();
         return cachedController;
     }
+
+    // ===== Shared tiered-regeneration tuning (WeaponUpgrades/AccessoriesUpgrades) =====
+    // When the generated tail rolls a stat type the weapon/accessory already owns, it
+    // levels that stat up (bigger roll) instead of adding an unrelated fresh one. This
+    // is deliberately rarer than getting something new, so it stays a special moment.
+    public const float LevelUpChance = 0.2f;
+    public const int MaxUpgradeTier = 5;
+
+    public static float TierMultiplier(int tier) => 1f + 0.5f * (tier - 1);
+
+    public static string TierRoman(int tier) => tier switch
+    {
+        1 => "I",
+        2 => "II",
+        3 => "III",
+        4 => "IV",
+        _ => "V",
+    };
 }
