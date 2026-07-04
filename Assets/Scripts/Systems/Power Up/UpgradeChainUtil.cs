@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 // Shared by WeaponUpgrades and AccessoriesUpgrades: both wire "the next upgrade
@@ -70,6 +71,20 @@ public static class UpgradeChainUtil
     public const int MaxUpgradeTier = 5;
 
     public static float TierMultiplier(int tier) => 1f + 0.5f * (tier - 1);
+
+    // Shared by both WeaponUpgrades.CountExistingTier and AccessoriesUpgrades.CountExistingTier:
+    // counts existing siblings (authored or generated) whose upgradeType matches, regardless
+    // of position - each file supplies its own predicate since their UpgradeType enums differ.
+    public static int CountSiblingsMatching<T>(Transform parent, Func<T, bool> predicate) where T : Component
+    {
+        int count = 0;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var c = parent.GetChild(i).GetComponent<T>();
+            if (c != null && predicate(c)) count++;
+        }
+        return count;
+    }
 
     public static string TierRoman(int tier) => tier switch
     {

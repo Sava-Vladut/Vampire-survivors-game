@@ -48,7 +48,7 @@ public sealed class KnifeUpgradeAdapter : IKnifeStatTarget
 
     public int Damage { get => k.damage; set => k.damage = value; }
     public SimpleHealth.DamageType DamageType { get => k.damageType; set => k.damageType = value; }
-    public float CritChance { get => k.critChance; set => k.critChance = value; }
+    public float CritChance { get => k.critChance; set => k.critChance = Mathf.Clamp01(value); }
     public float CritMultiplier { get => k.critMultiplier; set => k.critMultiplier = value; }
     public bool ApplyStatusEffectOnHit { get => k.applyStatusEffectOnHit; set => k.applyStatusEffectOnHit = value; }
     public float StatusApplyChance { get => k.statusApplyChance; set => k.statusApplyChance = Mathf.Clamp01(value); }
@@ -69,7 +69,7 @@ public sealed class ShooterUpgradeAdapter : IShooterStatTarget
 
     public int Damage { get => s.damage; set => s.damage = value; }
     public SimpleHealth.DamageType DamageType { get => s.damageType; set => s.damageType = value; }
-    public float CritChance { get => s.critChance; set => s.critChance = value; }
+    public float CritChance { get => s.critChance; set => s.critChance = Mathf.Clamp01(value); }
     public float CritMultiplier { get => s.critMultiplier; set => s.critMultiplier = value; }
     public bool ApplyStatusEffectOnHit { get => s.applyStatusEffectOnHit; set => s.applyStatusEffectOnHit = value; }
     public float StatusApplyChance { get => s.statusApplyChance; set => s.statusApplyChance = Mathf.Clamp01(value); }

@@ -87,8 +87,14 @@ public class WeaponUpgrades : MonoBehaviour
         public readonly float RollMax;
         public readonly bool RollIsInt;
 
+        // Selecting WHICH damage type / WHICH status effect / whether status is enabled at
+        // all is a one-time choice, not a magnitude that makes sense to scale up - so these
+        // never participate in the tiered level-up path (they can still be picked fresh once).
+        public readonly bool IsNonScalingSelector;
+
         public UpgradeSpec(WeaponKind kind, Func<float, string> nameFormat, Func<float, string> descFormat,
-            Action<object, float> apply, float rollMin, float rollMax, bool rollIsInt = false)
+            Action<object, float> apply, float rollMin, float rollMax, bool rollIsInt = false,
+            bool isNonScalingSelector = false)
         {
             Kind = kind;
             NameFormat = nameFormat;
@@ -97,6 +103,7 @@ public class WeaponUpgrades : MonoBehaviour
             RollMin = rollMin;
             RollMax = rollMax;
             RollIsInt = rollIsInt;
+            IsNonScalingSelector = isNonScalingSelector;
         }
     }
 
@@ -166,7 +173,7 @@ public class WeaponUpgrades : MonoBehaviour
         // ------------- Knife -------------
         [UpgradeType.KnifeDamageFlat] = new(WeaponKind.Knife, DamageFlatName, DamageFlatDesc, ApplyDamageFlat, 2f, 12f),
         [UpgradeType.KnifeDamagePercent] = new(WeaponKind.Knife, DamagePercentName, DamagePercentDesc, ApplyDamagePercent, 0.05f, 0.25f),
-        [UpgradeType.KnifeDamageTypeIndex] = new(WeaponKind.Knife, DamageTypeName, DamageTypeDesc, ApplyDamageType, 0f, 4f, rollIsInt: true),
+        [UpgradeType.KnifeDamageTypeIndex] = new(WeaponKind.Knife, DamageTypeName, DamageTypeDesc, ApplyDamageType, 0f, 4f, rollIsInt: true, isNonScalingSelector: true),
         [UpgradeType.KnifeRadiusFlat] = new(WeaponKind.Knife,
             v => $"Range Up +{Flat(v, "F2")}", v => $"Increases attack reach by {Flat(v, "F2")}.",
             (o, v) => { var t = (IKnifeStatTarget)o; t.Radius += v; }, 0.1f, 1.0f),
@@ -200,13 +207,13 @@ public class WeaponUpgrades : MonoBehaviour
         [UpgradeType.KnifeStatusApplyChancePercent] = new(WeaponKind.Knife, StatusChancePercentName, StatusChancePercentDesc, ApplyStatusChancePercent, 0.10f, 0.50f),
         [UpgradeType.KnifeStatusDurationFlat] = new(WeaponKind.Knife, StatusDurationFlatName, StatusDurationFlatDesc, ApplyStatusDurationFlat, 0.5f, 3.0f),
         [UpgradeType.KnifeStatusDurationPercent] = new(WeaponKind.Knife, StatusDurationPercentName, StatusDurationPercentDesc, ApplyStatusDurationPercent, 0.10f, 0.50f),
-        [UpgradeType.KnifeEnableStatusEffect] = new(WeaponKind.Knife, EnableStatusName, EnableStatusDesc, ApplyEnableStatus, 0f, 0f),
-        [UpgradeType.KnifeStatusEffectIndex] = new(WeaponKind.Knife, StatusIndexName, StatusIndexDesc, ApplyStatusIndex, 0f, StatusTypeCount - 1f, rollIsInt: true),
+        [UpgradeType.KnifeEnableStatusEffect] = new(WeaponKind.Knife, EnableStatusName, EnableStatusDesc, ApplyEnableStatus, 0f, 0f, isNonScalingSelector: true),
+        [UpgradeType.KnifeStatusEffectIndex] = new(WeaponKind.Knife, StatusIndexName, StatusIndexDesc, ApplyStatusIndex, 0f, StatusTypeCount - 1f, rollIsInt: true, isNonScalingSelector: true),
 
         // ------------- Shooter (shares concept delegates with Knife where identical) -------------
         [UpgradeType.ShooterDamageFlat] = new(WeaponKind.Shooter, DamageFlatName, DamageFlatDesc, ApplyDamageFlat, 2f, 12f),
         [UpgradeType.ShooterDamagePercent] = new(WeaponKind.Shooter, DamagePercentName, DamagePercentDesc, ApplyDamagePercent, 0.05f, 0.25f),
-        [UpgradeType.ShooterDamageTypeIndex] = new(WeaponKind.Shooter, DamageTypeName, DamageTypeDesc, ApplyDamageType, 0f, 4f, rollIsInt: true),
+        [UpgradeType.ShooterDamageTypeIndex] = new(WeaponKind.Shooter, DamageTypeName, DamageTypeDesc, ApplyDamageType, 0f, 4f, rollIsInt: true, isNonScalingSelector: true),
         [UpgradeType.ShooterProjectileCount] = new(WeaponKind.Shooter,
             v => $"Projectile Count +{IntFlat(v)}", v => $"Fires {IntFlat(v)} additional projectile(s).",
             (o, v) => { var t = (IShooterStatTarget)o; t.ProjectileCount += Mathf.RoundToInt(v); }, 1f, 3.99f, rollIsInt: true),
@@ -234,8 +241,8 @@ public class WeaponUpgrades : MonoBehaviour
         [UpgradeType.ShooterStatusApplyChancePercent] = new(WeaponKind.Shooter, StatusChancePercentName, StatusChancePercentDesc, ApplyStatusChancePercent, 0.10f, 0.50f),
         [UpgradeType.ShooterStatusDurationFlat] = new(WeaponKind.Shooter, StatusDurationFlatName, StatusDurationFlatDesc, ApplyStatusDurationFlat, 0.5f, 3.0f),
         [UpgradeType.ShooterStatusDurationPercent] = new(WeaponKind.Shooter, StatusDurationPercentName, StatusDurationPercentDesc, ApplyStatusDurationPercent, 0.10f, 0.50f),
-        [UpgradeType.ShooterEnableStatusEffect] = new(WeaponKind.Shooter, EnableStatusName, EnableStatusDesc, ApplyEnableStatus, 0f, 0f),
-        [UpgradeType.ShooterStatusEffectIndex] = new(WeaponKind.Shooter, StatusIndexName, StatusIndexDesc, ApplyStatusIndex, 0f, StatusTypeCount - 1f, rollIsInt: true),
+        [UpgradeType.ShooterEnableStatusEffect] = new(WeaponKind.Shooter, EnableStatusName, EnableStatusDesc, ApplyEnableStatus, 0f, 0f, isNonScalingSelector: true),
+        [UpgradeType.ShooterStatusEffectIndex] = new(WeaponKind.Shooter, StatusIndexName, StatusIndexDesc, ApplyStatusIndex, 0f, StatusTypeCount - 1f, rollIsInt: true, isNonScalingSelector: true),
 
         // ------------- Tick -------------
         [UpgradeType.TickRateFlat] = new(WeaponKind.Tick,
@@ -272,6 +279,9 @@ public class WeaponUpgrades : MonoBehaviour
     [Tooltip("True only for links synthesized at runtime past the authored chain's end.")]
     public bool isGenerated;
     public int generatedDepth;
+
+    [Tooltip("Cached at creation for generated upgrades only; authored entries never show a tier suffix even if they repeat an upgradeType.")]
+    public int tier = 1;
 
     // Icon now auto-inferred from parent weapon (Knife/SimpleShooter).
 
@@ -360,16 +370,6 @@ public class WeaponUpgrades : MonoBehaviour
 #endif
     }
 
-    // Selecting WHICH damage type / WHICH status effect / whether status is enabled at
-    // all is a one-time choice, not a magnitude that makes sense to scale up - so these
-    // never participate in the tiered level-up path (they can still be picked fresh once).
-    private static readonly HashSet<UpgradeType> NonScalingSelectorTypes = new()
-    {
-        UpgradeType.KnifeDamageTypeIndex, UpgradeType.ShooterDamageTypeIndex,
-        UpgradeType.KnifeEnableStatusEffect, UpgradeType.ShooterEnableStatusEffect,
-        UpgradeType.KnifeStatusEffectIndex, UpgradeType.ShooterStatusEffectIndex,
-    };
-
     /// <summary>All non-None/Custom upgrade types valid for this instance's parent.</summary>
     private List<UpgradeType> AllowedTypesForParent()
     {
@@ -385,15 +385,7 @@ public class WeaponUpgrades : MonoBehaviour
 
     /// <summary>How many existing siblings (authored or generated) already have this type.</summary>
     private static int CountExistingTier(Transform parent, UpgradeType type)
-    {
-        int count = 0;
-        for (int i = 0; i < parent.childCount; i++)
-        {
-            var wu = parent.GetChild(i).GetComponent<WeaponUpgrades>();
-            if (wu != null && wu.upgradeType == type) count++;
-        }
-        return count;
-    }
+        => UpgradeChainUtil.CountSiblingsMatching<WeaponUpgrades>(parent, wu => wu.upgradeType == type);
 
     /// <summary>
     /// Synthesizes one more upgrade as a new sibling under the same parent. Rolls either
@@ -417,7 +409,7 @@ public class WeaponUpgrades : MonoBehaviour
         {
             int tier = CountExistingTier(transform.parent, t);
             if (tier <= 0) (fresh ??= new List<UpgradeType>()).Add(t);
-            else if (tier < UpgradeChainUtil.MaxUpgradeTier && !NonScalingSelectorTypes.Contains(t))
+            else if (tier < UpgradeChainUtil.MaxUpgradeTier && !Specs[t].IsNonScalingSelector)
                 (levelable ??= new List<UpgradeType>()).Add(t);
         }
 
@@ -444,6 +436,7 @@ public class WeaponUpgrades : MonoBehaviour
         var wu = go.AddComponent<WeaponUpgrades>();
         wu.isGenerated = true;
         wu.generatedDepth = generatedDepth + 1;
+        wu.tier = newTier;
         wu.upgradeType = chosenType;
         wu.value = rolled;
         wu.Upgrade = new PowerUp
@@ -455,7 +448,7 @@ public class WeaponUpgrades : MonoBehaviour
         };
 
         wu.TryAssignIconFromParent();
-        wu.SetUpgradeInfo(); // reads the tier itself now (self already parented+typed above)
+        wu.SetUpgradeInfo(); // tier/upgradeType/isGenerated already set above
 
         return wu;
     }
@@ -502,16 +495,13 @@ public class WeaponUpgrades : MonoBehaviour
             Upgrade.powerUpName = spec.NameFormat(value);
             Upgrade.powerUpDescription = spec.DescFormat(value);
 
-            // Tier suffix is derived here (from live sibling count) rather than appended
-            // once by the caller, so it survives Awake() re-deriving the name later - a
-            // generated upgrade's GameObject only starts inactive and fires Awake (which
-            // calls this again) the moment the player actually selects it.
-            if (transform.parent != null)
-            {
-                int tier = CountExistingTier(transform.parent, upgradeType);
-                if (tier > 1)
-                    Upgrade.powerUpName += $" (Tier {UpgradeChainUtil.TierRoman(tier)})";
-            }
+            // Tier suffix uses the cached tier (set once at creation in
+            // CreateGeneratedNextUpgrade), not a live sibling recount, so it survives
+            // Awake() re-deriving the name later and never picks up a sibling generated
+            // as a side effect of this same Awake() call. Authored entries are never
+            // tiered even if they legitimately repeat the same upgradeType.
+            if (isGenerated && tier > 1)
+                Upgrade.powerUpName += $" (Tier {UpgradeChainUtil.TierRoman(tier)})";
         }
         else
         {

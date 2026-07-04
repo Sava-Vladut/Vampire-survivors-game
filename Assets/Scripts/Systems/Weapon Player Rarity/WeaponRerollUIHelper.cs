@@ -87,7 +87,19 @@ public class WeaponRerollUIHelper : MonoBehaviour
     public WeaponRarityController CurrentTarget()
     {
         if (index < 0 || index >= controllers.Count) return null;
-        return controllers[index];
+
+        var c = controllers[index];
+        // Explicit == goes through UnityEngine.Object's overload, which catches a
+        // destroyed-but-not-yet-GC'd controller ("fake null") - unlike callers using
+        // CurrentTarget()?.Method(), whose ?. only does a raw reference check and would
+        // still invoke the method on a destroyed object.
+        if (c == null)
+        {
+            controllers.RemoveAt(index);
+            if (index >= controllers.Count) index = controllers.Count - 1;
+            return null;
+        }
+        return c;
     }
 
 
@@ -163,9 +175,9 @@ public class WeaponRerollUIHelper : MonoBehaviour
         if (actionButtons == null || actionButtons.Length == 0) return;
 
         // No RefreshControllers() here: the cached list is already kept current by
-        // OnEnable/prev/next, and CurrentTarget() safely no-ops via Unity's overridden
-        // null check if the selected controller was destroyed in between. Rescanning
-        // the whole scene on every single button click was redundant with that cache.
+        // OnEnable/prev/next, and CurrentTarget() itself now prunes a destroyed controller
+        // and returns a real null before any ?. call sees it. Rescanning the whole scene on
+        // every single button click was redundant with that cache.
         UnityAction[] actions =
         {
             () => { CurrentTarget()?.RerollRarityAndStats(); UpdateSelectionUI(); },

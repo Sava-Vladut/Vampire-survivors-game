@@ -242,15 +242,7 @@ public class AccessoriesUpgrades : MonoBehaviour
     /// </summary>
     /// <summary>How many existing siblings (authored or generated) already have this type.</summary>
     private static int CountExistingTier(Transform parent, UpgradeType type)
-    {
-        int count = 0;
-        for (int i = 0; i < parent.childCount; i++)
-        {
-            var au = parent.GetChild(i).GetComponent<AccessoriesUpgrades>();
-            if (au != null && au.upgradeType == type) count++;
-        }
-        return count;
-    }
+        => UpgradeChainUtil.CountSiblingsMatching<AccessoriesUpgrades>(parent, au => au.upgradeType == type);
 
     /// <summary>
     /// Synthesizes one more upgrade as a new sibling, rolling either a stat from the
