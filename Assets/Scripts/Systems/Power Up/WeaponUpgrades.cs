@@ -455,9 +455,7 @@ public class WeaponUpgrades : MonoBehaviour
         };
 
         wu.TryAssignIconFromParent();
-        wu.SetUpgradeInfo();
-        if (newTier > 1)
-            wu.Upgrade.powerUpName += $" (Tier {UpgradeChainUtil.TierRoman(newTier)})";
+        wu.SetUpgradeInfo(); // reads the tier itself now (self already parented+typed above)
 
         return wu;
     }
@@ -503,6 +501,17 @@ public class WeaponUpgrades : MonoBehaviour
         {
             Upgrade.powerUpName = spec.NameFormat(value);
             Upgrade.powerUpDescription = spec.DescFormat(value);
+
+            // Tier suffix is derived here (from live sibling count) rather than appended
+            // once by the caller, so it survives Awake() re-deriving the name later - a
+            // generated upgrade's GameObject only starts inactive and fires Awake (which
+            // calls this again) the moment the player actually selects it.
+            if (transform.parent != null)
+            {
+                int tier = CountExistingTier(transform.parent, upgradeType);
+                if (tier > 1)
+                    Upgrade.powerUpName += $" (Tier {UpgradeChainUtil.TierRoman(tier)})";
+            }
         }
         else
         {
