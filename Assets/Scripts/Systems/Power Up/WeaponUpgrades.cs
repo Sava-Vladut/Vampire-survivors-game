@@ -257,6 +257,11 @@ public class WeaponUpgrades : MonoBehaviour
             (o, v) => { var t = (ITickStatTarget)o; t.BurstSpacing = Mathf.Max(0.01f, t.BurstSpacing * (1f - v)); }, 0.10f, 0.50f),
     };
 
+    // Once the authored chain runs out (no next sibling), CreateGeneratedNextUpgrade()
+    // synthesizes further links at runtime so leveling never dead-ends. Soft cap guards
+    // against unbounded GameObject growth over a very long play session.
+    private const int MaxGeneratedDepth = 200;
+
     private PowerUpChooser powerUpChooser;
 
     [Header("Power-Up")]
@@ -264,6 +269,10 @@ public class WeaponUpgrades : MonoBehaviour
 
     [Tooltip("Autofilled: next sibling with WeaponUpgrades in the same parent.")]
     public WeaponUpgrades nextUpgrade;
+
+    [Tooltip("True only for links synthesized at runtime past the authored chain's end.")]
+    public bool isGenerated;
+    public int generatedDepth;
 
     // Icon now auto-inferred from parent weapon (Knife/SimpleShooter).
 
@@ -341,12 +350,56 @@ public class WeaponUpgrades : MonoBehaviour
         var old = nextUpgrade;
         nextUpgrade = UpgradeChainUtil.FindNextSibling<WeaponUpgrades>(transform);
 
+        // Authored chain exhausted: synthesize the next link so leveling doesn't dead-end.
+        // Runtime-only — never touches the authored prefab/editor state.
+        if (nextUpgrade == null && Application.isPlaying)
+            nextUpgrade = CreateGeneratedNextUpgrade();
+
 #if UNITY_EDITOR
         if (old != nextUpgrade)
         {
             UnityEditor.EditorUtility.SetDirty(this);
         }
 #endif
+    }
+
+    /// <summary>
+    /// Synthesizes one more upgrade as a new sibling under the same parent, reusing
+    /// the exact same random-roll/name/description logic as the editor-only
+    /// "Generate Random Upgrade" tool. Once parented, UpgradeChainUtil.FindNextSibling
+    /// picks it up like any authored upgrade on future calls, so no extra bookkeeping
+    /// is needed to avoid re-generating it.
+    /// </summary>
+    private WeaponUpgrades CreateGeneratedNextUpgrade()
+    {
+        if (transform.parent == null) return null;
+        if (generatedDepth >= MaxGeneratedDepth) return null;
+
+        var go = new GameObject($"{transform.parent.name} - Generated Upgrade");
+        go.SetActive(false); // must precede AddComponent so Awake never fires prematurely
+        go.transform.SetParent(transform.parent, false);
+
+        var wu = go.AddComponent<WeaponUpgrades>();
+        wu.isGenerated = true;
+        wu.generatedDepth = generatedDepth + 1;
+        wu.Upgrade = new PowerUp
+        {
+            IsWeapon = false,
+            IsAccessory = false,
+            weight = Upgrade != null ? Upgrade.weight : 1f,
+            powerUpObject = go,
+        };
+
+        wu.TryAssignIconFromParent();
+        wu.GenerateRandomUpgrade();
+
+        if (wu.upgradeType == UpgradeType.None)
+        {
+            Destroy(go);
+            return null;
+        }
+
+        return wu;
     }
 
     private void EnqueueNextUpgradeOnce()
