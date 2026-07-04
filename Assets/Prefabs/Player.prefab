@@ -223,6 +223,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -6028249209390854301, guid: 1c97851b30daf4e4f994364accc37593, type: 3}
     weight: 120
   nextUpgrade: {fileID: 0}
+  upgradeType: 6
+  value: 0.08
 --- !u!114 &3074538827380537505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -240,31 +242,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddPoisonResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 3550301659603603574}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -397,6 +375,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 8980879253321227505}
+  upgradeType: 2
+  value: 15
 --- !u!114 &7434854976045923618
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -414,31 +394,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Assembly-CSharp
-        m_MethodName: GiveArmor
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -2016,6 +1972,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -6028249209390854301, guid: 1c97851b30daf4e4f994364accc37593, type: 3}
     weight: 120
   nextUpgrade: {fileID: 4988117049657926950}
+  upgradeType: 6
+  value: 0.08
 --- !u!114 &2055206306013398440
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2033,31 +1991,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddPoisonResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 3550301659603603574}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -2144,6 +2078,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 2231107383271472083}
+  allowedUpgradeFamily:
+  - 1
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -2270,6 +2206,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -6028249209390854301, guid: 1c97851b30daf4e4f994364accc37593, type: 3}
     weight: 120
   nextUpgrade: {fileID: 8341230762479610313}
+  upgradeType: 6
+  value: 0.08
 --- !u!114 &1250807271897541648
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2287,31 +2225,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddPoisonResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 3550301659603603574}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -2645,6 +2559,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
     weight: 120
   nextUpgrade: {fileID: 0}
+  upgradeType: 4
+  value: 0.08
 --- !u!114 &4912264357271866277
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2662,31 +2578,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddColdResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 4036439647093142074}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -3508,6 +3400,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -8639265281806335974, guid: a767dfe450289bc449574b956acd63cf, type: 3}
     weight: 30
   nextUpgrade: {fileID: 0}
+  upgradeType: 2
+  value: 10
 --- !u!114 &5601390871689250602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3525,31 +3419,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Assembly-CSharp
-        m_MethodName: GiveArmor
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 10
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -4122,6 +3992,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 120
   nextUpgrade: {fileID: 8810217557203297635}
+  upgradeType: 1
+  value: 10
 --- !u!114 &2734466829036011345
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4139,31 +4011,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: IncreaseMaxHealth
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -5440,6 +5288,10 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 1532793042552691948}
+  allowedUpgradeFamily:
+  - 7
+  - 8
+  - 9
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -6204,6 +6056,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 4160329433764316195}
+  upgradeType: 5
+  value: 0.08
 --- !u!114 &7540564925930315326
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6221,31 +6075,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddLightningResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 165601345750180290}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -6774,6 +6604,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 7155398759454235565}
+  upgradeType: 5
+  value: 0.08
 --- !u!114 &7559588488922019393
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6791,31 +6623,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddLightningResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 165601345750180290}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -7075,6 +6883,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 3550301659603603574}
+  allowedUpgradeFamily:
+  - 6
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -8985,6 +8795,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 0}
+  allowedUpgradeFamily:
+  - 2
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -9276,6 +9088,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 8264414361972771182}
+  upgradeType: 5
+  value: 0.08
 --- !u!114 &7255802030272286230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9293,31 +9107,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddLightningResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 165601345750180290}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -9876,6 +9666,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -5804952844029615345, guid: 840f4d57e89cf754083a2065097a1196, type: 3}
     weight: 120
   nextUpgrade: {fileID: 7781702697946173593}
+  upgradeType: 3
+  value: 0.08
 --- !u!114 &4358938850181092772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9893,31 +9685,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddFireResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 6179476287787354157}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -10433,6 +10201,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 0}
+  upgradeType: 2
+  value: 15
 --- !u!114 &3655621090145072965
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10450,31 +10220,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Assembly-CSharp
-        m_MethodName: GiveArmor
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -11637,6 +11383,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -8639265281806335974, guid: a767dfe450289bc449574b956acd63cf, type: 3}
     weight: 30
   nextUpgrade: {fileID: 298437339841741852}
+  upgradeType: 2
+  value: 10
 --- !u!114 &5149346043121443665
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11654,31 +11402,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Assembly-CSharp
-        m_MethodName: GiveArmor
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 10
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -11853,6 +11577,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -6028249209390854301, guid: 1c97851b30daf4e4f994364accc37593, type: 3}
     weight: 120
   nextUpgrade: {fileID: 6685637765848078020}
+  upgradeType: 6
+  value: 0.08
 --- !u!114 &4423823210600553754
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11870,31 +11596,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddPoisonResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 3550301659603603574}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -13231,6 +12933,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 115461220870199671}
+  upgradeType: 2
+  value: 15
 --- !u!114 &6109215687142572846
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13248,31 +12952,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Assembly-CSharp
-        m_MethodName: GiveArmor
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -13542,6 +13222,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 120
   nextUpgrade: {fileID: 853247300304075296}
+  upgradeType: 1
+  value: 10
 --- !u!114 &6003350747660481715
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13559,31 +13241,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: IncreaseMaxHealth
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -13724,6 +13382,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
     weight: 120
   nextUpgrade: {fileID: 3096808596398326719}
+  upgradeType: 4
+  value: 0.08
 --- !u!114 &2578111261017501805
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13741,31 +13401,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddColdResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 4036439647093142074}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -14145,6 +13781,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -5804952844029615345, guid: 840f4d57e89cf754083a2065097a1196, type: 3}
     weight: 120
   nextUpgrade: {fileID: 7669684583806369584}
+  upgradeType: 3
+  value: 0.08
 --- !u!114 &209738029428787065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14162,31 +13800,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddFireResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 6179476287787354157}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -15215,6 +14829,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 5384659669158054330}
+  upgradeType: 2
+  value: 15
 --- !u!114 &1528986905927859907
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15232,31 +14848,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Assembly-CSharp
-        m_MethodName: GiveArmor
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -15315,6 +14907,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
     weight: 120
   nextUpgrade: {fileID: 2314000486116733922}
+  upgradeType: 4
+  value: 0.08
 --- !u!114 &2818361494263592269
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15332,31 +14926,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddColdResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 4036439647093142074}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -15575,6 +15145,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 165601345750180290}
+  allowedUpgradeFamily:
+  - 5
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -16760,6 +16332,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -4499610800817194292, guid: 56f49ca85e719464aad70d75aae56889, type: 3}
     weight: 120
   nextUpgrade: {fileID: 5954330450190725613}
+  upgradeType: 9
+  value: -0.1
 --- !u!114 &5959148329915396534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16777,31 +16351,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1160076805280392997}
-        m_TargetAssemblyTypeName: Snappy2DController, Assembly-CSharp
-        m_MethodName: IncreaseDashCooldown
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: -0.1
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -16967,6 +16517,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -4499610800817194292, guid: 56f49ca85e719464aad70d75aae56889, type: 3}
     weight: 120
   nextUpgrade: {fileID: 4301679695399315223}
+  upgradeType: 8
+  value: 2
 --- !u!114 &6659313089550594043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16984,31 +16536,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1160076805280392997}
-        m_TargetAssemblyTypeName: Snappy2DController, Assembly-CSharp
-        m_MethodName: IncreaseDashSpeed
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 2
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -17093,6 +16621,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 4206175083726496136}
+  allowedUpgradeFamily:
+  - 2
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -17219,6 +16749,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 5853517288930489679}
+  upgradeType: 5
+  value: 0.08
 --- !u!114 &4565743155932052871
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17236,31 +16768,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddLightningResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 165601345750180290}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -17458,6 +16966,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -5804952844029615345, guid: 840f4d57e89cf754083a2065097a1196, type: 3}
     weight: 120
   nextUpgrade: {fileID: 1622410267910504734}
+  upgradeType: 3
+  value: 0.08
 --- !u!114 &5040857579700245599
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17475,31 +16985,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddFireResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 6179476287787354157}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -17616,6 +17102,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
     weight: 120
   nextUpgrade: {fileID: 5633225559556024504}
+  upgradeType: 4
+  value: 0.08
 --- !u!114 &4331916148098941207
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17633,31 +17121,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddColdResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 4036439647093142074}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -19059,6 +18523,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 120
   nextUpgrade: {fileID: 3478786327083596618}
+  upgradeType: 1
+  value: 10
 --- !u!114 &2056882034727749982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19076,31 +18542,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: IncreaseMaxHealth
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -19470,6 +18912,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 4036439647093142074}
+  allowedUpgradeFamily:
+  - 4
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -20000,6 +19444,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
     weight: 120
   nextUpgrade: {fileID: 0}
+  upgradeType: 5
+  value: 0.08
 --- !u!114 &2424035000058656718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20017,31 +19463,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddLightningResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 165601345750180290}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -20741,6 +20163,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -5804952844029615345, guid: 840f4d57e89cf754083a2065097a1196, type: 3}
     weight: 120
   nextUpgrade: {fileID: 0}
+  upgradeType: 3
+  value: 0.08
 --- !u!114 &6906840887556706508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20758,31 +20182,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddFireResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 6179476287787354157}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -21005,6 +20405,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 120
   nextUpgrade: {fileID: 0}
+  upgradeType: 1
+  value: 5
 --- !u!114 &349057750166067180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21022,31 +20424,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: IncreaseMaxHealth
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 5
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -21180,6 +20558,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -6028249209390854301, guid: 1c97851b30daf4e4f994364accc37593, type: 3}
     weight: 120
   nextUpgrade: {fileID: 6702023497100340280}
+  upgradeType: 6
+  value: 0.08
 --- !u!114 &6863685928672312266
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21197,31 +20577,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddPoisonResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 3550301659603603574}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -21747,6 +21103,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -5804952844029615345, guid: 840f4d57e89cf754083a2065097a1196, type: 3}
     weight: 120
   nextUpgrade: {fileID: 8327499080722164276}
+  upgradeType: 3
+  value: 0.08
 --- !u!114 &693041991488930446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21764,31 +21122,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddFireResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 6179476287787354157}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -22021,6 +21355,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 120
   nextUpgrade: {fileID: 6371496717713720112}
+  upgradeType: 1
+  value: 10
 --- !u!114 &8982113524508753575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22038,31 +21374,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: IncreaseMaxHealth
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -22258,6 +21570,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 120
   nextUpgrade: {fileID: 1602962855853603578}
+  upgradeType: 1
+  value: 10
 --- !u!114 &2983291043851822158
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22275,31 +21589,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: IncreaseMaxHealth
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 15
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -23284,6 +22574,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -4499610800817194292, guid: 56f49ca85e719464aad70d75aae56889, type: 3}
     weight: 120
   nextUpgrade: {fileID: 0}
+  upgradeType: 9
+  value: -0.1
 --- !u!114 &8305401705832053989
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23301,31 +22593,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1160076805280392997}
-        m_TargetAssemblyTypeName: Snappy2DController, Assembly-CSharp
-        m_MethodName: IncreaseDashCooldown
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: -0.1
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -23897,6 +23165,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
     weight: 120
   nextUpgrade: {fileID: 733382842848037385}
+  upgradeType: 4
+  value: 0.08
 --- !u!114 &7458400617674158940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23914,31 +23184,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddColdResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.08
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 4036439647093142074}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -24389,6 +23635,8 @@ MonoBehaviour:
     powerUpIcon: {fileID: -4499610800817194292, guid: 56f49ca85e719464aad70d75aae56889, type: 3}
     weight: 120
   nextUpgrade: {fileID: 3327386734238812877}
+  upgradeType: 7
+  value: 0.1
 --- !u!114 &6681366482965058194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24406,31 +23654,7 @@ MonoBehaviour:
   icon: {fileID: 0}
   onAwake:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1160076805280392997}
-        m_TargetAssemblyTypeName: Snappy2DController, Assembly-CSharp
-        m_MethodName: IncreaseMoveSpeed
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0.1
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 8305401705832053989}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
   nextUpgrade: {fileID: 0}
   statsTextPrefab: {fileID: 0}
   uiParent: {fileID: 0}
@@ -24516,6 +23740,8 @@ MonoBehaviour:
           m_BoolArgument: 0
         m_CallState: 2
   nextUpgrade: {fileID: 6179476287787354157}
+  allowedUpgradeFamily:
+  - 3
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}

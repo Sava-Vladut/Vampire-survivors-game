@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using Random = UnityEngine.Random;
 
 // Handles a single weapon upgrade entry and (optionally) wires the *next* upgrade
 // to the next sibling WeaponUpgrades component under the same parent.

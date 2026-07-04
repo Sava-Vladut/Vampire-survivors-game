@@ -41,4 +41,24 @@ public static class UpgradeChainUtil
             cachedChooser = Object.FindAnyObjectByType<PowerUpChooser>();
         return cachedChooser;
     }
+
+    // Accessory upgrades apply directly to the player's singleton components rather
+    // than a transform.parent-scoped weapon, so they're cached the same way.
+    private static SimpleHealth cachedHealth;
+
+    public static SimpleHealth GetHealth()
+    {
+        if (cachedHealth == null)
+            cachedHealth = Object.FindAnyObjectByType<SimpleHealth>();
+        return cachedHealth;
+    }
+
+    private static Snappy2DController cachedController;
+
+    public static Snappy2DController GetController()
+    {
+        if (cachedController == null)
+            cachedController = Object.FindAnyObjectByType<Snappy2DController>();
+        return cachedController;
+    }
 }

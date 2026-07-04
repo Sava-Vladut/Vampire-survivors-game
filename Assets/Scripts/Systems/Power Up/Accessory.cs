@@ -21,6 +21,10 @@ public class Accessory : MonoBehaviour
     [Header("Upgrades")]
     [HideInInspector] public AccessoriesUpgrades nextUpgrade;
 
+    [Tooltip("Stat types this accessory's chain draws from once its authored upgrades run out " +
+        "(e.g. a Poison Ring should only ever roll more Poison Resist). Set on the root accessory only.")]
+    [SerializeField] private AccessoriesUpgrades.UpgradeType[] allowedUpgradeFamily;
+
     // --- UI (mirrors Knife) ---
     [Header("UI")]
     [Tooltip("Prefab root GameObject that contains a TextMeshProUGUI somewhere in its children.")]
@@ -83,6 +87,19 @@ public class Accessory : MonoBehaviour
             p = p.parent;
         }
         return root;
+    }
+
+    /// <summary>
+    /// Stat types the root accessory's chain is allowed to generate once its authored
+    /// upgrades run out. Walks to the root the same way NotifyRootToRefresh does, since
+    /// only the root is expected to carry this field.
+    /// </summary>
+    public AccessoriesUpgrades.UpgradeType[] GetUpgradeFamily()
+    {
+        var root = GetRootAccessory();
+        return (root.allowedUpgradeFamily != null && root.allowedUpgradeFamily.Length > 0)
+            ? root.allowedUpgradeFamily
+            : null;
     }
 
     // Combines this description + ONLY active child Accessory descriptions, then merges similar stat lines.
