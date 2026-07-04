@@ -47,19 +47,13 @@ public class SimpleShooter : MonoBehaviour
     private AudioSource shootSource;
     private GameObject statsGameobjectInstance;
     public WeaponUpgrades nextUpgrade;
-    PowerUpChooser powerUpChooser;
 
     private void Awake()
     {
         shootSource = GetComponent<AudioSource>();
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
 
-        // Enqueue once, safely
-        if (nextUpgrade != null && nextUpgrade.Upgrade != null && powerUpChooser != null && powerUpChooser.powerUps != null)
-        {
-            if (!powerUpChooser.powerUps.Contains(nextUpgrade.Upgrade))
-                powerUpChooser.powerUps.Add(nextUpgrade.Upgrade);
-        }
+        if (nextUpgrade != null)
+            UpgradeChainUtil.EnqueueOnce(UpgradeChainUtil.GetChooser(), nextUpgrade.Upgrade);
 
         if (statsTextPrefab != null && uiParent != null)
         {

@@ -53,13 +53,11 @@ public class PowerUpChooser : MonoBehaviour
     public int RemainingAccessorySlots => Mathf.Max(0, maxAccessories - CurrentAccessories);
     public int RemainingWeaponSlots => Mathf.Max(0, maxWeapons - CurrentWeapons);
 
-    private void Awake()
-    {
-        SyncActiveToSelected();
-        RefreshStatsText();
-    }
+    private void Awake() => Initialize();
 
-    private void OnEnable()
+    private void OnEnable() => Initialize();
+
+    private void Initialize()
     {
         SyncActiveToSelected();
         RefreshStatsText();
@@ -161,21 +159,21 @@ public class PowerUpChooser : MonoBehaviour
     }
 
     /// <summary>
-    /// Drop (remove) a weapon from selectedPowerUps.
-    /// Disables its active instance (SetActive(false)).
-    /// Optionally returns it to the available pool.
+    /// Drop (remove) any selected PowerUp (weapon or accessory) from selectedPowerUps.
+    /// Disables its active instance (SetActive(false)) and clears its tracked-instance
+    /// entry. Optionally returns it to the available pool.
     /// </summary>
-    public bool TryDropWeapon(PowerUp pu, bool addBackToAvailable = true)
+    public bool TryDropSelected(PowerUp pu, bool addBackToAvailable = true)
     {
-        if (pu == null || !pu.IsWeapon) return false;
+        if (pu == null) return false;
 
         if (!selectedPowerUps.Remove(pu))
             return false;
 
         // Disable spawned/in-scene instance if we have it
-        if (spawnedInstances.TryGetValue(pu, out var inst) && inst != null)
+        if (spawnedInstances.TryGetValue(pu, out var inst))
         {
-            if (inst) inst.SetActive(false);
+            if (inst != null) inst.SetActive(false);
             spawnedInstances.Remove(pu);
         }
         else
@@ -190,6 +188,16 @@ public class PowerUpChooser : MonoBehaviour
 
         RefreshStatsText();
         return true;
+    }
+
+    /// <summary>
+    /// Drop (remove) a weapon from selectedPowerUps. Same as TryDropSelected but
+    /// refuses anything that isn't flagged as a weapon.
+    /// </summary>
+    public bool TryDropWeapon(PowerUp pu, bool addBackToAvailable = true)
+    {
+        if (pu == null || !pu.IsWeapon) return false;
+        return TryDropSelected(pu, addBackToAvailable);
     }
 
     /// <summary>
@@ -209,28 +217,21 @@ public class PowerUpChooser : MonoBehaviour
     public bool DropRandomWeapon(bool addBackToAvailable = true)
     {
         // Build a temp list of weapons only
-        var weapons = ListPool<PowerUp>.Get();
-        try
+        var weapons = new List<PowerUp>();
+        for (int i = 0; i < selectedPowerUps.Count; i++)
         {
-            for (int i = 0; i < selectedPowerUps.Count; i++)
-            {
-                var pu = selectedPowerUps[i];
-                if (pu != null && pu.IsWeapon) weapons.Add(pu);
-            }
-
-            if (weapons.Count == 0)
-            {
-                Debug.LogWarning("[PowerUpChooser] No weapons to drop.");
-                return false;
-            }
-
-            int pick = Random.Range(0, weapons.Count);
-            return TryDropWeapon(weapons[pick], addBackToAvailable);
+            var pu = selectedPowerUps[i];
+            if (pu != null && pu.IsWeapon) weapons.Add(pu);
         }
-        finally
+
+        if (weapons.Count == 0)
         {
-            ListPool<PowerUp>.Release(weapons);
+            Debug.LogWarning("[PowerUpChooser] No weapons to drop.");
+            return false;
         }
+
+        int pick = Random.Range(0, weapons.Count);
+        return TryDropWeapon(weapons[pick], addBackToAvailable);
     }
 
     // Context menu: right-click the component header and run this in the Editor
@@ -281,20 +282,5 @@ public class PowerUpChooser : MonoBehaviour
     {
         maxAccessories += delta;
         RefreshStatsText();
-    }
-}
-
-/// <summary>
-/// Lightweight list pool to avoid allocs in DropRandomWeapon (optional).
-/// Remove if you already use another pooling utility.
-/// </summary>
-static class ListPool<T>
-{
-    static readonly Stack<List<T>> pool = new();
-    public static List<T> Get() => pool.Count > 0 ? pool.Pop() : new List<T>();
-    public static void Release(List<T> list)
-    {
-        list.Clear();
-        pool.Push(list);
     }
 }

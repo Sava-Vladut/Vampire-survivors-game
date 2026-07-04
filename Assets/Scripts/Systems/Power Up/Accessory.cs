@@ -20,7 +20,6 @@ public class Accessory : MonoBehaviour
 
     [Header("Upgrades")]
     [HideInInspector] public AccessoriesUpgrades nextUpgrade;
-    private PowerUpChooser powerUpChooser;
 
     // --- UI (mirrors Knife) ---
     [Header("UI")]
@@ -35,12 +34,11 @@ public class Accessory : MonoBehaviour
     private void Awake()
     {
         // Queue accessory upgrade into PowerUpChooser
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
         if (nextUpgrade == null)
             nextUpgrade = GetComponentInChildren<AccessoriesUpgrades>(true);
 
-        if (nextUpgrade != null && powerUpChooser != null)
-            powerUpChooser.powerUps.Add(nextUpgrade.Upgrade);
+        if (nextUpgrade != null)
+            UpgradeChainUtil.EnqueueOnce(UpgradeChainUtil.GetChooser(), nextUpgrade.Upgrade);
 
         // Instantiate UI like Knife
         if (statsTextPrefab != null && uiParent != null)

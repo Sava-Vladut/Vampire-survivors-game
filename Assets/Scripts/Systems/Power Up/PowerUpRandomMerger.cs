@@ -61,12 +61,11 @@ public class PowerUpRandomMerger : MonoBehaviour
         ConsumeSourceObject(a);
         ConsumeSourceObject(b);
 
-        // Remove both from selected list (freeing capacity)
-        powerUpChooser.selectedPowerUps.Remove(a);
-        powerUpChooser.selectedPowerUps.Remove(b);
-
-        // Update any caps/labels the chooser shows
-        powerUpChooser.RefreshStatsText();
+        // Remove both from selected list (freeing capacity). Goes through the chooser's
+        // own API rather than mutating selectedPowerUps directly, so its tracked-instance
+        // bookkeeping (spawnedInstances) is cleared instead of left dangling.
+        powerUpChooser.TryDropSelected(a, addBackToAvailable: false);
+        powerUpChooser.TryDropSelected(b, addBackToAvailable: false);
 
         Debug.Log($"[PowerUpRandomMerger] Merged and removed: \"{a?.powerUpName}\" + \"{b?.powerUpName}\".");
     }

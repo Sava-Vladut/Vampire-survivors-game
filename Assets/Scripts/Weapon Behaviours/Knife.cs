@@ -87,15 +87,11 @@ public class Knife : MonoBehaviour
     private SimpleHealth parentHealth;
     private WeaponTick wt;
     private WeaponSwingAnimator swingAnimator;
-    private PowerUpChooser powerUpChooser;
 
     private void Awake()
     {
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
-        if (nextUpgrade != null && powerUpChooser != null)
-        {
-            powerUpChooser.powerUps.Add(nextUpgrade.Upgrade);
-        }
+        if (nextUpgrade != null)
+            UpgradeChainUtil.EnqueueOnce(UpgradeChainUtil.GetChooser(), nextUpgrade.Upgrade);
 
         shootSource = GetComponent<AudioSource>();
 
