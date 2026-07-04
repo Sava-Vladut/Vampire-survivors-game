@@ -248,8 +248,20 @@ public class AccessoriesUpgrades : MonoBehaviour
         var family = GetComponent<Accessory>()?.GetUpgradeFamily();
         if (family == null || family.Length == 0) return null;
 
-        var chosenType = family[Random.Range(0, family.Length)];
-        if (!Specs.TryGetValue(chosenType, out var spec)) return null;
+        // Filter to types Specs actually knows how to roll before picking, rather than
+        // picking blind and bailing out - a stray None/Custom in an authored family
+        // array would otherwise cost the roll entirely instead of just being ignored.
+        List<UpgradeType> rollable = null;
+        foreach (var t in family)
+        {
+            if (!Specs.ContainsKey(t)) continue;
+            rollable ??= new List<UpgradeType>(family.Length);
+            rollable.Add(t);
+        }
+        if (rollable == null || rollable.Count == 0) return null;
+
+        var chosenType = rollable[Random.Range(0, rollable.Count)];
+        var spec = Specs[chosenType];
 
         float rolled = spec.RollIsInt
             ? Mathf.Round(Random.Range(spec.RollMin, spec.RollMax))

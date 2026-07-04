@@ -37,9 +37,20 @@ public class Accessory : MonoBehaviour
 
     private void Awake()
     {
-        // Queue accessory upgrade into PowerUpChooser
+        // Queue accessory upgrade into PowerUpChooser. GetComponentInChildren searches this
+        // GameObject before its descendants, so on an "Upgrade N" node (which carries its own
+        // AccessoriesUpgrades sibling component) it would otherwise resolve to itself instead
+        // of an actual child - harmless today (EnqueueOnce dedupes it back out), but pointless
+        // and confusing, so explicitly skip self.
         if (nextUpgrade == null)
-            nextUpgrade = GetComponentInChildren<AccessoriesUpgrades>(true);
+        {
+            foreach (var candidate in GetComponentsInChildren<AccessoriesUpgrades>(true))
+            {
+                if (candidate.gameObject == gameObject) continue;
+                nextUpgrade = candidate;
+                break;
+            }
+        }
 
         if (nextUpgrade != null)
             UpgradeChainUtil.EnqueueOnce(UpgradeChainUtil.GetChooser(), nextUpgrade.Upgrade);

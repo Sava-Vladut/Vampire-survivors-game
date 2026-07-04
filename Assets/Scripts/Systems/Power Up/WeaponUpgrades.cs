@@ -263,8 +263,6 @@ public class WeaponUpgrades : MonoBehaviour
     // against unbounded GameObject growth over a very long play session.
     private const int MaxGeneratedDepth = 200;
 
-    private PowerUpChooser powerUpChooser;
-
     [Header("Power-Up")]
     public PowerUp Upgrade;
 
@@ -291,8 +289,6 @@ public class WeaponUpgrades : MonoBehaviour
 
     private void Awake()
     {
-        powerUpChooser = UpgradeChainUtil.GetChooser();
-
         AutoAssignNextUpgrade();      // make sure nextUpgrade is always the next sibling with WeaponUpgrades
         EnqueueNextUpgradeOnce();     // push next Upgrade asset into chooser (expects List<PowerUp>)
 
@@ -406,7 +402,7 @@ public class WeaponUpgrades : MonoBehaviour
     private void EnqueueNextUpgradeOnce()
     {
         if (nextUpgrade == null) return;
-        UpgradeChainUtil.EnqueueOnce(powerUpChooser, nextUpgrade.Upgrade);
+        UpgradeChainUtil.EnqueueOnce(UpgradeChainUtil.GetChooser(), nextUpgrade.Upgrade);
     }
 
     // ---------------------- Helpers ----------------------
