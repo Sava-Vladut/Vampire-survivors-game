@@ -681,7 +681,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 8
   knockbackForce: 7
-  executeChance: 0
+  cullThreshold: 0
   lifestealPercent: 0
   critChance: 0.02
   critMultiplier: 2
@@ -1436,7 +1436,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   lifestealPercent: 0
   critChance: 0.5
   critMultiplier: 1.5
@@ -2352,7 +2352,7 @@ MonoBehaviour:
   bulletLifetime: 5
   penetration: 3
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   chainHits: 0
   critChance: 0.25
   critMultiplier: 3
@@ -3106,7 +3106,6 @@ GameObject:
   - component: {fileID: 7754715335682866526}
   - component: {fileID: 4683568674584910072}
   - component: {fileID: 7141420854634069839}
-  - component: {fileID: 1126478190232524420}
   - component: {fileID: 8273459482374254787}
   - component: {fileID: 1755575790829812756}
   - component: {fileID: 6608178519213617443}
@@ -3243,9 +3242,9 @@ MonoBehaviour:
   instant: 1
   acceleration: 50
   dashSlider: {fileID: 9073139496275943802}
-  dashSpeed: 16
-  dashDuration: 0.1
-  dashCooldown: 2
+  dashSpeed: 15
+  dashDuration: 0.05
+  dashCooldown: 3.7
   dashIsBlink: 0
   blinkDistance: 5
   blinkBlockingLayers:
@@ -3506,28 +3505,6 @@ MonoBehaviour:
     - rid: 8693280127084134493
       type: {class: ShadowShape2DProvider_SpriteRenderer, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.2D.Runtime}
       data: 
---- !u!95 &1126478190232524420
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1227099894277660166}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 8e4b88cef8ee72b41a920ae9dc1f4131, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &8273459482374254787
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6370,7 +6347,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   lifestealPercent: 0
   critChance: 0.02
   critMultiplier: 2
@@ -7113,7 +7090,7 @@ MonoBehaviour:
   bulletLifetime: 1
   penetration: 1
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   chainHits: 0
   critChance: 0
   critMultiplier: 2
@@ -8214,7 +8191,7 @@ MonoBehaviour:
   bulletLifetime: 3
   penetration: 1
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   chainHits: 0
   critChance: 0.05
   critMultiplier: 2
@@ -8676,7 +8653,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &3671500682441700444
 RectTransform:
   m_ObjectHideFlags: 0
@@ -9905,7 +9882,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   lifestealPercent: 0
   critChance: 0
   critMultiplier: 2
@@ -11452,6 +11429,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5702712710036007540}
+  - {fileID: 356201777624814905}
   - {fileID: 1420364789606767436}
   - {fileID: 4692018829585025914}
   - {fileID: 3403740043649448040}
@@ -13322,7 +13300,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   lifestealPercent: 0
   critChance: 0.2
   critMultiplier: 2
@@ -15041,6 +15019,141 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &7449588020780478462
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 356201777624814905}
+  - component: {fileID: 5954073109839091591}
+  - component: {fileID: 687177725637758421}
+  m_Layer: 6
+  m_Name: Coat
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &356201777624814905
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7449588020780478462}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5432253268087408168}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5954073109839091591
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7449588020780478462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  AccesoryName: Coat
+  AccesoryDescription: +20 Evasion
+  icon: {fileID: -1388866057315300545, guid: 059063c078d0ce246ab42105aec6a340, type: 3}
+  onAwake:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 5791096993671492205}
+        m_TargetAssemblyTypeName: SimpleHealth, Grim
+        m_MethodName: GiveEvasion
+        m_Mode: 4
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 20
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
+  uiParent: {fileID: 3771470944807517528}
+  statsTextInstance: {fileID: 0}
+--- !u!114 &687177725637758421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7449588020780478462}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rollOnAwake: 1
+  rngSeed: 0
+  upgradeWeights: {fileID: 0}
+  current: 0
+  weights:
+    common: 40
+    uncommon: 25
+    rare: 12
+    legendary: 5
+  ranges:
+    damageMult: {x: 1.1, y: 1.3}
+    damageFlatAdd: {x: 3, y: 12}
+    atkSpeedFrac: {x: 0.1, y: 0.25}
+    critChanceAdd: {x: 0.05, y: 0.2}
+    critMultAdd: {x: 0.25, y: 1}
+    hpFlatAdd: {x: 15, y: 60}
+    hpMult: {x: 1.05, y: 1.25}
+    regenAdd: {x: 0.1, y: 1.5}
+    armorAdd: {x: 3, y: 12}
+    evasionAdd: {x: 3, y: 12}
+    armorMult: {x: 1.05, y: 1.25}
+    evasionMult: {x: 1.05, y: 1.25}
+    resistAdd: {x: 0.05, y: 0.2}
+    knifeRadiusMult: {x: 1.1, y: 1.3}
+    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
+    shooterLifetimeAdd: {x: 0.5, y: 2}
+    shooterForceAdd: {x: 1, y: 4}
+    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
+  tiers:
+    damagePercent: 5
+    damageFlat: 5
+    attackSpeed: 5
+    critChance: 5
+    critMultiplier: 5
+    hpFlat: 5
+    hpPercent: 5
+    regen: 5
+    armor: 5
+    evasion: 5
+    armorPercent: 5
+    evasionPercent: 5
+    resist: 5
+    knifeRadius: 5
+    knifeSplashRadius: 5
+    shooterLifetime: 5
+    shooterForce: 5
+    shooterAccuracy: 5
+    multiplierCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    useCurve: 0
+    defaultMinMax: {x: 0.5, y: 2}
+  healthSystem: {fileID: 5791096993671492205}
+  applied: []
 --- !u!1 &7487222791868677263
 GameObject:
   m_ObjectHideFlags: 0
@@ -15420,7 +15533,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   lifestealPercent: 0
   critChance: 0.5
   critMultiplier: 1.5
@@ -17248,7 +17361,7 @@ MonoBehaviour:
   bulletLifetime: 3
   penetration: 1
   knockbackForce: 0
-  executeChance: 0
+  cullThreshold: 0
   chainHits: 0
   critChance: 0.3
   critMultiplier: 2

@@ -1,6 +1,7 @@
 ﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI; // For Image
+using UnityEngine.Serialization;
 using System.Collections.Generic;
 
 // Targeting preference options for selecting enemies.
@@ -54,7 +55,9 @@ public class Knife : MonoBehaviour
     [Header("Knockback")]
     [SerializeField, Tooltip("Initial push speed applied to hit enemies, in units/sec. 0 disables knockback.")]
     public float knockbackForce = 0f;
-    [Range(0f, 1f)] public float executeChance = 0f;
+    [FormerlySerializedAs("executeChance")]
+    [Tooltip("Enemies at or below this fraction of their max health are instantly slain by this weapon's hits.")]
+    [Range(0f, 1f)] public float cullThreshold = 0f;
 
     [Header("Lifesteal")]
     [Tooltip("Fraction of damage dealt that is restored as health.")]
@@ -270,7 +273,8 @@ public class Knife : MonoBehaviour
                     float mult = isCrit ? Mathf.Max(1f, critMultiplier) : 1f;
                     int dealt = Mathf.RoundToInt(damage * mult);
 
-                    if (executeChance > 0f && Random.value < executeChance)
+                    bool cull = cullThreshold > 0f && health.CurrentHealth <= health.MaxHealth * cullThreshold;
+                    if (cull)
                         health.TakeDamage(health.CurrentHealth, damageType, false, false);
                     else
                         health.TakeDamage(dealt, damageType);

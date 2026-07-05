@@ -1,6 +1,7 @@
 // BulletDamageTrigger.cs
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(Collider2D))]
@@ -12,7 +13,9 @@ public class BulletDamageTrigger : MonoBehaviour
     [Tooltip("How many successful damage hits this bullet can apply before it is destroyed.")]
     [SerializeField] public int penetration = 1;
     [Min(0f)] public float knockbackForce = 0f;
-    [Range(0f, 1f)] public float executeChance = 0f;
+    [FormerlySerializedAs("executeChance")]
+    [Tooltip("Enemies at or below this fraction of their max health are instantly slain by this bullet.")]
+    [Range(0f, 1f)] public float cullThreshold = 0f;
 
     [Header("Filters")]
     [Tooltip("Only objects on these layers will be damaged.")]
@@ -83,7 +86,8 @@ public class BulletDamageTrigger : MonoBehaviour
 
 
         // Apply damage
-        if (executeChance > 0f && Random.value < executeChance)
+        bool cull = cullThreshold > 0f && health.CurrentHealth <= health.MaxHealth * cullThreshold;
+        if (cull)
             health.TakeDamage(health.CurrentHealth, damageType, false, false);
         else
             health.TakeDamage(damageAmount, damageType);

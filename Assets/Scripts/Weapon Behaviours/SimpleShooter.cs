@@ -1,6 +1,7 @@
 ﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI; // For Image
+using UnityEngine.Serialization;
 
 public class SimpleShooter : MonoBehaviour
 {
@@ -21,7 +22,9 @@ public class SimpleShooter : MonoBehaviour
     [Tooltip("Number of enemies a projectile can pass through before being destroyed.")]
     public int penetration = 1; // How many enemies the bullet can pass through before being destroyed
     [Min(0f)] public float knockbackForce = 0f;
-    [Range(0f, 1f)] public float executeChance = 0f;
+    [FormerlySerializedAs("executeChance")]
+    [Tooltip("Enemies at or below this fraction of their max health are instantly slain by this weapon's hits.")]
+    [Range(0f, 1f)] public float cullThreshold = 0f;
     [Min(0)] public int chainHits = 0;
 
     [Header("Criticals")]
@@ -267,7 +270,7 @@ public class SimpleShooter : MonoBehaviour
                     bulletDamage.damageType = damageType;
                     bulletDamage.penetration = penetration;
                     bulletDamage.knockbackForce = knockbackForce;
-                    bulletDamage.executeChance = executeChance;
+                    bulletDamage.cullThreshold = cullThreshold;
                     bulletDamage.statusApplyChance = statusApplyChance;
                     bulletDamage.applyStatusEffectOnHit = applyStatusEffectOnHit;
                     bulletDamage.statusEffectOnHit = statusEffectOnHit;

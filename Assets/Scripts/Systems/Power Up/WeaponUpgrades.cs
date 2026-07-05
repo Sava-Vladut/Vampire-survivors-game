@@ -35,7 +35,7 @@ public class WeaponUpgrades : MonoBehaviour
         KnifeEnableStatusEffect,
         KnifeStatusEffectIndex,
         KnifeKnockbackFlat,
-        KnifeExecuteChance,
+        KnifeCullThreshold,
 
         // --- Shooter (ShooterDamageFlat..ShooterStatusEffectIndex) ---
         ShooterDamageFlat,
@@ -57,7 +57,7 @@ public class WeaponUpgrades : MonoBehaviour
         ShooterEnableStatusEffect,
         ShooterStatusEffectIndex,
         ShooterKnockbackFlat,
-        ShooterExecuteChance,
+        ShooterCullThreshold,
         ShooterChainHits,
 
         // --- WeaponTick (TickRateFlat..BurstSpacingPercent) ---
@@ -115,7 +115,7 @@ public class WeaponUpgrades : MonoBehaviour
     private static bool InRange(UpgradeType t, UpgradeType first, UpgradeType last) =>
         t >= first && t <= last;
 
-    private static bool IsKnifeType(UpgradeType t) => InRange(t, UpgradeType.KnifeDamageFlat, UpgradeType.KnifeExecuteChance);
+    private static bool IsKnifeType(UpgradeType t) => InRange(t, UpgradeType.KnifeDamageFlat, UpgradeType.KnifeCullThreshold);
     private static bool IsShooterType(UpgradeType t) => InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterChainHits);
     private static bool IsTickType(UpgradeType t) => InRange(t, UpgradeType.TickRateFlat, UpgradeType.BurstSpacingPercent);
     private static bool IsStatusType(UpgradeType t) =>
@@ -205,8 +205,8 @@ public class WeaponUpgrades : MonoBehaviour
             UpgradeType.KnifeStatusEffectIndex, UpgradeType.ShooterStatusEffectIndex);
         Add("Crushing Force +{0}", "Hits knock enemies back with {0} additional force.", ValueFormat.F1,
             UpgradeType.KnifeKnockbackFlat, UpgradeType.ShooterKnockbackFlat);
-        Add("Executioner +{0}", "Every hit has a {0} chance to instantly slay its target.", ValueFormat.Percent,
-            UpgradeType.KnifeExecuteChance, UpgradeType.ShooterExecuteChance);
+        Add("Culling Strike +{0}", "Enemies at or below {0} health are instantly slain by this weapon.", ValueFormat.Percent,
+            UpgradeType.KnifeCullThreshold, UpgradeType.ShooterCullThreshold);
 
         // Knife only
         Add("Long Reach +{0}", "Strikes reach {0} farther from the weapon.", ValueFormat.F2, UpgradeType.KnifeRadiusFlat);
@@ -381,8 +381,8 @@ public class WeaponUpgrades : MonoBehaviour
             case UpgradeType.KnifeKnockbackFlat:
                 knife.knockbackForce += value;
                 break;
-            case UpgradeType.KnifeExecuteChance:
-                knife.executeChance = Mathf.Clamp01(knife.executeChance + value);
+            case UpgradeType.KnifeCullThreshold:
+                knife.cullThreshold = Mathf.Clamp01(knife.cullThreshold + value);
                 break;
         }
     }
@@ -448,8 +448,8 @@ public class WeaponUpgrades : MonoBehaviour
             case UpgradeType.ShooterKnockbackFlat:
                 shooter.knockbackForce += value;
                 break;
-            case UpgradeType.ShooterExecuteChance:
-                shooter.executeChance = Mathf.Clamp01(shooter.executeChance + value);
+            case UpgradeType.ShooterCullThreshold:
+                shooter.cullThreshold = Mathf.Clamp01(shooter.cullThreshold + value);
                 break;
             case UpgradeType.ShooterChainHits:
                 shooter.chainHits += Mathf.Max(1, Mathf.RoundToInt(value));
@@ -578,9 +578,9 @@ public class WeaponUpgrades : MonoBehaviour
             case UpgradeType.KnifeKnockbackFlat:
             case UpgradeType.ShooterKnockbackFlat:
                 return Random.Range(0.5f, 3f);
-            case UpgradeType.KnifeExecuteChance:
-            case UpgradeType.ShooterExecuteChance:
-                return Random.Range(0.01f, 0.05f);
+            case UpgradeType.KnifeCullThreshold:
+            case UpgradeType.ShooterCullThreshold:
+                return Random.Range(0.02f, 0.06f);
             case UpgradeType.ShooterChainHits:
                 return Mathf.Round(Random.Range(1f, 2.99f));
 

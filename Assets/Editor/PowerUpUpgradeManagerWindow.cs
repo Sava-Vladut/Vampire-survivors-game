@@ -223,7 +223,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private static string WeaponCompatibility(WeaponUpgrades.UpgradeType type)
     {
         if (type >= WeaponUpgrades.UpgradeType.KnifeDamageFlat &&
-            type <= WeaponUpgrades.UpgradeType.KnifeExecuteChance) return "Knife";
+            type <= WeaponUpgrades.UpgradeType.KnifeCullThreshold) return "Knife";
         if (type >= WeaponUpgrades.UpgradeType.ShooterDamageFlat &&
             type <= WeaponUpgrades.UpgradeType.ShooterChainHits) return "Shooter";
         return "WeaponTick";
@@ -244,7 +244,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         if (name.Contains("StatusEffectIndex")) return "Random status";
         if (name.Contains("DamageTypeIndex")) return "Damage type";
         if (name.Contains("Knockback")) return "+0.5 to +3";
-        if (name.Contains("ExecuteChance")) return "+1% to +5%";
+        if (name.Contains("CullThreshold")) return "+2% to +6%";
         if (name.Contains("ChainHits")) return "+1 to +2";
         if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat")) return "+1 to +3";
         if (type == WeaponUpgrades.UpgradeType.KnifeRadiusFlat) return "+0.10 to +1.00";
