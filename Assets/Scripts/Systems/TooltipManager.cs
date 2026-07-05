@@ -57,7 +57,7 @@ public class TooltipManager : MonoBehaviour
 
         // Find the nearest parent canvas; fall back to any canvas if needed (Unity 6 API)
         canvas = GetComponentInParent<Canvas>();
-        if (canvas == null) canvas = Object.FindFirstObjectByType<Canvas>();
+        if (canvas == null) canvas = Object.FindAnyObjectByType<Canvas>();
         if (canvas == null)
         {
             Debug.LogError("[TooltipManager] No Canvas found. Place TooltipManager under a Canvas.");
@@ -69,7 +69,7 @@ public class TooltipManager : MonoBehaviour
         HideTooltipImmediate();
 
         // Make sure we can receive UI pointer events (Unity 6 API)
-        if (Object.FindFirstObjectByType<EventSystem>() == null)
+        if (Object.FindAnyObjectByType<EventSystem>() == null)
         {
             var es = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
             es.transform.SetParent(canvas.transform);

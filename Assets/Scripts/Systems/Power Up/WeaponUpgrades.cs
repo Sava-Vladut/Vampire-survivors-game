@@ -1,5 +1,6 @@
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events; // <-- ADD THIS
+using UnityEngine.Events;
 //
 // Handles a single weapon upgrade entry and (optionally) wires the *next* upgrade
 // to the next sibling WeaponUpgrades component under the same parent.
@@ -7,11 +8,13 @@ using UnityEngine.Events; // <-- ADD THIS
 //
 public class WeaponUpgrades : MonoBehaviour
 {
+    // Serialized by value into scenes/prefabs — do NOT reorder or remove members.
+    // Members are grouped in contiguous ranges per weapon (see IsTypeAllowedForParent).
     public enum UpgradeType
     {
         None,
 
-        // --- Knife ---
+        // --- Knife (KnifeDamageFlat..KnifeStatusEffectIndex) ---
         KnifeDamageFlat,
         KnifeDamagePercent,
         KnifeDamageTypeIndex,
@@ -33,7 +36,7 @@ public class WeaponUpgrades : MonoBehaviour
         KnifeEnableStatusEffect,
         KnifeStatusEffectIndex,
 
-        // --- Shooter ---
+        // --- Shooter (ShooterDamageFlat..ShooterStatusEffectIndex) ---
         ShooterDamageFlat,
         ShooterDamagePercent,
         ShooterDamageTypeIndex,
@@ -53,7 +56,7 @@ public class WeaponUpgrades : MonoBehaviour
         ShooterEnableStatusEffect,
         ShooterStatusEffectIndex,
 
-        // --- WeaponTick ---
+        // --- WeaponTick (TickRateFlat..BurstSpacingPercent) ---
         TickRateFlat,
         TickRatePercent,
         BurstCountFlat,
@@ -72,15 +75,14 @@ public class WeaponUpgrades : MonoBehaviour
     [Tooltip("Autofilled: next sibling with WeaponUpgrades in the same parent.")]
     public WeaponUpgrades nextUpgrade;
 
-    // Icon now auto-inferred from parent weapon (Knife/SimpleShooter).
+    // Icon auto-inferred from parent weapon (Knife/SimpleShooter).
 
     [Header("Upgrade Settings")]
     public UpgradeType upgradeType = UpgradeType.None;
 
     [Header("Custom Hooks")]
     [Tooltip("Invoked in Awake if UpgradeType.Custom is selected.")]
-    public UnityEvent onCustomAwake; // <-- ADD THIS
-
+    public UnityEvent onCustomAwake;
 
     [Tooltip("Acts as integer for flat amounts (rounded), or as a percent when the upgrade type is % based (e.g., 0.25 = 25%).")]
     public float value = 0f;
@@ -94,7 +96,6 @@ public class WeaponUpgrades : MonoBehaviour
         AutoAssignNextUpgrade();      // make sure nextUpgrade is always the next sibling with WeaponUpgrades
         EnqueueNextUpgradeOnce();     // push next Upgrade asset into chooser (expects List<PowerUp>)
 
-        // Ensure icon: inherit from parent weapon if available
         TryAssignIconFromParent();
 
         // Normalize type if not allowed for the current parent
@@ -103,16 +104,11 @@ public class WeaponUpgrades : MonoBehaviour
 
         SetUpgradeInfo();
 
-        // --- ADD THIS: fire the custom event on Awake if Custom is selected ---
         if (upgradeType == UpgradeType.Custom)
-        {
             onCustomAwake?.Invoke();
-        }
-        // ---------------------------------------------------------------------
 
         ApplyUpgrade();
     }
-
 
     private void OnEnable()
     {
@@ -126,24 +122,16 @@ public class WeaponUpgrades : MonoBehaviour
         // Keep next wired live in the editor
         AutoAssignNextUpgrade();
 
-        // Keep name/description (and icon) up to date while editing
         if (!IsTypeAllowedForParent(upgradeType))
             upgradeType = UpgradeType.None;
 
         TryAssignIconFromParent();
-
         SetUpgradeInfo();
     }
 
-    private void OnTransformParentChanged()
-    {
-        AutoAssignNextUpgrade();
-    }
+    private void OnTransformParentChanged() => AutoAssignNextUpgrade();
 
-    private void OnTransformChildrenChanged()
-    {
-        AutoAssignNextUpgrade();
-    }
+    private void OnTransformChildrenChanged() => AutoAssignNextUpgrade();
 
     // ---------------------- Auto-wire NEXT ----------------------
 
@@ -157,15 +145,12 @@ public class WeaponUpgrades : MonoBehaviour
         var old = nextUpgrade;
         nextUpgrade = null;
 
-        if (transform.parent == null) return;
-
-        int myIndex = transform.GetSiblingIndex();
         var parent = transform.parent;
+        if (parent == null) return;
 
-        for (int i = myIndex + 1; i < parent.childCount; i++)
+        for (int i = transform.GetSiblingIndex() + 1; i < parent.childCount; i++)
         {
-            var candidate = parent.GetChild(i).GetComponent<WeaponUpgrades>();
-            if (candidate != null)
+            if (parent.GetChild(i).TryGetComponent(out WeaponUpgrades candidate))
             {
                 nextUpgrade = candidate;
                 break;
@@ -174,15 +159,12 @@ public class WeaponUpgrades : MonoBehaviour
 
 #if UNITY_EDITOR
         if (old != nextUpgrade)
-        {
             UnityEditor.EditorUtility.SetDirty(this);
-        }
 #endif
     }
 
     /// <summary>
     /// Adds the nextUpgrade's PowerUp asset to the chooser list once.
-    /// Requires PowerUpChooser.powerUps to be a List<PowerUp>.
     /// Safely avoids duplicates and nulls.
     /// </summary>
     private void EnqueueNextUpgradeOnce()
@@ -192,87 +174,144 @@ public class WeaponUpgrades : MonoBehaviour
 
         var list = powerUpChooser.powerUps;
         if (list != null && !list.Contains(nextUpgrade.Upgrade))
-        {
             list.Add(nextUpgrade.Upgrade);
-        }
     }
 
     // ---------------------- Helpers ----------------------
 
-    private bool HasParent<T>() where T : Component
-    {
-        if (transform.parent == null) return false;
-        return transform.parent.GetComponent<T>() != null;
-    }
+    private bool HasParent<T>() where T : Component =>
+        transform.parent != null && transform.parent.TryGetComponent<T>(out _);
+
+    private static bool InRange(UpgradeType t, UpgradeType first, UpgradeType last) =>
+        t >= first && t <= last;
+
+    private static bool IsKnifeType(UpgradeType t) => InRange(t, UpgradeType.KnifeDamageFlat, UpgradeType.KnifeStatusEffectIndex);
+    private static bool IsShooterType(UpgradeType t) => InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterStatusEffectIndex);
+    private static bool IsTickType(UpgradeType t) => InRange(t, UpgradeType.TickRateFlat, UpgradeType.BurstSpacingPercent);
 
     private bool IsTypeAllowedForParent(UpgradeType type)
     {
         // None/Custom always allowed
         if (type == UpgradeType.None || type == UpgradeType.Custom) return true;
+        if (IsKnifeType(type)) return HasParent<Knife>();
+        if (IsShooterType(type)) return HasParent<SimpleShooter>();
+        if (IsTickType(type)) return HasParent<WeaponTick>();
+        return false;
+    }
 
-        bool hasKnife = HasParent<Knife>();
-        bool hasShooter = HasParent<SimpleShooter>();
-        bool hasTick = HasParent<WeaponTick>();
+    // ---------------------- Display text ----------------------
 
-        switch (type)
+    private enum ValueFormat
+    {
+        None,       // no value in the text
+        Int,        // rounded integer
+        Percent,    // value * 100, "F0" + %
+        F1,
+        F2,
+        Seconds1,   // "F1" + s
+        Seconds2,   // "F2" + s
+        Multiplier, // "F2" + x
+        Degrees,    // "F1" + °
+        DamageType  // enum name, uncolored
+    }
+
+    private readonly struct UpgradeText
+    {
+        public readonly string title;
+        public readonly string description;
+        public readonly ValueFormat format;
+
+        public UpgradeText(string title, string description, ValueFormat format)
         {
-            // Knife-only
-            case UpgradeType.KnifeDamageFlat:
-            case UpgradeType.KnifeDamagePercent:
-            case UpgradeType.KnifeDamageTypeIndex:
-            case UpgradeType.KnifeRadiusFlat:
-            case UpgradeType.KnifeRadiusPercent:
-            case UpgradeType.KnifeMaxTargetsFlat:
-            case UpgradeType.KnifeLifestealFlat:
-            case UpgradeType.KnifeLifestealPercent:
-            case UpgradeType.KnifeCritChanceFlat:
-            case UpgradeType.KnifeCritMultiplierFlat:
-            case UpgradeType.KnifeSplashRadiusFlat:
-            case UpgradeType.KnifeSplashRadiusPercent:
-            case UpgradeType.KnifeSplashDamagePercentFlat:
-            case UpgradeType.KnifeSplashDamagePercentPercent:
-            case UpgradeType.KnifeStatusApplyChanceFlat:
-            case UpgradeType.KnifeStatusApplyChancePercent:
-            case UpgradeType.KnifeStatusDurationFlat:
-            case UpgradeType.KnifeStatusDurationPercent:
-            case UpgradeType.KnifeEnableStatusEffect:
-            case UpgradeType.KnifeStatusEffectIndex:
-                return hasKnife;
-
-            // Shooter-only
-            case UpgradeType.ShooterDamageFlat:
-            case UpgradeType.ShooterDamagePercent:
-            case UpgradeType.ShooterDamageTypeIndex:
-            case UpgradeType.ShooterProjectileCount:
-            case UpgradeType.ShooterSpreadAngleFlat:
-            case UpgradeType.ShooterSpreadAnglePercent:
-            case UpgradeType.ShooterProjectileSpeedFlat:
-            case UpgradeType.ShooterProjectileSpeedPercent:
-            case UpgradeType.ShooterLifetimeFlat:
-            case UpgradeType.ShooterLifetimePercent:
-            case UpgradeType.ShooterCritChanceFlat:
-            case UpgradeType.ShooterCritMultiplierFlat:
-            case UpgradeType.ShooterStatusApplyChanceFlat:
-            case UpgradeType.ShooterStatusApplyChancePercent:
-            case UpgradeType.ShooterStatusDurationFlat:
-            case UpgradeType.ShooterStatusDurationPercent:
-            case UpgradeType.ShooterEnableStatusEffect:
-            case UpgradeType.ShooterStatusEffectIndex:
-                return hasShooter;
-
-            // Tick-only
-            case UpgradeType.TickRateFlat:
-            case UpgradeType.TickRatePercent:
-            case UpgradeType.BurstCountFlat:
-            case UpgradeType.BurstCountPercent:
-            case UpgradeType.BurstSpacingFlat:
-            case UpgradeType.BurstSpacingPercent:
-                return hasTick;
-
-            default:
-                return false;
+            this.title = title;
+            this.description = description;
+            this.format = format;
         }
     }
+
+    // Title/description templates; {0} is the formatted value. Knife and Shooter
+    // share entries where the wording is identical.
+    private static readonly Dictionary<UpgradeType, UpgradeText> upgradeTexts = BuildUpgradeTexts();
+
+    private static Dictionary<UpgradeType, UpgradeText> BuildUpgradeTexts()
+    {
+        var table = new Dictionary<UpgradeType, UpgradeText>();
+        void Add(string title, string desc, ValueFormat format, params UpgradeType[] types)
+        {
+            foreach (var t in types) table[t] = new UpgradeText(title, desc, format);
+        }
+
+        // Shared Knife + Shooter
+        Add("Damage Up +{0}", "Increases weapon damage by {0}.", ValueFormat.Int,
+            UpgradeType.KnifeDamageFlat, UpgradeType.ShooterDamageFlat);
+        Add("Damage Up +{0}", "Increases weapon damage by {0}.", ValueFormat.Percent,
+            UpgradeType.KnifeDamagePercent, UpgradeType.ShooterDamagePercent);
+        Add("Damage Type: {0}", "Changes this weapon's damage type to {0}.", ValueFormat.DamageType,
+            UpgradeType.KnifeDamageTypeIndex, UpgradeType.ShooterDamageTypeIndex);
+        Add("Critical Chance +{0}", "Raises chance to critically strike by {0}.", ValueFormat.Percent,
+            UpgradeType.KnifeCritChanceFlat, UpgradeType.ShooterCritChanceFlat);
+        Add("Critical Damage +{0}", "Increases critical strike damage by {0}.", ValueFormat.Multiplier,
+            UpgradeType.KnifeCritMultiplierFlat, UpgradeType.ShooterCritMultiplierFlat);
+        Add("Status Chance +{0}", "Increases chance to inflict effects by {0}.", ValueFormat.Percent,
+            UpgradeType.KnifeStatusApplyChanceFlat, UpgradeType.ShooterStatusApplyChanceFlat);
+        Add("Status Chance +{0}", "Further improves effect application by {0}.", ValueFormat.Percent,
+            UpgradeType.KnifeStatusApplyChancePercent, UpgradeType.ShooterStatusApplyChancePercent);
+        Add("Status Duration +{0}", "Effects linger longer by {0}.", ValueFormat.Seconds1,
+            UpgradeType.KnifeStatusDurationFlat, UpgradeType.ShooterStatusDurationFlat);
+        Add("Status Duration +{0}", "Effects linger longer by {0}.", ValueFormat.Percent,
+            UpgradeType.KnifeStatusDurationPercent, UpgradeType.ShooterStatusDurationPercent);
+        Add("Enable Status On Hit", "Enables inflicting status effects on hit.", ValueFormat.None,
+            UpgradeType.KnifeEnableStatusEffect, UpgradeType.ShooterEnableStatusEffect);
+        Add("Set Status Type", "Sets the status effect type (index {0}).", ValueFormat.Int,
+            UpgradeType.KnifeStatusEffectIndex, UpgradeType.ShooterStatusEffectIndex);
+
+        // Knife only
+        Add("Range Up +{0}", "Increases attack reach by {0}.", ValueFormat.F2, UpgradeType.KnifeRadiusFlat);
+        Add("Range Up +{0}", "Increases attack reach by {0}.", ValueFormat.Percent, UpgradeType.KnifeRadiusPercent);
+        Add("Additional Targets +{0}", "Allows strikes to affect {0} additional target(s).", ValueFormat.Int, UpgradeType.KnifeMaxTargetsFlat);
+        Add("Lifesteal Up +{0}", "Increases lifesteal by {0}.", ValueFormat.Percent, UpgradeType.KnifeLifestealFlat);
+        Add("Lifesteal Up +{0}", "Further empowers lifesteal by {0}.", ValueFormat.Percent, UpgradeType.KnifeLifestealPercent);
+        Add("Splash Radius +{0}", "Widens splash reach by {0}.", ValueFormat.F2, UpgradeType.KnifeSplashRadiusFlat);
+        Add("Splash Radius +{0}", "Widens splash reach by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashRadiusPercent);
+        Add("Splash Potency +{0}", "Increases splash damage by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashDamagePercentFlat);
+        Add("Splash Potency +{0}", "Further empowers splash damage by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashDamagePercentPercent);
+
+        // Shooter only
+        Add("Projectile Count +{0}", "Fires {0} additional projectile(s).", ValueFormat.Int, UpgradeType.ShooterProjectileCount);
+        Add("Spread +{0}", "Narrows firing spread by {0}.", ValueFormat.Degrees, UpgradeType.ShooterSpreadAngleFlat);
+        Add("Spread +{0}", "Narrows firing spread by {0}.", ValueFormat.Percent, UpgradeType.ShooterSpreadAnglePercent);
+        Add("Projectile Speed +{0}", "Increases projectile speed by {0}.", ValueFormat.F1, UpgradeType.ShooterProjectileSpeedFlat);
+        Add("Projectile Speed +{0}", "Increases projectile speed by {0}.", ValueFormat.Percent, UpgradeType.ShooterProjectileSpeedPercent);
+        Add("Projectile Lifetime +{0}", "Extends projectile lifetime by {0}.", ValueFormat.Seconds1, UpgradeType.ShooterLifetimeFlat);
+        Add("Projectile Lifetime +{0}", "Extends projectile lifetime by {0}.", ValueFormat.Percent, UpgradeType.ShooterLifetimePercent);
+
+        // Tick
+        Add("Attack Interval −{0}", "Reduces delay between attacks by {0}.", ValueFormat.Seconds2, UpgradeType.TickRateFlat);
+        Add("Attack Interval −{0}", "Reduces delay between attacks by {0}.", ValueFormat.Percent, UpgradeType.TickRatePercent);
+        Add("Burst Count +{0}", "Increases shots per burst by {0}.", ValueFormat.Int, UpgradeType.BurstCountFlat);
+        Add("Burst Count +{0}", "Increases shots per burst by {0}.", ValueFormat.Percent, UpgradeType.BurstCountPercent);
+        Add("Burst Delay −{0}", "Reduces delay between burst shots by {0}.", ValueFormat.Seconds2, UpgradeType.BurstSpacingFlat);
+        Add("Burst Delay −{0}", "Reduces delay between burst shots by {0}.", ValueFormat.Percent, UpgradeType.BurstSpacingPercent);
+
+        return table;
+    }
+
+    private const string NumColor = "#8888FF";
+    private static string C(string s) => $"<color={NumColor}>{s}</color>";
+
+    private string FormatValue(ValueFormat format) => format switch
+    {
+        ValueFormat.Int => C(Mathf.RoundToInt(value).ToString()),
+        ValueFormat.Percent => C((value * 100f).ToString("F0")) + "%",
+        ValueFormat.F1 => C(value.ToString("F1")),
+        ValueFormat.F2 => C(value.ToString("F2")),
+        ValueFormat.Seconds1 => C(value.ToString("F1")) + "s",
+        ValueFormat.Seconds2 => C(value.ToString("F2")) + "s",
+        ValueFormat.Multiplier => C(value.ToString("F2")) + "x",
+        ValueFormat.Degrees => C(value.ToString("F1")) + "°",
+        ValueFormat.DamageType => ClampToDamageType(Mathf.RoundToInt(value)).ToString(),
+        _ => string.Empty,
+    };
 
     private void SetUpgradeInfo()
     {
@@ -281,446 +320,214 @@ public class WeaponUpgrades : MonoBehaviour
         // Custom leaves name/description alone
         if (upgradeType == UpgradeType.Custom) return;
 
-        const string numColor = "#8888FF";
-        string C(string s) => $"<color={numColor}>{s}</color>";
-
-        switch (upgradeType)
+        if (upgradeTexts.TryGetValue(upgradeType, out var text))
         {
-            // ------------- Knife (displayed as Melee) -------------
-            case UpgradeType.KnifeDamageFlat:
-                Upgrade.powerUpName = $"Damage Up +{C(Mathf.RoundToInt(value).ToString())}";
-                Upgrade.powerUpDescription = $"Increases weapon damage by {C(Mathf.RoundToInt(value).ToString())}.";
-                break;
-            case UpgradeType.KnifeDamagePercent:
-                Upgrade.powerUpName = $"Damage Up +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases weapon damage by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeDamageTypeIndex:
-                {
-                    var dt = ClampToDamageType(Mathf.RoundToInt(value));
-                    Upgrade.powerUpName = $"Damage Type: {dt}";
-                    Upgrade.powerUpDescription = $"Changes this weapon's damage type to {dt}.";
-                    break;
-                }
-            case UpgradeType.KnifeRadiusFlat:
-                Upgrade.powerUpName = $"Range Up +{C(value.ToString("F2"))}";
-                Upgrade.powerUpDescription = $"Increases attack reach by {C(value.ToString("F2"))}.";
-                break;
-            case UpgradeType.KnifeRadiusPercent:
-                Upgrade.powerUpName = $"Range Up +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases attack reach by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeMaxTargetsFlat:
-                Upgrade.powerUpName = $"Additional Targets +{C(Mathf.RoundToInt(value).ToString())}";
-                Upgrade.powerUpDescription = $"Allows strikes to affect {C(Mathf.RoundToInt(value).ToString())} additional target(s).";
-                break;
-            case UpgradeType.KnifeLifestealFlat:
-                Upgrade.powerUpName = $"Lifesteal Up +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases lifesteal by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeLifestealPercent:
-                Upgrade.powerUpName = $"Lifesteal Up +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Further empowers lifesteal by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeCritChanceFlat:
-                Upgrade.powerUpName = $"Critical Chance +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Raises chance to critically strike by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeCritMultiplierFlat:
-                Upgrade.powerUpName = $"Critical Damage +{C(value.ToString("F2"))}x";
-                Upgrade.powerUpDescription = $"Increases critical strike damage by {C(value.ToString("F2"))}x.";
-                break;
-            case UpgradeType.KnifeSplashRadiusFlat:
-                Upgrade.powerUpName = $"Splash Radius +{C(value.ToString("F2"))}";
-                Upgrade.powerUpDescription = $"Widens splash reach by {C(value.ToString("F2"))}.";
-                break;
-            case UpgradeType.KnifeSplashRadiusPercent:
-                Upgrade.powerUpName = $"Splash Radius +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Widens splash reach by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeSplashDamagePercentFlat:
-                Upgrade.powerUpName = $"Splash Potency +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases splash damage by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeSplashDamagePercentPercent:
-                Upgrade.powerUpName = $"Splash Potency +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Further empowers splash damage by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeStatusApplyChanceFlat:
-                Upgrade.powerUpName = $"Status Chance +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases chance to inflict effects by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeStatusApplyChancePercent:
-                Upgrade.powerUpName = $"Status Chance +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Further improves effect application by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeStatusDurationFlat:
-                Upgrade.powerUpName = $"Status Duration +{C(value.ToString("F1"))}s";
-                Upgrade.powerUpDescription = $"Effects linger longer by {C(value.ToString("F1"))}s.";
-                break;
-            case UpgradeType.KnifeStatusDurationPercent:
-                Upgrade.powerUpName = $"Status Duration +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Effects linger longer by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.KnifeEnableStatusEffect:
-                Upgrade.powerUpName = $"Enable Status On Hit";
-                Upgrade.powerUpDescription = $"Enables inflicting status effects on hit.";
-                break;
-            case UpgradeType.KnifeStatusEffectIndex:
-                Upgrade.powerUpName = $"Set Status Type";
-                Upgrade.powerUpDescription = $"Sets the status effect type (index {C(Mathf.RoundToInt(value).ToString())}).";
-                break;
-
-            // ------------- Shooter -------------
-            case UpgradeType.ShooterDamageFlat:
-                Upgrade.powerUpName = $"Damage Up +{C(Mathf.RoundToInt(value).ToString())}";
-                Upgrade.powerUpDescription = $"Increases weapon damage by {C(Mathf.RoundToInt(value).ToString())}.";
-                break;
-            case UpgradeType.ShooterDamagePercent:
-                Upgrade.powerUpName = $"Damage Up +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases weapon damage by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterDamageTypeIndex:
-                {
-                    var dt = ClampToDamageType(Mathf.RoundToInt(value));
-                    Upgrade.powerUpName = $"Damage Type: {dt}";
-                    Upgrade.powerUpDescription = $"Changes this weapon's damage type to {dt}.";
-                    break;
-                }
-            case UpgradeType.ShooterProjectileCount:
-                Upgrade.powerUpName = $"Projectile Count +{C(Mathf.RoundToInt(value).ToString())}";
-                Upgrade.powerUpDescription = $"Fires {C(Mathf.RoundToInt(value).ToString())} additional projectile(s).";
-                break;
-            case UpgradeType.ShooterSpreadAngleFlat:
-                Upgrade.powerUpName = $"Spread +{C(value.ToString("F1"))}°";
-                Upgrade.powerUpDescription = $"Narrows firing spread by {C(value.ToString("F1"))}°.";
-                break;
-            case UpgradeType.ShooterSpreadAnglePercent:
-                Upgrade.powerUpName = $"Spread +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Narrows firing spread by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterProjectileSpeedFlat:
-                Upgrade.powerUpName = $"Projectile Speed +{C(value.ToString("F1"))}";
-                Upgrade.powerUpDescription = $"Increases projectile speed by {C(value.ToString("F1"))}.";
-                break;
-            case UpgradeType.ShooterProjectileSpeedPercent:
-                Upgrade.powerUpName = $"Projectile Speed +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases projectile speed by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterLifetimeFlat:
-                Upgrade.powerUpName = $"Projectile Lifetime +{C(value.ToString("F1"))}s";
-                Upgrade.powerUpDescription = $"Extends projectile lifetime by {C(value.ToString("F1"))}s.";
-                break;
-            case UpgradeType.ShooterLifetimePercent:
-                Upgrade.powerUpName = $"Projectile Lifetime +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Extends projectile lifetime by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterCritChanceFlat:
-                Upgrade.powerUpName = $"Critical Chance +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Raises chance to critically strike by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterCritMultiplierFlat:
-                Upgrade.powerUpName = $"Critical Damage +{C(value.ToString("F2"))}x";
-                Upgrade.powerUpDescription = $"Increases critical strike damage by {C(value.ToString("F2"))}x.";
-                break;
-            case UpgradeType.ShooterStatusApplyChanceFlat:
-                Upgrade.powerUpName = $"Status Chance +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases chance to inflict effects by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterStatusApplyChancePercent:
-                Upgrade.powerUpName = $"Status Chance +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Further improves effect application by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterStatusDurationFlat:
-                Upgrade.powerUpName = $"Status Duration +{C(value.ToString("F1"))}s";
-                Upgrade.powerUpDescription = $"Effects linger longer by {C(value.ToString("F1"))}s.";
-                break;
-            case UpgradeType.ShooterStatusDurationPercent:
-                Upgrade.powerUpName = $"Status Duration +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Effects linger longer by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.ShooterEnableStatusEffect:
-                Upgrade.powerUpName = $"Enable Status On Hit";
-                Upgrade.powerUpDescription = $"Enables inflicting status effects on hit.";
-                break;
-            case UpgradeType.ShooterStatusEffectIndex:
-                Upgrade.powerUpName = $"Set Status Type";
-                Upgrade.powerUpDescription = $"Sets the status effect type (index {C(Mathf.RoundToInt(value).ToString())}).";
-                break;
-
-            // ------------- Tick -------------
-            case UpgradeType.TickRateFlat:
-                Upgrade.powerUpName = $"Attack Interval −{C(value.ToString("F2"))}s";
-                Upgrade.powerUpDescription = $"Reduces delay between attacks by {C(value.ToString("F2"))}s.";
-                break;
-            case UpgradeType.TickRatePercent:
-                Upgrade.powerUpName = $"Attack Interval −{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Reduces delay between attacks by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.BurstCountFlat:
-                Upgrade.powerUpName = $"Burst Count +{C(Mathf.RoundToInt(value).ToString())}";
-                Upgrade.powerUpDescription = $"Increases shots per burst by {C(Mathf.RoundToInt(value).ToString())}.";
-                break;
-            case UpgradeType.BurstCountPercent:
-                Upgrade.powerUpName = $"Burst Count +{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Increases shots per burst by {C((value * 100f).ToString("F0"))}%.";
-                break;
-            case UpgradeType.BurstSpacingFlat:
-                Upgrade.powerUpName = $"Burst Delay −{C(value.ToString("F2"))}s";
-                Upgrade.powerUpDescription = $"Reduces delay between burst shots by {C(value.ToString("F2"))}s.";
-                break;
-            case UpgradeType.BurstSpacingPercent:
-                Upgrade.powerUpName = $"Burst Delay −{C((value * 100f).ToString("F0"))}%";
-                Upgrade.powerUpDescription = $"Reduces delay between burst shots by {C((value * 100f).ToString("F0"))}%.";
-                break;
-
-            default:
-                Upgrade.powerUpName = "No Upgrade";
-                Upgrade.powerUpDescription = "This upgrade slot is empty.";
-                break;
+            string v = FormatValue(text.format);
+            Upgrade.powerUpName = string.Format(text.title, v);
+            Upgrade.powerUpDescription = string.Format(text.description, v);
+        }
+        else
+        {
+            Upgrade.powerUpName = "No Upgrade";
+            Upgrade.powerUpDescription = "This upgrade slot is empty.";
         }
 
         // Append parent name unless Custom (handled above) or no parent
         if (transform.parent != null && !string.IsNullOrEmpty(Upgrade.powerUpName))
-        {
             Upgrade.powerUpName = $"{transform.parent.name} - {Upgrade.powerUpName}";
-        }
     }
 
     private void TryAssignIconFromParent()
     {
-        if (Upgrade == null) return;
-        // Read weapon sprite from parent weapon behaviours
-        if (transform.parent != null)
+        if (Upgrade == null || transform.parent == null) return;
+
+        if (transform.parent.TryGetComponent(out Knife knife) && knife.weaponSprite != null)
         {
-            if (transform.parent.TryGetComponent(out Knife knife))
-            {
-                if (knife.weaponSprite != null)
-                {
-                    Upgrade.powerUpIcon = knife.weaponSprite;
-                    return;
-                }
-            }
-            if (transform.parent.TryGetComponent(out SimpleShooter shooter))
-            {
-                if (shooter.weaponSprite != null)
-                {
-                    Upgrade.powerUpIcon = shooter.weaponSprite;
-                    return;
-                }
-            }
+            Upgrade.powerUpIcon = knife.weaponSprite;
+            return;
+        }
+        if (transform.parent.TryGetComponent(out SimpleShooter shooter) && shooter.weaponSprite != null)
+        {
+            Upgrade.powerUpIcon = shooter.weaponSprite;
         }
     }
 
+    // ---------------------- Apply ----------------------
+
     public void ApplyUpgrade()
     {
-        // CUSTOM: intentionally does nothing
+        // CUSTOM/None: intentionally do nothing
         if (upgradeType == UpgradeType.Custom || upgradeType == UpgradeType.None)
             return;
 
-        // ---------------- KNIFE ----------------
-        if (transform.parent != null && transform.parent.TryGetComponent(out Knife knife))
+        var parent = transform.parent;
+        if (parent == null) return;
+
+        if (IsKnifeType(upgradeType) && parent.TryGetComponent(out Knife knife))
+            ApplyKnifeUpgrade(knife);
+        else if (IsShooterType(upgradeType) && parent.TryGetComponent(out SimpleShooter shooter))
+            ApplyShooterUpgrade(shooter);
+        else if (IsTickType(upgradeType) && parent.TryGetComponent(out WeaponTick tick))
+            ApplyTickUpgrade(tick);
+    }
+
+    private void ApplyKnifeUpgrade(Knife knife)
+    {
+        switch (upgradeType)
         {
-            switch (upgradeType)
-            {
-                case UpgradeType.KnifeDamageFlat:
-                    knife.damage += Mathf.RoundToInt(value);
-                    break;
-
-                case UpgradeType.KnifeDamagePercent:
-                    knife.damage = Mathf.RoundToInt(knife.damage * (1f + value));
-                    break;
-
-                case UpgradeType.KnifeRadiusFlat:
-                    knife.radius += value;
-                    break;
-
-                case UpgradeType.KnifeRadiusPercent:
-                    knife.radius *= (1f + value);
-                    break;
-
-                case UpgradeType.KnifeMaxTargetsFlat:
-                    knife.maxTargetsPerTick += Mathf.RoundToInt(value);
-                    break;
-
-                case UpgradeType.KnifeLifestealFlat:
-                    knife.lifestealPercent += value;
-                    break;
-
-                case UpgradeType.KnifeLifestealPercent:
-                    knife.lifestealPercent *= (1f + value);
-                    break;
-
-                case UpgradeType.KnifeCritChanceFlat:
-                    knife.critChance += value;
-                    break;
-
-                case UpgradeType.KnifeCritMultiplierFlat:
-                    knife.critMultiplier += value;
-                    break;
-                case UpgradeType.KnifeSplashRadiusFlat:
-                    knife.splashRadius += value;
-                    break;
-
-                case UpgradeType.KnifeSplashRadiusPercent:
-                    knife.splashRadius *= (1f + value);
-                    break;
-
-                case UpgradeType.KnifeSplashDamagePercentFlat:
-                    knife.splashDamagePercent += value;
-                    break;
-
-                case UpgradeType.KnifeSplashDamagePercentPercent:
-                    knife.splashDamagePercent *= (1f + value);
-                    break;
-
-                case UpgradeType.KnifeStatusApplyChanceFlat:
-                    knife.statusApplyChance = Mathf.Clamp01(knife.statusApplyChance + value);
-                    break;
-
-                case UpgradeType.KnifeStatusApplyChancePercent:
-                    knife.statusApplyChance = Mathf.Clamp01(knife.statusApplyChance * (1f + value));
-                    break;
-
-                case UpgradeType.KnifeStatusDurationFlat:
-                    knife.statusEffectDuration += value;
-                    break;
-
-                case UpgradeType.KnifeStatusDurationPercent:
-                    knife.statusEffectDuration *= (1f + value);
-                    break;
-
-                case UpgradeType.KnifeEnableStatusEffect:
-                    knife.applyStatusEffectOnHit = true;
-                    break;
-
-                case UpgradeType.KnifeStatusEffectIndex:
-                    knife.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
-                    break;
-
-                case UpgradeType.KnifeDamageTypeIndex:
-                    knife.damageType = ClampToDamageType(Mathf.RoundToInt(value));
-                    break;
-            }
+            case UpgradeType.KnifeDamageFlat:
+                knife.damage += Mathf.RoundToInt(value);
+                break;
+            case UpgradeType.KnifeDamagePercent:
+                knife.damage = Mathf.RoundToInt(knife.damage * (1f + value));
+                break;
+            case UpgradeType.KnifeRadiusFlat:
+                knife.radius += value;
+                break;
+            case UpgradeType.KnifeRadiusPercent:
+                knife.radius *= (1f + value);
+                break;
+            case UpgradeType.KnifeMaxTargetsFlat:
+                knife.maxTargetsPerTick += Mathf.RoundToInt(value);
+                break;
+            case UpgradeType.KnifeLifestealFlat:
+                knife.lifestealPercent += value;
+                break;
+            case UpgradeType.KnifeLifestealPercent:
+                knife.lifestealPercent *= (1f + value);
+                break;
+            case UpgradeType.KnifeCritChanceFlat:
+                knife.critChance += value;
+                break;
+            case UpgradeType.KnifeCritMultiplierFlat:
+                knife.critMultiplier += value;
+                break;
+            case UpgradeType.KnifeSplashRadiusFlat:
+                knife.splashRadius += value;
+                break;
+            case UpgradeType.KnifeSplashRadiusPercent:
+                knife.splashRadius *= (1f + value);
+                break;
+            case UpgradeType.KnifeSplashDamagePercentFlat:
+                knife.splashDamagePercent += value;
+                break;
+            case UpgradeType.KnifeSplashDamagePercentPercent:
+                knife.splashDamagePercent *= (1f + value);
+                break;
+            case UpgradeType.KnifeStatusApplyChanceFlat:
+                knife.statusApplyChance = Mathf.Clamp01(knife.statusApplyChance + value);
+                break;
+            case UpgradeType.KnifeStatusApplyChancePercent:
+                knife.statusApplyChance = Mathf.Clamp01(knife.statusApplyChance * (1f + value));
+                break;
+            case UpgradeType.KnifeStatusDurationFlat:
+                knife.statusEffectDuration += value;
+                break;
+            case UpgradeType.KnifeStatusDurationPercent:
+                knife.statusEffectDuration *= (1f + value);
+                break;
+            case UpgradeType.KnifeEnableStatusEffect:
+                knife.applyStatusEffectOnHit = true;
+                break;
+            case UpgradeType.KnifeStatusEffectIndex:
+                knife.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
+                break;
+            case UpgradeType.KnifeDamageTypeIndex:
+                knife.damageType = ClampToDamageType(Mathf.RoundToInt(value));
+                break;
         }
+    }
 
-        // ---------------- SHOOTER ----------------
-        if (transform.parent != null && transform.parent.TryGetComponent(out SimpleShooter shooter))
+    private void ApplyShooterUpgrade(SimpleShooter shooter)
+    {
+        switch (upgradeType)
         {
-            switch (upgradeType)
-            {
-                case UpgradeType.ShooterDamageFlat:
-                    shooter.damage += Mathf.RoundToInt(value);
-                    break;
-
-                case UpgradeType.ShooterDamagePercent:
-                    shooter.damage = Mathf.RoundToInt(shooter.damage * (1f + value));
-                    break;
-
-                case UpgradeType.ShooterProjectileCount:
-                    shooter.projectileCount += Mathf.RoundToInt(value);
-                    break;
-
-                case UpgradeType.ShooterSpreadAngleFlat:
-                    shooter.spreadAngle += value;
-                    break;
-
-                case UpgradeType.ShooterSpreadAnglePercent:
-                    shooter.spreadAngle *= (1f + value);
-                    break;
-
-                case UpgradeType.ShooterProjectileSpeedFlat:
-                    shooter.shootForce += value;
-                    break;
-
-                case UpgradeType.ShooterProjectileSpeedPercent:
-                    shooter.shootForce *= (1f + value);
-                    break;
-
-                case UpgradeType.ShooterLifetimeFlat:
-                    shooter.bulletLifetime += value;
-                    break;
-
-                case UpgradeType.ShooterLifetimePercent:
-                    shooter.bulletLifetime *= (1f + value);
-                    break;
-
-                case UpgradeType.ShooterCritChanceFlat:
-                    shooter.critChance += value;
-                    break;
-
-                case UpgradeType.ShooterCritMultiplierFlat:
-                    shooter.critMultiplier += value;
-                    break;
-
-                case UpgradeType.ShooterStatusApplyChanceFlat:
-                    shooter.statusApplyChance = Mathf.Clamp01(shooter.statusApplyChance + value);
-                    break;
-
-                case UpgradeType.ShooterStatusApplyChancePercent:
-                    shooter.statusApplyChance = Mathf.Clamp01(shooter.statusApplyChance * (1f + value));
-                    break;
-
-                case UpgradeType.ShooterStatusDurationFlat:
-                    shooter.statusEffectDuration += value;
-                    break;
-
-                case UpgradeType.ShooterStatusDurationPercent:
-                    shooter.statusEffectDuration *= (1f + value);
-                    break;
-
-                case UpgradeType.ShooterEnableStatusEffect:
-                    shooter.applyStatusEffectOnHit = true;
-                    break;
-
-                case UpgradeType.ShooterStatusEffectIndex:
-                    shooter.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
-                    break;
-
-                case UpgradeType.ShooterDamageTypeIndex:
-                    shooter.damageType = ClampToDamageType(Mathf.RoundToInt(value));
-                    break;
-            }
+            case UpgradeType.ShooterDamageFlat:
+                shooter.damage += Mathf.RoundToInt(value);
+                break;
+            case UpgradeType.ShooterDamagePercent:
+                shooter.damage = Mathf.RoundToInt(shooter.damage * (1f + value));
+                break;
+            case UpgradeType.ShooterProjectileCount:
+                shooter.projectileCount += Mathf.RoundToInt(value);
+                break;
+            case UpgradeType.ShooterSpreadAngleFlat:
+                shooter.spreadAngle += value;
+                break;
+            case UpgradeType.ShooterSpreadAnglePercent:
+                shooter.spreadAngle *= (1f + value);
+                break;
+            case UpgradeType.ShooterProjectileSpeedFlat:
+                shooter.shootForce += value;
+                break;
+            case UpgradeType.ShooterProjectileSpeedPercent:
+                shooter.shootForce *= (1f + value);
+                break;
+            case UpgradeType.ShooterLifetimeFlat:
+                shooter.bulletLifetime += value;
+                break;
+            case UpgradeType.ShooterLifetimePercent:
+                shooter.bulletLifetime *= (1f + value);
+                break;
+            case UpgradeType.ShooterCritChanceFlat:
+                shooter.critChance += value;
+                break;
+            case UpgradeType.ShooterCritMultiplierFlat:
+                shooter.critMultiplier += value;
+                break;
+            case UpgradeType.ShooterStatusApplyChanceFlat:
+                shooter.statusApplyChance = Mathf.Clamp01(shooter.statusApplyChance + value);
+                break;
+            case UpgradeType.ShooterStatusApplyChancePercent:
+                shooter.statusApplyChance = Mathf.Clamp01(shooter.statusApplyChance * (1f + value));
+                break;
+            case UpgradeType.ShooterStatusDurationFlat:
+                shooter.statusEffectDuration += value;
+                break;
+            case UpgradeType.ShooterStatusDurationPercent:
+                shooter.statusEffectDuration *= (1f + value);
+                break;
+            case UpgradeType.ShooterEnableStatusEffect:
+                shooter.applyStatusEffectOnHit = true;
+                break;
+            case UpgradeType.ShooterStatusEffectIndex:
+                shooter.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
+                break;
+            case UpgradeType.ShooterDamageTypeIndex:
+                shooter.damageType = ClampToDamageType(Mathf.RoundToInt(value));
+                break;
         }
+    }
 
-        // ---------------- TICK ----------------
-        if (transform.parent != null && transform.parent.TryGetComponent(out WeaponTick tick))
+    private void ApplyTickUpgrade(WeaponTick tick)
+    {
+        switch (upgradeType)
         {
-            switch (upgradeType)
-            {
-                case UpgradeType.TickRateFlat:
-                    tick.interval = Mathf.Max(0.05f, tick.interval - value);
-                    break;
-
-                case UpgradeType.TickRatePercent:
-                    tick.interval = Mathf.Max(0.05f, tick.interval * (1f - value));
-                    break;
-
-                case UpgradeType.BurstCountFlat:
-                    tick.burstCount += Mathf.RoundToInt(value);
-                    break;
-
-                case UpgradeType.BurstCountPercent:
-                    tick.burstCount = Mathf.RoundToInt(tick.burstCount * (1f + value));
-                    break;
-
-                case UpgradeType.BurstSpacingFlat:
-                    tick.burstSpacing = Mathf.Max(0.01f, tick.burstSpacing - value);
-                    break;
-
-                case UpgradeType.BurstSpacingPercent:
-                    tick.burstSpacing = Mathf.Max(0.01f, tick.burstSpacing * (1f - value));
-                    break;
-            }
+            case UpgradeType.TickRateFlat:
+                tick.interval = Mathf.Max(0.05f, tick.interval - value);
+                break;
+            case UpgradeType.TickRatePercent:
+                tick.interval = Mathf.Max(0.05f, tick.interval * (1f - value));
+                break;
+            case UpgradeType.BurstCountFlat:
+                tick.burstCount += Mathf.RoundToInt(value);
+                break;
+            case UpgradeType.BurstCountPercent:
+                tick.burstCount = Mathf.RoundToInt(tick.burstCount * (1f + value));
+                break;
+            case UpgradeType.BurstSpacingFlat:
+                tick.burstSpacing = Mathf.Max(0.01f, tick.burstSpacing - value);
+                break;
+            case UpgradeType.BurstSpacingPercent:
+                tick.burstSpacing = Mathf.Max(0.01f, tick.burstSpacing * (1f - value));
+                break;
         }
     }
 
     private static SimpleHealth.DamageType ClampToDamageType(int rawIndex)
     {
         // Ensure value maps into enum range 0..4
-        if (rawIndex < 0) rawIndex = 0;
-        if (rawIndex > 4) rawIndex = 4;
-        return (SimpleHealth.DamageType)rawIndex;
+        return (SimpleHealth.DamageType)Mathf.Clamp(rawIndex, 0, 4);
     }
 
 #if UNITY_EDITOR
@@ -750,48 +557,29 @@ public class WeaponUpgrades : MonoBehaviour
             }
 
             // Filter choices based on parent components
-            var all = (WeaponUpgrades.UpgradeType[])System.Enum.GetValues(typeof(WeaponUpgrades.UpgradeType));
-            System.Collections.Generic.List<WeaponUpgrades.UpgradeType> allowed = new();
-
-            foreach (var t in all)
-            {
-                if (wu.IsTypeAllowedForParent(t))
-                    allowed.Add(t);
-            }
-            // After: value/other fields + so.ApplyModifiedProperties() if you prefer
-            // Find the serialized property for the UnityEvent
-            var customEventProp = so.FindProperty("onCustomAwake");
+            var allowed = wu.GetAllowedTypes(includeNoneAndCustom: true);
 
             // Only show the event hook when the selected type is Custom
-            if (wu.upgradeType == WeaponUpgrades.UpgradeType.Custom)
+            if (wu.upgradeType == UpgradeType.Custom)
             {
                 UnityEditor.EditorGUILayout.Space();
                 UnityEditor.EditorGUILayout.LabelField("Custom Events", UnityEditor.EditorStyles.boldLabel);
-                UnityEditor.EditorGUILayout.PropertyField(customEventProp);
+                UnityEditor.EditorGUILayout.PropertyField(so.FindProperty("onCustomAwake"));
             }
 
             if (allowed.Count == 0)
             {
                 UnityEditor.EditorGUILayout.HelpBox("No valid upgrades for this parent. Add Knife, SimpleShooter, or WeaponTick to the parent.", UnityEditor.MessageType.Warning);
             }
-
-            // Current selection index within allowed list
-            int currentIndex = Mathf.Max(0, allowed.IndexOf(wu.upgradeType));
-            if (currentIndex < 0) currentIndex = 0;
-
-            // Display names
-            string[] names = new string[allowed.Count];
-            for (int i = 0; i < allowed.Count; i++)
-                names[i] = allowed[i].ToString();
-
-            // Draw popup
-            int newIndex = (allowed.Count > 0)
-                ? UnityEditor.EditorGUILayout.Popup("Upgrade Type", currentIndex, names)
-                : 0;
-
-            // Apply selection
-            if (allowed.Count > 0)
+            else
             {
+                int currentIndex = Mathf.Max(0, allowed.IndexOf(wu.upgradeType));
+
+                string[] names = new string[allowed.Count];
+                for (int i = 0; i < allowed.Count; i++)
+                    names[i] = allowed[i].ToString();
+
+                int newIndex = UnityEditor.EditorGUILayout.Popup("Upgrade Type", currentIndex, names);
                 var newType = allowed[newIndex];
                 if (newType != wu.upgradeType)
                 {
@@ -802,11 +590,9 @@ public class WeaponUpgrades : MonoBehaviour
                 }
             }
 
-            // Value field
-            var valueProp = so.FindProperty("value");
-            UnityEditor.EditorGUILayout.PropertyField(valueProp);
+            UnityEditor.EditorGUILayout.PropertyField(so.FindProperty("value"));
 
-            // Warn if invalid (shouldn’t happen thanks to filtering, but still safe)
+            // Warn if invalid (shouldn't happen thanks to filtering, but still safe)
             if (!wu.IsTypeAllowedForParent(wu.upgradeType))
             {
                 UnityEditor.EditorGUILayout.HelpBox("Selected UpgradeType is not valid for this parent. It will be treated as 'None'.", UnityEditor.MessageType.Warning);
@@ -827,27 +613,29 @@ public class WeaponUpgrades : MonoBehaviour
 #endif
 
     // ---------------------- Tools ----------------------
+
+    private List<UpgradeType> GetAllowedTypes(bool includeNoneAndCustom)
+    {
+        var allowed = new List<UpgradeType>();
+        foreach (UpgradeType t in System.Enum.GetValues(typeof(UpgradeType)))
+        {
+            if (!includeNoneAndCustom && (t == UpgradeType.None || t == UpgradeType.Custom)) continue;
+            if (IsTypeAllowedForParent(t)) allowed.Add(t);
+        }
+        return allowed;
+    }
+
     [ContextMenu("Generate Random Upgrade")]
     private void GenerateRandomUpgrade()
     {
-        // Build allowed list excluding None/Custom
-        var all = (UpgradeType[])System.Enum.GetValues(typeof(UpgradeType));
-        System.Collections.Generic.List<UpgradeType> allowed = new();
-        for (int i = 0; i < all.Length; i++)
-        {
-            var t = all[i];
-            if (t == UpgradeType.None || t == UpgradeType.Custom) continue;
-            if (IsTypeAllowedForParent(t)) allowed.Add(t);
-        }
+        var allowed = GetAllowedTypes(includeNoneAndCustom: false);
         if (allowed.Count == 0)
         {
             Debug.LogWarning("[WeaponUpgrades] No valid upgrade types for this parent.");
             return;
         }
 
-        // Pick a type and value
-        int pick = Random.Range(0, allowed.Count);
-        var chosen = allowed[pick];
+        var chosen = allowed[Random.Range(0, allowed.Count)];
 
 #if UNITY_EDITOR
         UnityEditor.Undo.RecordObject(this, "Generate Random Upgrade");
@@ -861,56 +649,72 @@ public class WeaponUpgrades : MonoBehaviour
 #endif
     }
 
+    private static float RandomStatusEffectIndex() =>
+        Mathf.Round(Random.Range(0f, (float)System.Enum.GetValues(typeof(StatusEffectSystem.StatusType)).Length - 1f));
+
     private float GetRandomValueForType(UpgradeType t)
     {
         switch (t)
         {
+            // Shared Knife + Shooter ranges
+            case UpgradeType.KnifeDamageFlat:
+            case UpgradeType.ShooterDamageFlat:
+                return Random.Range(2f, 12f);
+            case UpgradeType.KnifeDamagePercent:
+            case UpgradeType.ShooterDamagePercent:
+                return Random.Range(0.05f, 0.25f);
+            case UpgradeType.KnifeCritChanceFlat:
+            case UpgradeType.ShooterCritChanceFlat:
+                return Random.Range(0.03f, 0.20f);
+            case UpgradeType.KnifeCritMultiplierFlat:
+            case UpgradeType.ShooterCritMultiplierFlat:
+                return Random.Range(0.10f, 0.60f);
+            case UpgradeType.KnifeStatusApplyChanceFlat:
+            case UpgradeType.ShooterStatusApplyChanceFlat:
+                return Random.Range(0.05f, 0.30f);
+            case UpgradeType.KnifeStatusApplyChancePercent:
+            case UpgradeType.ShooterStatusApplyChancePercent:
+                return Random.Range(0.10f, 0.50f);
+            case UpgradeType.KnifeStatusDurationFlat:
+            case UpgradeType.ShooterStatusDurationFlat:
+                return Random.Range(0.5f, 3.0f);
+            case UpgradeType.KnifeStatusDurationPercent:
+            case UpgradeType.ShooterStatusDurationPercent:
+                return Random.Range(0.10f, 0.50f);
+            case UpgradeType.KnifeEnableStatusEffect:
+            case UpgradeType.ShooterEnableStatusEffect:
+                return 0f; // toggle only
+            case UpgradeType.KnifeStatusEffectIndex:
+            case UpgradeType.ShooterStatusEffectIndex:
+                return RandomStatusEffectIndex();
+
+            // Small integer counts (1..3)
+            case UpgradeType.KnifeMaxTargetsFlat:
+            case UpgradeType.ShooterProjectileCount:
+            case UpgradeType.BurstCountFlat:
+                return Mathf.Round(Random.Range(1f, 3.99f));
+
             // Knife
-            case UpgradeType.KnifeDamageFlat: return Random.Range(2f, 12f);
-            case UpgradeType.KnifeDamagePercent: return Random.Range(0.05f, 0.25f);
             case UpgradeType.KnifeRadiusFlat: return Random.Range(0.1f, 1.0f);
             case UpgradeType.KnifeRadiusPercent: return Random.Range(0.05f, 0.30f);
-            case UpgradeType.KnifeMaxTargetsFlat: return Mathf.Round(Random.Range(1f, 3.99f));
             case UpgradeType.KnifeLifestealFlat: return Random.Range(0.02f, 0.15f);
             case UpgradeType.KnifeLifestealPercent: return Random.Range(0.10f, 0.40f);
-            case UpgradeType.KnifeCritChanceFlat: return Random.Range(0.03f, 0.20f);
-            case UpgradeType.KnifeCritMultiplierFlat: return Random.Range(0.10f, 0.60f);
             case UpgradeType.KnifeSplashRadiusFlat: return Random.Range(0.20f, 1.50f);
             case UpgradeType.KnifeSplashRadiusPercent: return Random.Range(0.10f, 0.50f);
             case UpgradeType.KnifeSplashDamagePercentFlat: return Random.Range(0.05f, 0.30f);
             case UpgradeType.KnifeSplashDamagePercentPercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.KnifeStatusApplyChanceFlat: return Random.Range(0.05f, 0.30f);
-            case UpgradeType.KnifeStatusApplyChancePercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.KnifeStatusDurationFlat: return Random.Range(0.5f, 3.0f);
-            case UpgradeType.KnifeStatusDurationPercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.KnifeEnableStatusEffect: return 0f; // toggle only
-            case UpgradeType.KnifeStatusEffectIndex:
-                return Mathf.Round(Random.Range(0f, (float)System.Enum.GetValues(typeof(StatusEffectSystem.StatusType)).Length - 1f));
 
             // Shooter
-            case UpgradeType.ShooterDamageFlat: return Random.Range(2f, 12f);
-            case UpgradeType.ShooterDamagePercent: return Random.Range(0.05f, 0.25f);
-            case UpgradeType.ShooterProjectileCount: return Mathf.Round(Random.Range(1f, 3.99f));
             case UpgradeType.ShooterSpreadAngleFlat: return Random.Range(2f, 20f);
             case UpgradeType.ShooterSpreadAnglePercent: return Random.Range(0.10f, 0.50f);
             case UpgradeType.ShooterProjectileSpeedFlat: return Random.Range(0.5f, 5f);
             case UpgradeType.ShooterProjectileSpeedPercent: return Random.Range(0.10f, 0.50f);
             case UpgradeType.ShooterLifetimeFlat: return Random.Range(0.3f, 2f);
             case UpgradeType.ShooterLifetimePercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.ShooterCritChanceFlat: return Random.Range(0.03f, 0.20f);
-            case UpgradeType.ShooterCritMultiplierFlat: return Random.Range(0.10f, 0.60f);
-            case UpgradeType.ShooterStatusApplyChanceFlat: return Random.Range(0.05f, 0.30f);
-            case UpgradeType.ShooterStatusApplyChancePercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.ShooterStatusDurationFlat: return Random.Range(0.5f, 3.0f);
-            case UpgradeType.ShooterStatusDurationPercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.ShooterEnableStatusEffect: return 0f; // toggle only
-            case UpgradeType.ShooterStatusEffectIndex:
-                return Mathf.Round(Random.Range(0f, (float)System.Enum.GetValues(typeof(StatusEffectSystem.StatusType)).Length - 1f));
 
             // Tick
             case UpgradeType.TickRateFlat: return Random.Range(0.05f, 0.50f);
             case UpgradeType.TickRatePercent: return Random.Range(0.05f, 0.30f);
-            case UpgradeType.BurstCountFlat: return Mathf.Round(Random.Range(1f, 3.99f));
             case UpgradeType.BurstCountPercent: return Random.Range(0.10f, 0.50f);
             case UpgradeType.BurstSpacingFlat: return Random.Range(0.02f, 0.30f);
             case UpgradeType.BurstSpacingPercent: return Random.Range(0.10f, 0.50f);

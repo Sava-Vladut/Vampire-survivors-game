@@ -163,7 +163,7 @@ public class PowerUpChooser : MonoBehaviour
         // Disable spawned/in-scene instance if we have it
         if (spawnedInstances.TryGetValue(pu, out var inst) && inst != null)
         {
-            if (inst) inst.SetActive(false);
+            inst.SetActive(false);
             spawnedInstances.Remove(pu);
         }
         else
@@ -257,7 +257,7 @@ public class PowerUpChooser : MonoBehaviour
     /// </summary>
     public void AddMaxWeapons(int delta)
     {
-        maxWeapons += delta;
+        maxWeapons = Mathf.Max(0, maxWeapons + delta);
         RefreshStatsText();
     }
 
@@ -267,7 +267,7 @@ public class PowerUpChooser : MonoBehaviour
     /// </summary>
     public void AddMaxAccessories(int delta)
     {
-        maxAccessories += delta;
+        maxAccessories = Mathf.Max(0, maxAccessories + delta);
         RefreshStatsText();
     }
 }

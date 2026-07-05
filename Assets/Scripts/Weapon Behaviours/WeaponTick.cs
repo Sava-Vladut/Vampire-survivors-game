@@ -76,33 +76,34 @@ public class WeaponTick : MonoBehaviour
 
     private IEnumerator TickRoutine()
     {
-        // Basic input sanitation
-        float safeInterval = Mathf.Max(0f, interval);
-        float safeBurstSpacing = Mathf.Max(0f, burstSpacing);
-        int safeBurstCount = Mathf.Max(1, burstCount);
-
         while (true)
         {
+            // Read the current Inspector values every cycle so Play Mode changes
+            // take effect without restarting the coroutine.
+            float currentInterval = Mathf.Max(0f, interval);
+
             // Wait until the next cycle/burst start
             if (useUnscaledTime)
-                yield return new WaitForSecondsRealtime(safeInterval);
+                yield return new WaitForSecondsRealtime(currentInterval);
             else
-                yield return new WaitForSeconds(safeInterval);
+                yield return new WaitForSeconds(currentInterval);
 
-            if (burstEnabled && safeBurstCount > 1)
+            int currentBurstCount = Mathf.Max(1, burstCount);
+            if (burstEnabled && currentBurstCount > 1)
             {
                 // Fire a burst
-                for (int i = 0; i < safeBurstCount; i++)
+                for (int i = 0; i < currentBurstCount; i++)
                 {
                     onTick?.Invoke();
 
                     // Spacing between ticks inside the burst (skip after the last one)
-                    if (i < safeBurstCount - 1)
+                    if (i < currentBurstCount - 1)
                     {
+                        float currentBurstSpacing = Mathf.Max(0f, burstSpacing);
                         if (useUnscaledTime)
-                            yield return new WaitForSecondsRealtime(safeBurstSpacing);
+                            yield return new WaitForSecondsRealtime(currentBurstSpacing);
                         else
-                            yield return new WaitForSeconds(safeBurstSpacing);
+                            yield return new WaitForSeconds(currentBurstSpacing);
                     }
                 }
             }

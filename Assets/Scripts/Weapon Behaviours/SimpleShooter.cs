@@ -5,38 +5,54 @@ using UnityEngine.UI; // For Image
 public class SimpleShooter : MonoBehaviour
 {
     [Header("Projectile Settings")]
+    [Tooltip("Projectile prefab instantiated whenever this weapon fires.")]
     public GameObject bulletPrefab;
+    [Tooltip("Projectile spawn points. If empty, this transform is used.")]
     public Transform[] shootTransforms; // Where to spawn bullets; if empty, uses this.transform
 
+    [Tooltip("Initial movement speed applied to spawned projectiles.")]
     public float shootForce = 10f;
+    [Tooltip("Base damage assigned to each spawned projectile.")]
     public int damage = 15;
-    [SerializeField] public SimpleHealth.DamageType damageType;
+    [SerializeField, Tooltip("Damage category used for resistances, weaknesses, and damage coloring.")]
+    public SimpleHealth.DamageType damageType;
+    [Tooltip("Time in seconds before a spawned projectile is destroyed. Set to 0 or less to disable timed destruction.")]
     public float bulletLifetime = 5f;
+    [Tooltip("Number of enemies a projectile can pass through before being destroyed.")]
     public int penetration = 1; // How many enemies the bullet can pass through before being destroyed
 
     [Header("Criticals")]
+    [Tooltip("Chance for a projectile to deal critical damage.")]
     [Range(0f, 1f)] public float critChance = 0f;
+    [Tooltip("Damage multiplier applied when a critical hit occurs.")]
     [Min(1f)] public float critMultiplier = 2f;
 
     [Header("On Hit Effects")]
+    [Tooltip("Whether projectile hits can apply a status effect.")]
     public bool applyStatusEffectOnHit = false;
+    [Tooltip("Chance for each projectile hit to apply the selected status effect.")]
     public float statusApplyChance = 1f;    // optional: chance to apply on hit (0..1)
+    [Tooltip("Status effect applied when the on-hit chance succeeds.")]
     public StatusEffectSystem.StatusType statusEffectOnHit = StatusEffectSystem.StatusType.Bleeding;
     [Tooltip("Duration in seconds for the applied status effect.")]
     public float statusEffectDuration = 3f;
 
     [Header("Shot Pattern")]
+    [Tooltip("Number of projectiles spawned from each shoot transform per attack.")]
     public int projectileCount = 1;
     [Tooltip("Total cone in degrees. Each projectile gets a random angle within [-spread/2, +spread/2].")]
     public float spreadAngle = 0f;
 
     [Header("SFX")]
+    [Tooltip("Audio clip played whenever the weapon fires.")]
     [SerializeField] private AudioClip shootClip;
 
     [Header("UI")]
     [Tooltip("Prefab root GameObject that contains a TextMeshProUGUI somewhere in its children.")]
     [SerializeField] public GameObject statsTextPrefab;
+    [Tooltip("Transform under which the weapon stats UI is instantiated.")]
     [SerializeField] private Transform uiParent;
+    [Tooltip("Optional custom text appended to the generated weapon stats.")]
     [TextArea][SerializeField] public string extraTextField = " ";
     [Tooltip("Sprite to show above the stats text.")]
     [SerializeField] public Sprite weaponSprite;
@@ -46,6 +62,7 @@ public class SimpleShooter : MonoBehaviour
     private Image iconImage;
     private AudioSource shootSource;
     private GameObject statsGameobjectInstance;
+    [Tooltip("Upgrade offered after this weapon has been obtained.")]
     public WeaponUpgrades nextUpgrade;
     PowerUpChooser powerUpChooser;
 
