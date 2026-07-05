@@ -23,7 +23,8 @@ public class Knife : MonoBehaviour
     public float radius = 1f;
     [SerializeField, Tooltip("Base damage dealt to main target.")]
     public int damage = 10;
-    [SerializeField] public SimpleHealth.DamageType damageType;
+    [SerializeField, Tooltip("Damage category used for resistances, weaknesses, and damage coloring.")]
+    public SimpleHealth.DamageType damageType;
     [SerializeField, Tooltip("Which layers are considered valid targets.")]
     private LayerMask targetMask = ~0;
     [SerializeField, Tooltip("Maximum number of targets per tick (0 = unlimited).")]
@@ -41,24 +42,39 @@ public class Knife : MonoBehaviour
     [Range(0f, 1f)] public float splashDamagePercent = 0.5f;
 
     [Header("On Hit Effects")]
+    [Tooltip("Whether successful hits can apply a status effect.")]
     public bool applyStatusEffectOnHit = false;
+    [Tooltip("Chance for each successful hit to apply the selected status effect.")]
     [Range(0f, 1f)] public float statusApplyChance = 1f;    // optional: chance to apply on hit (0..1)
+    [Tooltip("Status effect applied when the on-hit chance succeeds.")]
     public StatusEffectSystem.StatusType statusEffectOnHit = StatusEffectSystem.StatusType.Bleeding;
+    [Tooltip("Duration of the applied status effect, in seconds.")]
     public float statusEffectDuration = 3f; // Duration in seconds for the status effect
 
+    [Header("Knockback")]
+    [SerializeField, Tooltip("Initial push speed applied to hit enemies, in units/sec. 0 disables knockback.")]
+    public float knockbackForce = 0f;
+
     [Header("Lifesteal")]
+    [Tooltip("Fraction of damage dealt that is restored as health.")]
     [Range(0f, 1f)][SerializeField] public float lifestealPercent = 0.25f;
 
     [Header("Criticals")]
+    [Tooltip("Chance for a hit to deal critical damage.")]
     [Range(0f, 1f)] public float critChance = 0f;
+    [Tooltip("Damage multiplier applied when a critical hit occurs.")]
     [Min(1f)] public float critMultiplier = 2f;
 
     [Header("Upgrades")]
+    [Tooltip("Upgrade offered after this weapon has been obtained.")]
     public WeaponUpgrades nextUpgrade;
 
     [Header("SFX")]
+    [Tooltip("Audio clip played whenever the knife attacks.")]
     [SerializeField] private AudioClip shootClip;
+    [Tooltip("Audio clip played when the knife hits at least one target.")]
     [SerializeField] private AudioClip stabClip;
+    [Tooltip("Visual effect spawned at each hit target, or near the weapon when the attack misses.")]
     [SerializeField] private GameObject slashEffect;
     [Tooltip("Extra SFX GameObject spawned directly on top of the Knife.")]
     [SerializeField] private GameObject selfSfxObject;
@@ -66,7 +82,9 @@ public class Knife : MonoBehaviour
     [Header("UI")]
     [Tooltip("Prefab root GameObject that contains a TextMeshProUGUI somewhere in its children.")]
     [SerializeField] public GameObject statsTextPrefab;
+    [Tooltip("Transform under which the weapon stats UI is instantiated.")]
     [SerializeField] private Transform uiParent;
+    [Tooltip("Optional custom text appended to the generated weapon stats.")]
     [TextArea][SerializeField] public string extraTextField;
     [Tooltip("Sprite to show above the stats text.")]
     [SerializeField] public Sprite weaponSprite;
@@ -167,6 +185,8 @@ public class Knife : MonoBehaviour
 
             sb.AppendLine($"Lifesteal: <color={numColor}>{(lifestealPercent * 100f):F0}</color>%");
             sb.AppendLine($"Crit: <color={numColor}>{(critChance * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
+            if (knockbackForce > 0f)
+                sb.AppendLine($"Knockback: <color={numColor}>{knockbackForce:F1}</color>");
             sb.AppendLine($"Max Targets: <color={numColor}>{maxTargetsPerTick}</color>");
 
             if (applyStatusEffectOnHit)
@@ -216,7 +236,7 @@ public class Knife : MonoBehaviour
         bool anyHit = false;
         int targetsHit = 0;
         int targetCap = (maxTargetsPerTick > 0) ? maxTargetsPerTick : int.MaxValue;
-        HashSet<int> processed = new HashSet<int>();
+        HashSet<Collider2D> processed = new HashSet<Collider2D>();
 
         for (int oi = 0; oi < origins.Length; oi++)
         {
@@ -239,7 +259,7 @@ public class Knife : MonoBehaviour
                 var col = selected[hi];
                 if (col == null) continue;
 
-                processed.Add(col.GetInstanceID());
+                processed.Add(col);
 
                 if (slashEffect != null)
                     Instantiate(slashEffect, col.transform.position, Quaternion.identity);
@@ -261,6 +281,18 @@ public class Knife : MonoBehaviour
                     int dealt = Mathf.RoundToInt(damage * mult);
 
                     health.TakeDamage(dealt, damageType);
+
+                    // knockback (away from the hit origin)
+                    if (knockbackForce > 0f)
+                    {
+                        EnemyChaser chaser = col.GetComponent<EnemyChaser>();
+                        if (chaser != null)
+                        {
+                            Vector2 dir = (Vector2)col.transform.position - (Vector2)origin.position;
+                            dir = dir.sqrMagnitude > 1e-6f ? dir.normalized : Random.insideUnitCircle.normalized;
+                            chaser.ApplyKnockback(dir * knockbackForce);
+                        }
+                    }
 
                     // lifesteal
                     if (lifestealPercent > 0f && parentHealth != null && parentHealth.IsAlive)
@@ -378,7 +410,7 @@ public class Knife : MonoBehaviour
     }
 
     // Orders and selects targets from hits based on the chosen mode.
-    private List<Collider2D> OrderTargets(Collider2D[] hits, Transform origin, TargetingMode mode, HashSet<int> alreadyChosen, int takeCount)
+    private List<Collider2D> OrderTargets(Collider2D[] hits, Transform origin, TargetingMode mode, HashSet<Collider2D> alreadyChosen, int takeCount)
     {
         List<(Collider2D col, SimpleHealth hp, float dist)> candidates = new List<(Collider2D, SimpleHealth, float)>();
         Vector3 o = origin != null ? origin.position : transform.position;
@@ -387,7 +419,7 @@ public class Knife : MonoBehaviour
         {
             var c = hits[i];
             if (c == null || c.gameObject == gameObject) continue;
-            if (alreadyChosen != null && alreadyChosen.Contains(c.GetInstanceID())) continue;
+            if (alreadyChosen != null && alreadyChosen.Contains(c)) continue;
 
             SimpleHealth h = c.GetComponent<SimpleHealth>();
             if (h == null || !h.IsAlive || h.IsInvulnerable) continue;

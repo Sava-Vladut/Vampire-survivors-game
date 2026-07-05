@@ -21,6 +21,10 @@ public class EnemyChaser : MonoBehaviour
     [Tooltip("Dead zone half-width around stoppingDistance where velocity is set to 0 to avoid flip-flopping between chase and flee (only used if flee enabled).")]
     [SerializeField] private float fleeBuffer = 0.25f;
 
+    [Header("Knockback")]
+    [Tooltip("How fast knockback velocity fades, in units per second squared. Higher = snappier recovery.")]
+    [SerializeField] private float knockbackDecay = 15f;
+
     [Header("Reach Event")]
     [Tooltip("If true, allows the reach event to fire again after the target moves away far enough.")]
     [SerializeField] private bool repeatEvent = false;
@@ -32,6 +36,7 @@ public class EnemyChaser : MonoBehaviour
     private StatusEffectSystem cachedStatusEffects;
     private SimpleHealth cachedHealth;
     private bool hasReached;
+    private Vector2 knockbackVelocity;
 
     private void Awake()
     {
@@ -63,6 +68,12 @@ public class EnemyChaser : MonoBehaviour
             explosionComp.baseDamage = maxHp / 3;
             explosionComp.DoExplosion();
         }
+    }
+
+    // Adds an instantaneous push (units/sec) that decays over time via knockbackDecay.
+    public void ApplyKnockback(Vector2 impulse)
+    {
+        knockbackVelocity += impulse;
     }
 
     private void FixedUpdate()
@@ -119,9 +130,10 @@ public class EnemyChaser : MonoBehaviour
         // Movement multiplier from status effects (cached component)
         float mult = GetMoveMultiplier(cachedStatusEffects); // 0 if Stun/Frozen, 2 if Speed, else 1
 
-        // Apply velocity
+        // Apply velocity (knockback is blended in on top of chase movement)
         float speed = moveSpeed * mult;
-        rb.linearVelocity = needsMove ? (desiredDir * speed) : Vector2.zero;
+        rb.linearVelocity = (needsMove ? (desiredDir * speed) : Vector2.zero) + knockbackVelocity;
+        knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDecay * Time.fixedDeltaTime);
 
         ResetReachedIfFar(distSqr);
     }

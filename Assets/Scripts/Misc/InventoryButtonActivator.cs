@@ -147,8 +147,7 @@ public class InventoryButtonActivator : MonoBehaviour
 
         // Newer Unity API (faster, no alloc)
 #if UNITY_2023_1_OR_NEWER
-        inventory = Object.FindFirstObjectByType<SimpleInventory>(FindObjectsInactive.Exclude);
-        if (!inventory) inventory = Object.FindAnyObjectByType<SimpleInventory>(FindObjectsInactive.Exclude);
+        inventory = Object.FindAnyObjectByType<SimpleInventory>(FindObjectsInactive.Exclude);
 #else
         // Fallback for older versions
         inventory = FindObjectOfType<SimpleInventory>();

@@ -96,28 +96,17 @@ public class PowerUpSelectionUI : MonoBehaviour
         }
 
         // Keep lists in sync (chooser owns the logic)
-        powerUpChooser.SyncActiveToSelected(); // NEW
+        powerUpChooser.SyncActiveToSelected();
 
         // Build eligible candidates strictly by caps/type rules
+        // (first selection forces weapons only)
         List<int> candidates = new List<int>();
-        if (isFirstSelection)
+        for (int i = 0; i < powerUpChooser.powerUps.Count; i++)
         {
-            // First selection: force weapons only
-            for (int i = 0; i < powerUpChooser.powerUps.Count; i++)
-            {
-                if (powerUpChooser.CanSelectByIndex(i) && powerUpChooser.powerUps[i].IsWeapon)
-                    candidates.Add(i);
-            }
+            if (!powerUpChooser.CanSelectByIndex(i)) continue;
+            if (isFirstSelection && !powerUpChooser.powerUps[i].IsWeapon) continue;
+            candidates.Add(i);
         }
-        else
-        {
-            for (int i = 0; i < powerUpChooser.powerUps.Count; i++)
-            {
-                if (powerUpChooser.CanSelectByIndex(i))
-                    candidates.Add(i);
-            }
-        }
-
 
         if (candidates.Count == 0)
         {
@@ -206,18 +195,22 @@ public class PowerUpSelectionUI : MonoBehaviour
             }
         }
 
-        // Show skip button
+        SetExtraButtonsVisible(true);
+    }
+
+    /// <summary>Shows/hides the skip and reroll buttons together.</summary>
+    private void SetExtraButtonsVisible(bool visible)
+    {
         if (skipButton != null)
         {
             foreach (var btn in skipButton)
             {
-                if (btn != null) btn.gameObject.SetActive(true);
+                if (btn != null) btn.gameObject.SetActive(visible);
             }
         }
 
-        // Show reroll button
         if (rerollButton != null)
-            rerollButton.gameObject.SetActive(true);
+            rerollButton.gameObject.SetActive(visible);
     }
 
     private void SelectPowerUp(int buttonSlot)
@@ -252,45 +245,48 @@ public class PowerUpSelectionUI : MonoBehaviour
 
         shownIndices = null;
 
-        if (skipButton != null)
-        {
-            foreach (var btn in skipButton)
-            {
-                if (btn != null) btn.gameObject.SetActive(false);
-            }
-        }
-
-        if (rerollButton != null)
-            rerollButton.gameObject.SetActive(false);
+        SetExtraButtonsVisible(false);
     }
 
+    /// <summary>
+    /// Weighted sampling without replacement: picks up to 'count' unique
+    /// power-up indices from 'source', weighted by each power-up's weight.
+    /// </summary>
     private int[] PickRandomUnique(List<int> source, int count)
     {
         var result = new List<int>(count);
         var available = new List<int>(source);
 
+        // Cache weights once; keep the two lists index-aligned as we remove picks
+        var weights = new List<float>(available.Count);
+        float totalWeight = 0f;
+        foreach (var idx in available)
+        {
+            float w = Mathf.Max(0f, powerUpChooser.powerUps[idx].weight);
+            weights.Add(w);
+            totalWeight += w;
+        }
+
         for (int picks = 0; picks < count && available.Count > 0; picks++)
         {
-            float totalWeight = 0f;
-            foreach (var idx in available)
-                totalWeight += Mathf.Max(0f, powerUpChooser.powerUps[idx].weight);
-
             float roll = Random.value * totalWeight;
             float cumulative = 0f;
-            int chosenIndex = available[0];
+            int chosen = 0;
 
-            foreach (var idx in available)
+            for (int i = 0; i < available.Count; i++)
             {
-                cumulative += Mathf.Max(0f, powerUpChooser.powerUps[idx].weight);
+                cumulative += weights[i];
                 if (roll <= cumulative)
                 {
-                    chosenIndex = idx;
+                    chosen = i;
                     break;
                 }
             }
 
-            result.Add(chosenIndex);
-            available.Remove(chosenIndex);
+            result.Add(available[chosen]);
+            totalWeight -= weights[chosen];
+            available.RemoveAt(chosen);
+            weights.RemoveAt(chosen);
         }
 
         return result.ToArray();
