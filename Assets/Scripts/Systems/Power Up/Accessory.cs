@@ -18,10 +18,6 @@ public class Accessory : MonoBehaviour
     [Header("Event to trigger on Awake")]
     public UnityEvent onAwake;
 
-    [Header("Upgrades")]
-    [HideInInspector] public AccessoriesUpgrades nextUpgrade;
-    private PowerUpChooser powerUpChooser;
-
     // --- UI (mirrors Knife) ---
     [Header("UI")]
     [Tooltip("Prefab root GameObject that contains a TextMeshProUGUI somewhere in its children.")]
@@ -34,14 +30,6 @@ public class Accessory : MonoBehaviour
 
     private void Awake()
     {
-        // Queue accessory upgrade into PowerUpChooser
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
-        if (nextUpgrade == null)
-            nextUpgrade = GetComponentInChildren<AccessoriesUpgrades>(true);
-
-        if (nextUpgrade != null && powerUpChooser != null)
-            powerUpChooser.powerUps.Add(nextUpgrade.Upgrade);
-
         // Instantiate UI like Knife
         if (statsTextPrefab != null && uiParent != null)
         {
@@ -125,7 +113,7 @@ public class Accessory : MonoBehaviour
             if (u != null && u.enabled && u.gameObject.activeInHierarchy)
                 enabledUpgrades++;
         }
-        sb.AppendLine($"Upgrades: <color=#8888FF>{enabledUpgrades}</color>/<color=#8888FF>{allUpgrades.Length}</color>");
+        sb.AppendLine($"Upgrades: <color=#8888FF>{enabledUpgrades}</color>/<color=#8888FF>{AccessoriesUpgrades.MaxUpgrades}</color>");
 
         if (!string.IsNullOrWhiteSpace(extraTextField))
             sb.AppendLine(extraTextField);

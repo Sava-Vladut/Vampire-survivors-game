@@ -17,10 +17,12 @@ public class PowerUpSelectionUI : MonoBehaviour
     [SerializeField] private Button[] skipButton;
 
     [Header("Reroll Button")]
-    [SerializeField] private Button rerollButton; // new button
+    [SerializeField] private Button rerollButton;
 
     [Header("References")]
     [SerializeField] private PowerUpChooser powerUpChooser;
+    [Tooltip("Rolls fresh random upgrade offers each time the selection opens. Auto-found if left empty.")]
+    [SerializeField] private RandomUpgradeGenerator upgradeGenerator;
     [SerializeField] private Volume slowMoVolume;
 
     [Header("Audio")]
@@ -43,6 +45,14 @@ public class PowerUpSelectionUI : MonoBehaviour
     private void Awake()
     {
         if (selectionPanel != null) selectionPanel.SetActive(false);
+
+        if (upgradeGenerator == null && powerUpChooser != null)
+            upgradeGenerator = powerUpChooser.GetComponent<RandomUpgradeGenerator>();
+
+        // Existing scenes/prefabs may predate RandomUpgradeGenerator. Keep the
+        // selection system functional without requiring every scene to be rewired.
+        if (upgradeGenerator == null && powerUpChooser != null)
+            upgradeGenerator = powerUpChooser.gameObject.AddComponent<RandomUpgradeGenerator>();
 
         // Wire up selection buttons safely
         if (selectButtons != null)
@@ -70,7 +80,7 @@ public class PowerUpSelectionUI : MonoBehaviour
         if (rerollButton != null)
         {
             rerollButton.onClick.RemoveAllListeners();
-            rerollButton.onClick.AddListener(() => ShowSelection()); // simply calls ShowSelection again
+            rerollButton.onClick.AddListener(ShowSelection);
             rerollButton.gameObject.SetActive(false); // hidden until selection is shown
         }
     }
@@ -83,9 +93,9 @@ public class PowerUpSelectionUI : MonoBehaviour
 
     public void ShowSelection()
     {
-        if (powerUpChooser == null || powerUpChooser.powerUps == null || powerUpChooser.powerUps.Count == 0)
+        if (powerUpChooser == null || powerUpChooser.powerUps == null)
         {
-            Debug.LogWarning("[PowerUpSelectionUI] No power-ups available!");
+            Debug.LogWarning("[PowerUpSelectionUI] No PowerUpChooser assigned!");
             return;
         }
 
@@ -97,6 +107,17 @@ public class PowerUpSelectionUI : MonoBehaviour
 
         // Keep lists in sync (chooser owns the logic)
         powerUpChooser.SyncActiveToSelected();
+
+        // Roll fresh random upgrade offers for owned weapons/accessories
+        // (also discards offers from a previous open/reroll)
+        if (upgradeGenerator != null)
+            upgradeGenerator.RefreshOffers();
+
+        if (powerUpChooser.powerUps.Count == 0)
+        {
+            Debug.LogWarning("[PowerUpSelectionUI] No power-ups available!");
+            return;
+        }
 
         // Build eligible candidates strictly by caps/type rules
         // (first selection forces weapons only)
@@ -144,14 +165,13 @@ public class PowerUpSelectionUI : MonoBehaviour
             if (nameTexts != null && i < nameTexts.Length && nameTexts[i] != null)
                 nameTexts[i].text = has ? powerUpChooser.powerUps[shownIndices[i]].powerUpName : string.Empty;
 
-            // Description (with bold [weight] prefix)
+            // Description
             if (descriptionTexts != null && i < descriptionTexts.Length && descriptionTexts[i] != null)
             {
                 if (has)
                 {
                     var pu = powerUpChooser.powerUps[shownIndices[i]];
-                    string weightStr = pu.weight.ToString("0.##");
-                    descriptionTexts[i].text = $"<b>[<sprite name=\"chest\">{weightStr}] </b>";
+                    descriptionTexts[i].text = string.Empty;
 
                     if (pu.IsWeapon)
                         descriptionTexts[i].text += "<b>[WEAPON] </b>";
@@ -242,6 +262,10 @@ public class PowerUpSelectionUI : MonoBehaviour
         PlaySFX(closeSFX);
         Time.timeScale = 1f;
         if (slowMoVolume) slowMoVolume.weight = 0f;
+
+        // Discard whatever offers were not picked
+        if (upgradeGenerator != null)
+            upgradeGenerator.ClearOffers();
 
         shownIndices = null;
 

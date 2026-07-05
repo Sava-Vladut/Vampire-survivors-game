@@ -986,6 +986,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 649933111}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: -7772435429642446462, guid: 2e3079208581f0947a2cf32672dfcad8, type: 3}
     weight: 25
   - powerUpName: Demonic aura
@@ -994,6 +995,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 639213108}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: 8231555752496444948, guid: ba56297cc1c52124e973953e690e4e62, type: 3}
     weight: 25
   - powerUpName: 'Longshot Crossbow '
@@ -1002,6 +1004,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 1067259438}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: 5583272366953621293, guid: 9c929be9fa68d654e999a40812345349, type: 3}
     weight: 40
   - powerUpName: Blowgun
@@ -1010,6 +1013,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 36749035}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: -7760187274092295470, guid: c65873ba4404283489c9c87a682a2ec3, type: 3}
     weight: 25
   - powerUpName: 'Armor '
@@ -1018,6 +1022,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 1148692611}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
     weight: 70
   - powerUpName: Arcane Splitter Bandolier
@@ -1027,6 +1032,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 1463767441}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: -8639265281806335974, guid: a767dfe450289bc449574b956acd63cf, type: 3}
     weight: 10
   - powerUpName: 'Boots '
@@ -1034,6 +1040,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 2129366286}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: -4499610800817194292, guid: 56f49ca85e719464aad70d75aae56889, type: 3}
     weight: 30
   - powerUpName: Phantom Aegis (invisible mod)
@@ -1041,6 +1048,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 1096646206}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: -5815878979569319132, guid: 232d1ff41e000fb4e9190c4c98ed8d3e, type: 3}
     weight: 40
   - powerUpName: Life Ring
@@ -1049,6 +1057,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 1916213437}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 10
   - powerUpName: Eye of devastion
@@ -1058,6 +1067,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 106603279}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: -4123865958783411403, guid: 0a366753cfc322c4fa3a5d298da696f0, type: 3}
     weight: 50
   - powerUpName: Knife
@@ -1066,6 +1076,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 708600856}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: 761100573506273824, guid: 10f26e97524846a49b9bd2a662980489, type: 3}
     weight: 100
   - powerUpName: Axe
@@ -1075,6 +1086,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 1664849901}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: 6674386295937086461, guid: 314224ddc60daef45ad898b3faea6ff9, type: 3}
     weight: 30
   - powerUpName: Sword
@@ -1083,6 +1095,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 559894131}
     IsAccessory: 0
     IsWeapon: 1
+    IsUpgrade: 0
     powerUpIcon: {fileID: 5734951662672692488, guid: 8540d4521fd661f499c22750fb5a8984, type: 3}
     weight: 30
   - powerUpName: Ice Ring
@@ -1092,6 +1105,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 631350345}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
     weight: 30
   - powerUpName: Lightning Ring
@@ -1100,6 +1114,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 2112833038}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
     weight: 30
   - powerUpName: Fire Ring
@@ -1109,6 +1124,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 1385301260}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: -5804952844029615345, guid: 840f4d57e89cf754083a2065097a1196, type: 3}
     weight: 30
   - powerUpName: Poison Ring
@@ -1118,6 +1134,7 @@ MonoBehaviour:
     powerUpObject: {fileID: 427896885}
     IsAccessory: 1
     IsWeapon: 0
+    IsUpgrade: 0
     powerUpIcon: {fileID: -6028249209390854301, guid: 1c97851b30daf4e4f994364accc37593, type: 3}
     weight: 30
   selectedPowerUps: []
@@ -1254,6 +1271,7 @@ MonoBehaviour:
   - {fileID: 1217392576}
   rerollButton: {fileID: 309780851}
   powerUpChooser: {fileID: 730127411}
+  upgradeGenerator: {fileID: 0}
   slowMoVolume: {fileID: 1323910575}
   audioSource: {fileID: 2084376099}
   openSFX: {fileID: 8300000, guid: d41702a733bd46543af0617d3fbb9f22, type: 3}
@@ -49606,189 +49624,6 @@ MonoBehaviour:
   AmplitudeGain: 0
   FrequencyGain: 0
   m_NoiseOffsets: {x: 0, y: 0, z: 0}
---- !u!1 &980626908 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1227099894277660166, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-  m_PrefabInstance: {fileID: 4663750748832903826}
-  m_PrefabAsset: {fileID: 0}
---- !u!43 &1043137398
-Mesh:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 12
-  m_SubMeshes:
-  - serializedVersion: 2
-    firstByte: 0
-    indexCount: 0
-    topology: 0
-    baseVertex: 0
-    firstVertex: 0
-    vertexCount: 0
-    localAABB:
-      m_Center: {x: 0, y: 0, z: 0}
-      m_Extent: {x: 0, y: 0, z: 0}
-  m_Shapes:
-    vertices: []
-    shapes: []
-    channels: []
-    fullWeights: []
-  m_BindPose: []
-  m_BoneNameHashes: 
-  m_RootBoneNameHash: 0
-  m_BonesAABB: []
-  m_VariableBoneCountWeights:
-    m_Data: 
-  m_MeshCompression: 0
-  m_IsReadable: 1
-  m_KeepVertices: 1
-  m_KeepIndices: 1
-  m_IndexFormat: 0
-  m_IndexBuffer: 
-  m_VertexData:
-    serializedVersion: 3
-    m_VertexCount: 0
-    m_Channels:
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    - stream: 0
-      offset: 0
-      format: 0
-      dimension: 0
-    m_DataSize: 0
-    _typelessdata: 
-  m_CompressedMesh:
-    m_Vertices:
-      m_NumItems: 0
-      m_Range: 0
-      m_Start: 0
-      m_Data: 
-      m_BitSize: 0
-    m_UV:
-      m_NumItems: 0
-      m_Range: 0
-      m_Start: 0
-      m_Data: 
-      m_BitSize: 0
-    m_Normals:
-      m_NumItems: 0
-      m_Range: 0
-      m_Start: 0
-      m_Data: 
-      m_BitSize: 0
-    m_Tangents:
-      m_NumItems: 0
-      m_Range: 0
-      m_Start: 0
-      m_Data: 
-      m_BitSize: 0
-    m_Weights:
-      m_NumItems: 0
-      m_Data: 
-      m_BitSize: 0
-    m_NormalSigns:
-      m_NumItems: 0
-      m_Data: 
-      m_BitSize: 0
-    m_TangentSigns:
-      m_NumItems: 0
-      m_Data: 
-      m_BitSize: 0
-    m_FloatColors:
-      m_NumItems: 0
-      m_Range: 0
-      m_Start: 0
-      m_Data: 
-      m_BitSize: 0
-    m_BoneIndices:
-      m_NumItems: 0
-      m_Data: 
-      m_BitSize: 0
-    m_Triangles:
-      m_NumItems: 0
-      m_Data: 
-      m_BitSize: 0
-    m_UVInfo: 0
-  m_LocalAABB:
-    m_Center: {x: 0, y: 0, z: 0}
-    m_Extent: {x: 0, y: 0, z: 0}
-  m_MeshUsageFlags: 0
-  m_CookingOptions: 30
-  m_BakedConvexCollisionMesh: 
-  m_BakedTriangleCollisionMesh: 
-  'm_MeshMetrics[0]': 1
-  'm_MeshMetrics[1]': 1
-  m_MeshOptimizationFlags: 1
-  m_StreamData:
-    serializedVersion: 2
-    offset: 0
-    size: 0
-    path: 
-  m_MeshLodInfo:
-    serializedVersion: 2
-    m_LodSelectionCurve:
-      serializedVersion: 1
-      m_LodSlope: 0
-      m_LodBias: 0
-    m_NumLevels: 1
-    m_SubMeshes:
-    - serializedVersion: 2
-      m_Levels:
-      - serializedVersion: 1
-        m_IndexStart: 0
-        m_IndexCount: 0
 --- !u!114 &1054814950 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 591935273281868447, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
@@ -59225,6 +59060,184 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 763878338640954299, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
   m_PrefabInstance: {fileID: 4663750748832903826}
   m_PrefabAsset: {fileID: 0}
+--- !u!43 &2003719574
+Mesh:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 12
+  m_SubMeshes:
+  - serializedVersion: 2
+    firstByte: 0
+    indexCount: 0
+    topology: 0
+    baseVertex: 0
+    firstVertex: 0
+    vertexCount: 0
+    localAABB:
+      m_Center: {x: 0, y: 0, z: 0}
+      m_Extent: {x: 0, y: 0, z: 0}
+  m_Shapes:
+    vertices: []
+    shapes: []
+    channels: []
+    fullWeights: []
+  m_BindPose: []
+  m_BoneNameHashes: 
+  m_RootBoneNameHash: 0
+  m_BonesAABB: []
+  m_VariableBoneCountWeights:
+    m_Data: 
+  m_MeshCompression: 0
+  m_IsReadable: 1
+  m_KeepVertices: 1
+  m_KeepIndices: 1
+  m_IndexFormat: 0
+  m_IndexBuffer: 
+  m_VertexData:
+    serializedVersion: 3
+    m_VertexCount: 0
+    m_Channels:
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    - stream: 0
+      offset: 0
+      format: 0
+      dimension: 0
+    m_DataSize: 0
+    _typelessdata: 
+  m_CompressedMesh:
+    m_Vertices:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UV:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Normals:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Tangents:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Weights:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_NormalSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_TangentSigns:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_FloatColors:
+      m_NumItems: 0
+      m_Range: 0
+      m_Start: 0
+      m_Data: 
+      m_BitSize: 0
+    m_BoneIndices:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_Triangles:
+      m_NumItems: 0
+      m_Data: 
+      m_BitSize: 0
+    m_UVInfo: 0
+  m_LocalAABB:
+    m_Center: {x: 0, y: 0, z: 0}
+    m_Extent: {x: 0, y: 0, z: 0}
+  m_MeshUsageFlags: 0
+  m_CookingOptions: 30
+  m_BakedConvexCollisionMesh: 
+  m_BakedTriangleCollisionMesh: 
+  'm_MeshMetrics[0]': 1
+  'm_MeshMetrics[1]': 1
+  m_MeshOptimizationFlags: 1
+  m_StreamData:
+    serializedVersion: 2
+    offset: 0
+    size: 0
+    path: 
+  m_MeshLodInfo:
+    serializedVersion: 2
+    m_LodSelectionCurve:
+      serializedVersion: 1
+      m_LodSlope: 0
+      m_LodBias: 0
+    m_NumLevels: 1
+    m_SubMeshes:
+    - serializedVersion: 2
+      m_Levels:
+      - serializedVersion: 1
+        m_IndexStart: 0
+        m_IndexCount: 0
 --- !u!82 &2084376099 stripped
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 4683568674584910072, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
@@ -59284,10 +59297,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 30405735645601086, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 1732537697491249851, guid: f0a7b6470c8628240acf4c53fc8b7f45, type: 3}
     - target: {fileID: 1227099894277660166, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
       propertyPath: m_Name
       value: Player
@@ -59331,10 +59340,6 @@ PrefabInstance:
     - target: {fileID: 3201638118651079745, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3570729368270483169, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: knockbackForce
-      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 3591487772768646200, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
       propertyPath: m_AnchorMax.y
@@ -59432,54 +59437,10 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6355551625964360536, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: onAwake.m_PersistentCalls.m_Calls.Array.size
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 6355551625964360536, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: onAwake.m_PersistentCalls.m_Calls.Array.data[3].m_Mode
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6355551625964360536, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: onAwake.m_PersistentCalls.m_Calls.Array.data[3].m_Target
+    - target: {fileID: 7141420854634069839, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
+      propertyPath: m_ShadowMesh.m_Mesh
       value: 
-      objectReference: {fileID: 980626908}
-    - target: {fileID: 6355551625964360536, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: onAwake.m_PersistentCalls.m_Calls.Array.data[3].m_CallState
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6355551625964360536, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: onAwake.m_PersistentCalls.m_Calls.Array.data[3].m_TargetAssemblyTypeName
-      value: SimpleHealth, Grim
-      objectReference: {fileID: 0}
-    - target: {fileID: 6585297972381571741, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: damage
-      value: 17
-      objectReference: {fileID: 0}
-    - target: {fileID: 6585297972381571741, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: radius
-      value: 0.7
-      objectReference: {fileID: 0}
-    - target: {fileID: 6585297972381571741, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: splashRadius
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6873270333062620889, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: interval
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6873270333062620889, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: burstCount
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 6873270333062620889, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: burstSpacing
-      value: 0.15
-      objectReference: {fileID: 0}
-    - target: {fileID: 6873689500673814246, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: radius
-      value: 4
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 2003719574}
     - target: {fileID: 7250410898846024135, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -59503,18 +59464,6 @@ PrefabInstance:
     - target: {fileID: 7250410898846024135, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7596130138076833886, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7754715335682866526, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: m_SpriteTilingProperty.oldSize.x
-      value: 0.78125
-      objectReference: {fileID: 0}
-    - target: {fileID: 7754715335682866526, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: m_SpriteTilingProperty.oldSize.y
-      value: 0.96875
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -38,7 +38,7 @@ public class PowerUpRandomMerger : MonoBehaviour
         List<PowerUp> pool = new List<PowerUp>();
         foreach (var pu in powerUpChooser.selectedPowerUps)
         {
-            if (pu == null) continue;
+            if (pu == null || pu.IsUpgrade) continue;
             if (isAccessory && pu.IsAccessory) pool.Add(pu);
             else if (!isAccessory && pu.IsWeapon) pool.Add(pu);
         }

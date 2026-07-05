@@ -51,6 +51,7 @@ public class Snappy2DController : MonoBehaviour
     public float MoveSpeed => moveSpeed;
     public float DashSpeed => dashSpeed;
     public float DashDuration => dashDuration;
+    public float DashDistance => dashIsBlink ? blinkDistance : dashSpeed * dashDuration;
     public float DashCooldown => dashCooldown;
 
     private void Awake()
@@ -155,6 +156,18 @@ public class Snappy2DController : MonoBehaviour
     {
         if (amount == 0f) return;
         dashSpeed = Mathf.Max(0f, dashSpeed + amount);
+    }
+
+    public void IncreaseDashDistance(float amount)
+    {
+        if (amount == 0f) return;
+
+        // Preserve the current dash speed and extend how long the normal dash
+        // lasts. Also upgrade blink distance so switching modes keeps the bonus.
+        if (dashSpeed > 0f)
+            dashDuration = Mathf.Max(0f, dashDuration + amount / dashSpeed);
+
+        blinkDistance = Mathf.Max(0f, blinkDistance + amount);
     }
 
     public void IncreaseDashCooldown(float amount)

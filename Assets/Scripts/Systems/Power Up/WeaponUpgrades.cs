@@ -1,10 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
 //
-// Handles a single weapon upgrade entry and (optionally) wires the *next* upgrade
-// to the next sibling WeaponUpgrades component under the same parent.
-// Also pushes that next upgrade's PowerUp into PowerUpChooser (expects a List<PowerUp>).
+// Handles a single weapon upgrade entry. Applies its effect to the parent weapon
+// when its GameObject is activated (via PowerUpChooser.TryChoosePowerUp).
+// Offers are rolled at runtime by RandomUpgradeGenerator through RandomizeAsOffer.
 //
 public class WeaponUpgrades : MonoBehaviour
 {
@@ -62,27 +61,19 @@ public class WeaponUpgrades : MonoBehaviour
         BurstCountFlat,
         BurstCountPercent,
         BurstSpacingFlat,
-        BurstSpacingPercent,
-
-        Custom
+        BurstSpacingPercent
     }
 
-    private PowerUpChooser powerUpChooser;
+    /// <summary>Maximum number of upgrades a single weapon can receive.</summary>
+    public const int MaxUpgrades = 20;
 
     [Header("Power-Up")]
     public PowerUp Upgrade;
-
-    [Tooltip("Autofilled: next sibling with WeaponUpgrades in the same parent.")]
-    public WeaponUpgrades nextUpgrade;
 
     // Icon auto-inferred from parent weapon (Knife/SimpleShooter).
 
     [Header("Upgrade Settings")]
     public UpgradeType upgradeType = UpgradeType.None;
-
-    [Header("Custom Hooks")]
-    [Tooltip("Invoked in Awake if UpgradeType.Custom is selected.")]
-    public UnityEvent onCustomAwake;
 
     [Tooltip("Acts as integer for flat amounts (rounded), or as a percent when the upgrade type is % based (e.g., 0.25 = 25%).")]
     public float value = 0f;
@@ -91,11 +82,6 @@ public class WeaponUpgrades : MonoBehaviour
 
     private void Awake()
     {
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
-
-        AutoAssignNextUpgrade();      // make sure nextUpgrade is always the next sibling with WeaponUpgrades
-        EnqueueNextUpgradeOnce();     // push next Upgrade asset into chooser (expects List<PowerUp>)
-
         TryAssignIconFromParent();
 
         // Normalize type if not allowed for the current parent
@@ -104,77 +90,16 @@ public class WeaponUpgrades : MonoBehaviour
 
         SetUpgradeInfo();
 
-        if (upgradeType == UpgradeType.Custom)
-            onCustomAwake?.Invoke();
-
         ApplyUpgrade();
-    }
-
-    private void OnEnable()
-    {
-        // Editor recompile / domain reload safety
-        AutoAssignNextUpgrade();
-        EnqueueNextUpgradeOnce();
     }
 
     private void OnValidate()
     {
-        // Keep next wired live in the editor
-        AutoAssignNextUpgrade();
-
         if (!IsTypeAllowedForParent(upgradeType))
             upgradeType = UpgradeType.None;
 
         TryAssignIconFromParent();
         SetUpgradeInfo();
-    }
-
-    private void OnTransformParentChanged() => AutoAssignNextUpgrade();
-
-    private void OnTransformChildrenChanged() => AutoAssignNextUpgrade();
-
-    // ---------------------- Auto-wire NEXT ----------------------
-
-    /// <summary>
-    /// Automatically sets nextUpgrade to the next sibling under the same parent
-    /// that has a WeaponUpgrades component. If immediate next child doesn't have it,
-    /// scans forward until it finds one. Clears if none found.
-    /// </summary>
-    private void AutoAssignNextUpgrade()
-    {
-        var old = nextUpgrade;
-        nextUpgrade = null;
-
-        var parent = transform.parent;
-        if (parent == null) return;
-
-        for (int i = transform.GetSiblingIndex() + 1; i < parent.childCount; i++)
-        {
-            if (parent.GetChild(i).TryGetComponent(out WeaponUpgrades candidate))
-            {
-                nextUpgrade = candidate;
-                break;
-            }
-        }
-
-#if UNITY_EDITOR
-        if (old != nextUpgrade)
-            UnityEditor.EditorUtility.SetDirty(this);
-#endif
-    }
-
-    /// <summary>
-    /// Adds the nextUpgrade's PowerUp asset to the chooser list once.
-    /// Safely avoids duplicates and nulls.
-    /// </summary>
-    private void EnqueueNextUpgradeOnce()
-    {
-        if (powerUpChooser == null) return;
-        if (nextUpgrade == null || nextUpgrade.Upgrade == null) return;
-
-        var list = powerUpChooser.powerUps;
-        if (list != null && !list.Contains(nextUpgrade.Upgrade))
-            list.Add(nextUpgrade.Upgrade);
     }
 
     // ---------------------- Helpers ----------------------
@@ -188,11 +113,19 @@ public class WeaponUpgrades : MonoBehaviour
     private static bool IsKnifeType(UpgradeType t) => InRange(t, UpgradeType.KnifeDamageFlat, UpgradeType.KnifeStatusEffectIndex);
     private static bool IsShooterType(UpgradeType t) => InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterStatusEffectIndex);
     private static bool IsTickType(UpgradeType t) => InRange(t, UpgradeType.TickRateFlat, UpgradeType.BurstSpacingPercent);
+    private static bool IsStatusType(UpgradeType t) =>
+        InRange(t, UpgradeType.KnifeStatusApplyChanceFlat, UpgradeType.KnifeStatusEffectIndex) ||
+        InRange(t, UpgradeType.ShooterStatusApplyChanceFlat, UpgradeType.ShooterStatusEffectIndex);
+    private static bool IsEnableStatusType(UpgradeType t) =>
+        t == UpgradeType.KnifeEnableStatusEffect ||
+        t == UpgradeType.ShooterEnableStatusEffect;
+
+    public static bool IsGeneratedType(UpgradeType type) =>
+        type != UpgradeType.None && !IsEnableStatusType(type);
 
     private bool IsTypeAllowedForParent(UpgradeType type)
     {
-        // None/Custom always allowed
-        if (type == UpgradeType.None || type == UpgradeType.Custom) return true;
+        if (type == UpgradeType.None) return true;
         if (IsKnifeType(type)) return HasParent<Knife>();
         if (IsShooterType(type)) return HasParent<SimpleShooter>();
         if (IsTickType(type)) return HasParent<WeaponTick>();
@@ -212,7 +145,8 @@ public class WeaponUpgrades : MonoBehaviour
         Seconds2,   // "F2" + s
         Multiplier, // "F2" + x
         Degrees,    // "F1" + °
-        DamageType  // enum name, uncolored
+        DamageType, // enum name, uncolored
+        StatusType  // status enum name, uncolored
     }
 
     private readonly struct UpgradeText
@@ -242,56 +176,56 @@ public class WeaponUpgrades : MonoBehaviour
         }
 
         // Shared Knife + Shooter
-        Add("Damage Up +{0}", "Increases weapon damage by {0}.", ValueFormat.Int,
+        Add("Tempered Power +{0}", "Each hit deals {0} more damage.", ValueFormat.Int,
             UpgradeType.KnifeDamageFlat, UpgradeType.ShooterDamageFlat);
-        Add("Damage Up +{0}", "Increases weapon damage by {0}.", ValueFormat.Percent,
+        Add("Weapon Mastery +{0}", "All damage from this weapon is increased by {0}.", ValueFormat.Percent,
             UpgradeType.KnifeDamagePercent, UpgradeType.ShooterDamagePercent);
-        Add("Damage Type: {0}", "Changes this weapon's damage type to {0}.", ValueFormat.DamageType,
+        Add("{0} Infusion", "Attunes every hit from this weapon to {0} damage.", ValueFormat.DamageType,
             UpgradeType.KnifeDamageTypeIndex, UpgradeType.ShooterDamageTypeIndex);
-        Add("Critical Chance +{0}", "Raises chance to critically strike by {0}.", ValueFormat.Percent,
+        Add("Keen Edge +{0}", "Grants {0} additional critical-hit chance.", ValueFormat.Percent,
             UpgradeType.KnifeCritChanceFlat, UpgradeType.ShooterCritChanceFlat);
-        Add("Critical Damage +{0}", "Increases critical strike damage by {0}.", ValueFormat.Multiplier,
+        Add("Savage Criticals +{0}", "Critical hits gain {0} additional damage multiplier.", ValueFormat.Multiplier,
             UpgradeType.KnifeCritMultiplierFlat, UpgradeType.ShooterCritMultiplierFlat);
-        Add("Status Chance +{0}", "Increases chance to inflict effects by {0}.", ValueFormat.Percent,
+        Add("Affliction Chance +{0}", "Hits are {0} more likely to inflict their on-hit effect.", ValueFormat.Percent,
             UpgradeType.KnifeStatusApplyChanceFlat, UpgradeType.ShooterStatusApplyChanceFlat);
-        Add("Status Chance +{0}", "Further improves effect application by {0}.", ValueFormat.Percent,
+        Add("Potent Affliction +{0}", "Multiplies this weapon's on-hit effect chance by {0}.", ValueFormat.Percent,
             UpgradeType.KnifeStatusApplyChancePercent, UpgradeType.ShooterStatusApplyChancePercent);
-        Add("Status Duration +{0}", "Effects linger longer by {0}.", ValueFormat.Seconds1,
+        Add("Lingering Curse +{0}", "On-hit effects remain on enemies for {0} longer.", ValueFormat.Seconds1,
             UpgradeType.KnifeStatusDurationFlat, UpgradeType.ShooterStatusDurationFlat);
-        Add("Status Duration +{0}", "Effects linger longer by {0}.", ValueFormat.Percent,
+        Add("Enduring Affliction +{0}", "Increases this weapon's on-hit effect duration by {0}.", ValueFormat.Percent,
             UpgradeType.KnifeStatusDurationPercent, UpgradeType.ShooterStatusDurationPercent);
         Add("Enable Status On Hit", "Enables inflicting status effects on hit.", ValueFormat.None,
             UpgradeType.KnifeEnableStatusEffect, UpgradeType.ShooterEnableStatusEffect);
-        Add("Set Status Type", "Sets the status effect type (index {0}).", ValueFormat.Int,
+        Add("{0} Affliction", "This weapon's hits now inflict {0}.", ValueFormat.StatusType,
             UpgradeType.KnifeStatusEffectIndex, UpgradeType.ShooterStatusEffectIndex);
 
         // Knife only
-        Add("Range Up +{0}", "Increases attack reach by {0}.", ValueFormat.F2, UpgradeType.KnifeRadiusFlat);
-        Add("Range Up +{0}", "Increases attack reach by {0}.", ValueFormat.Percent, UpgradeType.KnifeRadiusPercent);
-        Add("Additional Targets +{0}", "Allows strikes to affect {0} additional target(s).", ValueFormat.Int, UpgradeType.KnifeMaxTargetsFlat);
-        Add("Lifesteal Up +{0}", "Increases lifesteal by {0}.", ValueFormat.Percent, UpgradeType.KnifeLifestealFlat);
-        Add("Lifesteal Up +{0}", "Further empowers lifesteal by {0}.", ValueFormat.Percent, UpgradeType.KnifeLifestealPercent);
-        Add("Splash Radius +{0}", "Widens splash reach by {0}.", ValueFormat.F2, UpgradeType.KnifeSplashRadiusFlat);
-        Add("Splash Radius +{0}", "Widens splash reach by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashRadiusPercent);
-        Add("Splash Potency +{0}", "Increases splash damage by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashDamagePercentFlat);
-        Add("Splash Potency +{0}", "Further empowers splash damage by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashDamagePercentPercent);
+        Add("Long Reach +{0}", "Strikes reach {0} farther from the weapon.", ValueFormat.F2, UpgradeType.KnifeRadiusFlat);
+        Add("Sweeping Reach +{0}", "Increases this weapon's attack radius by {0}.", ValueFormat.Percent, UpgradeType.KnifeRadiusPercent);
+        Add("Cleave +{0}", "Each strike can hit {0} additional enemies.", ValueFormat.Int, UpgradeType.KnifeMaxTargetsFlat);
+        Add("Bloodthirst +{0}", "Converts an additional {0} of damage dealt into healing.", ValueFormat.Percent, UpgradeType.KnifeLifestealFlat);
+        Add("Greater Bloodthirst +{0}", "Increases this weapon's current lifesteal by {0}.", ValueFormat.Percent, UpgradeType.KnifeLifestealPercent);
+        Add("Wider Impact +{0}", "Splash attacks reach {0} farther around the target.", ValueFormat.F2, UpgradeType.KnifeSplashRadiusFlat);
+        Add("Expanding Impact +{0}", "Increases splash radius by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashRadiusPercent);
+        Add("Aftershock +{0}", "Splash hits deal {0} more of the weapon's damage.", ValueFormat.Percent, UpgradeType.KnifeSplashDamagePercentFlat);
+        Add("Greater Aftershock +{0}", "Increases current splash damage by {0}.", ValueFormat.Percent, UpgradeType.KnifeSplashDamagePercentPercent);
 
         // Shooter only
-        Add("Projectile Count +{0}", "Fires {0} additional projectile(s).", ValueFormat.Int, UpgradeType.ShooterProjectileCount);
-        Add("Spread +{0}", "Narrows firing spread by {0}.", ValueFormat.Degrees, UpgradeType.ShooterSpreadAngleFlat);
-        Add("Spread +{0}", "Narrows firing spread by {0}.", ValueFormat.Percent, UpgradeType.ShooterSpreadAnglePercent);
-        Add("Projectile Speed +{0}", "Increases projectile speed by {0}.", ValueFormat.F1, UpgradeType.ShooterProjectileSpeedFlat);
-        Add("Projectile Speed +{0}", "Increases projectile speed by {0}.", ValueFormat.Percent, UpgradeType.ShooterProjectileSpeedPercent);
-        Add("Projectile Lifetime +{0}", "Extends projectile lifetime by {0}.", ValueFormat.Seconds1, UpgradeType.ShooterLifetimeFlat);
-        Add("Projectile Lifetime +{0}", "Extends projectile lifetime by {0}.", ValueFormat.Percent, UpgradeType.ShooterLifetimePercent);
+        Add("Multishot +{0}", "Fires {0} additional projectiles with every attack.", ValueFormat.Int, UpgradeType.ShooterProjectileCount);
+        Add("Steady Aim +{0}", "Reduces projectile spread by {0}, making shots more accurate.", ValueFormat.Degrees, UpgradeType.ShooterSpreadAngleFlat);
+        Add("Deadeye +{0}", "Reduces current projectile spread by {0}.", ValueFormat.Percent, UpgradeType.ShooterSpreadAnglePercent);
+        Add("Swift Projectiles +{0}", "Projectiles travel {0} faster.", ValueFormat.F1, UpgradeType.ShooterProjectileSpeedFlat);
+        Add("Arcane Velocity +{0}", "Increases projectile speed by {0}.", ValueFormat.Percent, UpgradeType.ShooterProjectileSpeedPercent);
+        Add("Extended Flight +{0}", "Projectiles remain active for {0} longer.", ValueFormat.Seconds1, UpgradeType.ShooterLifetimeFlat);
+        Add("Unfading Shot +{0}", "Increases projectile lifetime by {0}.", ValueFormat.Percent, UpgradeType.ShooterLifetimePercent);
 
         // Tick
-        Add("Attack Interval −{0}", "Reduces delay between attacks by {0}.", ValueFormat.Seconds2, UpgradeType.TickRateFlat);
-        Add("Attack Interval −{0}", "Reduces delay between attacks by {0}.", ValueFormat.Percent, UpgradeType.TickRatePercent);
-        Add("Burst Count +{0}", "Increases shots per burst by {0}.", ValueFormat.Int, UpgradeType.BurstCountFlat);
-        Add("Burst Count +{0}", "Increases shots per burst by {0}.", ValueFormat.Percent, UpgradeType.BurstCountPercent);
-        Add("Burst Delay −{0}", "Reduces delay between burst shots by {0}.", ValueFormat.Seconds2, UpgradeType.BurstSpacingFlat);
-        Add("Burst Delay −{0}", "Reduces delay between burst shots by {0}.", ValueFormat.Percent, UpgradeType.BurstSpacingPercent);
+        Add("Quickened Strikes -{0}", "Attacks trigger {0} sooner each cycle.", ValueFormat.Seconds2, UpgradeType.TickRateFlat);
+        Add("Battle Rhythm +{0}", "Reduces the delay between attacks by {0}.", ValueFormat.Percent, UpgradeType.TickRatePercent);
+        Add("Larger Volley +{0}", "Adds {0} attacks to every burst.", ValueFormat.Int, UpgradeType.BurstCountFlat);
+        Add("Relentless Volley +{0}", "Increases attacks per burst by {0}.", ValueFormat.Percent, UpgradeType.BurstCountPercent);
+        Add("Rapid Burst -{0}", "Each attack within a burst fires {0} sooner.", ValueFormat.Seconds2, UpgradeType.BurstSpacingFlat);
+        Add("Flurry +{0}", "Reduces the delay between burst attacks by {0}.", ValueFormat.Percent, UpgradeType.BurstSpacingPercent);
 
         return table;
     }
@@ -310,15 +244,15 @@ public class WeaponUpgrades : MonoBehaviour
         ValueFormat.Multiplier => C(value.ToString("F2")) + "x",
         ValueFormat.Degrees => C(value.ToString("F1")) + "°",
         ValueFormat.DamageType => ClampToDamageType(Mathf.RoundToInt(value)).ToString(),
+        ValueFormat.StatusType => ((StatusEffectSystem.StatusType)Mathf.Clamp(
+            Mathf.RoundToInt(value), 0,
+            System.Enum.GetValues(typeof(StatusEffectSystem.StatusType)).Length - 1)).ToString(),
         _ => string.Empty,
     };
 
     private void SetUpgradeInfo()
     {
         if (Upgrade == null) return;
-
-        // Custom leaves name/description alone
-        if (upgradeType == UpgradeType.Custom) return;
 
         if (upgradeTexts.TryGetValue(upgradeType, out var text))
         {
@@ -332,7 +266,7 @@ public class WeaponUpgrades : MonoBehaviour
             Upgrade.powerUpDescription = "This upgrade slot is empty.";
         }
 
-        // Append parent name unless Custom (handled above) or no parent
+        // Append the owning weapon name.
         if (transform.parent != null && !string.IsNullOrEmpty(Upgrade.powerUpName))
             Upgrade.powerUpName = $"{transform.parent.name} - {Upgrade.powerUpName}";
     }
@@ -356,8 +290,7 @@ public class WeaponUpgrades : MonoBehaviour
 
     public void ApplyUpgrade()
     {
-        // CUSTOM/None: intentionally do nothing
-        if (upgradeType == UpgradeType.Custom || upgradeType == UpgradeType.None)
+        if (upgradeType == UpgradeType.None)
             return;
 
         var parent = transform.parent;
@@ -530,123 +463,53 @@ public class WeaponUpgrades : MonoBehaviour
         return (SimpleHealth.DamageType)Mathf.Clamp(rawIndex, 0, 4);
     }
 
-#if UNITY_EDITOR
-    // ---------- Custom Inspector to Filter Enum + show read-only next ----------
-    [UnityEditor.CustomEditor(typeof(WeaponUpgrades))]
-    private class WeaponUpgradesEditor : UnityEditor.Editor
-    {
-        public override void OnInspectorGUI()
-        {
-            var wu = (WeaponUpgrades)target;
-            var so = serializedObject;
+    // ---------------------- Runtime generation ----------------------
 
-            so.Update();
-
-            // Draw PowerUp first
-            UnityEditor.EditorGUILayout.PropertyField(so.FindProperty("Upgrade"));
-
-            // Read-only nextUpgrade display with a refresh button
-            using (new UnityEditor.EditorGUI.DisabledScope(true))
-            {
-                UnityEditor.EditorGUILayout.ObjectField("Next Upgrade (auto)", wu.nextUpgrade, typeof(WeaponUpgrades), true);
-            }
-            if (UnityEngine.GUILayout.Button("Refresh Next"))
-            {
-                wu.AutoAssignNextUpgrade();
-                UnityEditor.EditorUtility.SetDirty(wu);
-            }
-
-            // Filter choices based on parent components
-            var allowed = wu.GetAllowedTypes(includeNoneAndCustom: true);
-
-            // Only show the event hook when the selected type is Custom
-            if (wu.upgradeType == UpgradeType.Custom)
-            {
-                UnityEditor.EditorGUILayout.Space();
-                UnityEditor.EditorGUILayout.LabelField("Custom Events", UnityEditor.EditorStyles.boldLabel);
-                UnityEditor.EditorGUILayout.PropertyField(so.FindProperty("onCustomAwake"));
-            }
-
-            if (allowed.Count == 0)
-            {
-                UnityEditor.EditorGUILayout.HelpBox("No valid upgrades for this parent. Add Knife, SimpleShooter, or WeaponTick to the parent.", UnityEditor.MessageType.Warning);
-            }
-            else
-            {
-                int currentIndex = Mathf.Max(0, allowed.IndexOf(wu.upgradeType));
-
-                string[] names = new string[allowed.Count];
-                for (int i = 0; i < allowed.Count; i++)
-                    names[i] = allowed[i].ToString();
-
-                int newIndex = UnityEditor.EditorGUILayout.Popup("Upgrade Type", currentIndex, names);
-                var newType = allowed[newIndex];
-                if (newType != wu.upgradeType)
-                {
-                    UnityEditor.Undo.RecordObject(wu, "Change Upgrade Type");
-                    wu.upgradeType = newType;
-                    wu.SetUpgradeInfo();
-                    UnityEditor.EditorUtility.SetDirty(wu);
-                }
-            }
-
-            UnityEditor.EditorGUILayout.PropertyField(so.FindProperty("value"));
-
-            // Warn if invalid (shouldn't happen thanks to filtering, but still safe)
-            if (!wu.IsTypeAllowedForParent(wu.upgradeType))
-            {
-                UnityEditor.EditorGUILayout.HelpBox("Selected UpgradeType is not valid for this parent. It will be treated as 'None'.", UnityEditor.MessageType.Warning);
-            }
-
-            so.ApplyModifiedProperties();
-
-            // Show live preview of title/description if possible
-            if (wu.Upgrade != null)
-            {
-                UnityEditor.EditorGUILayout.Space();
-                UnityEditor.EditorGUILayout.LabelField("Preview", UnityEditor.EditorStyles.boldLabel);
-                UnityEditor.EditorGUILayout.LabelField("Title", wu.Upgrade.powerUpName);
-                UnityEditor.EditorGUILayout.LabelField("Description", wu.Upgrade.powerUpDescription, UnityEditor.EditorStyles.wordWrappedLabel);
-            }
-        }
-    }
-#endif
-
-    // ---------------------- Tools ----------------------
-
-    private List<UpgradeType> GetAllowedTypes(bool includeNoneAndCustom)
+    private List<UpgradeType> GetAllowedTypes()
     {
         var allowed = new List<UpgradeType>();
         foreach (UpgradeType t in System.Enum.GetValues(typeof(UpgradeType)))
         {
-            if (!includeNoneAndCustom && (t == UpgradeType.None || t == UpgradeType.Custom)) continue;
+            if (!IsGeneratedType(t)) continue;
             if (IsTypeAllowedForParent(t)) allowed.Add(t);
         }
+
+        var parent = transform.parent;
+        bool hasOnHitEffect = parent != null &&
+            ((parent.TryGetComponent(out Knife knife) && knife.applyStatusEffectOnHit) ||
+             (parent.TryGetComponent(out SimpleShooter shooter) && shooter.applyStatusEffectOnHit));
+        if (!hasOnHitEffect)
+            allowed.RemoveAll(IsStatusType);
+
         return allowed;
     }
 
-    [ContextMenu("Generate Random Upgrade")]
-    private void GenerateRandomUpgrade()
+    /// <summary>
+    /// Configures this component as a freshly rolled upgrade offer for its parent
+    /// weapon: picks a random allowed type (minus excludeTypes), rolls a value, and
+    /// creates a new PowerUp entry whose powerUpObject is this GameObject, so that
+    /// selecting it in the UI activates this object and applies the upgrade.
+    /// Returns false when no upgrade type is available.
+    /// </summary>
+    public bool RandomizeAsOffer(ICollection<UpgradeType> excludeTypes = null)
     {
-        var allowed = GetAllowedTypes(includeNoneAndCustom: false);
-        if (allowed.Count == 0)
+        var allowed = GetAllowedTypes();
+        if (excludeTypes != null)
+            allowed.RemoveAll(excludeTypes.Contains);
+        if (allowed.Count == 0) return false;
+
+        upgradeType = allowed[Random.Range(0, allowed.Count)];
+        value = GetRandomValueForType(upgradeType);
+
+        Upgrade = new PowerUp
         {
-            Debug.LogWarning("[WeaponUpgrades] No valid upgrade types for this parent.");
-            return;
-        }
-
-        var chosen = allowed[Random.Range(0, allowed.Count)];
-
-#if UNITY_EDITOR
-        UnityEditor.Undo.RecordObject(this, "Generate Random Upgrade");
-#endif
-        upgradeType = chosen;
-        value = GetRandomValueForType(chosen);
+            powerUpObject = gameObject,
+            IsWeapon = true,
+            IsUpgrade = true
+        };
+        TryAssignIconFromParent();
         SetUpgradeInfo();
-
-#if UNITY_EDITOR
-        UnityEditor.EditorUtility.SetDirty(this);
-#endif
+        return true;
     }
 
     private static float RandomStatusEffectIndex() =>

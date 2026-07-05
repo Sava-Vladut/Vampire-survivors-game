@@ -65,10 +65,6 @@ public class Knife : MonoBehaviour
     [Tooltip("Damage multiplier applied when a critical hit occurs.")]
     [Min(1f)] public float critMultiplier = 2f;
 
-    [Header("Upgrades")]
-    [Tooltip("Upgrade offered after this weapon has been obtained.")]
-    public WeaponUpgrades nextUpgrade;
-
     [Header("SFX")]
     [Tooltip("Audio clip played whenever the knife attacks.")]
     [SerializeField] private AudioClip shootClip;
@@ -105,16 +101,9 @@ public class Knife : MonoBehaviour
     private SimpleHealth parentHealth;
     private WeaponTick wt;
     private WeaponSwingAnimator swingAnimator;
-    private PowerUpChooser powerUpChooser;
 
     private void Awake()
     {
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
-        if (nextUpgrade != null && powerUpChooser != null)
-        {
-            powerUpChooser.powerUps.Add(nextUpgrade.Upgrade);
-        }
-
         shootSource = GetComponent<AudioSource>();
 
         if (transform.parent != null && transform.parent.parent != null)
@@ -172,7 +161,7 @@ public class Knife : MonoBehaviour
                 if (upgrade != null && upgrade.gameObject.activeInHierarchy && upgrade.enabled)
                     enabledCount++;
             }
-            sb.AppendLine($"Upgrades: <color={numColor}>{enabledCount}</color>/<color={numColor}>{wu.Length}</color>");
+            sb.AppendLine($"Upgrades: <color={numColor}>{enabledCount}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
 
             sb.AppendLine($"Damage: <color={numColor}>{damage}</color>");
             string dtColor = GetDamageTypeHex(damageType);

@@ -18,6 +18,8 @@ public class PowerUp
     public bool IsAccessory;
     [Tooltip("Treat this power-up as a Weapon (counts toward weapon cap).")]
     public bool IsWeapon;
+    [Tooltip("This entry upgrades an owned item and does not consume a weapon/accessory slot.")]
+    public bool IsUpgrade;
 
     [Header("Visuals")]
     [Tooltip("Icon representing this power-up. If null, UI will use its default icon.")]
@@ -45,24 +47,17 @@ public class PowerUpChooser : MonoBehaviour
     // Track the actual active instance for each PowerUp (either in-scene object or instantiated prefab)
     private readonly Dictionary<PowerUp, GameObject> spawnedInstances = new();
 
-    public int CurrentAccessories => CountSelected(p => p.IsAccessory);
-    public int CurrentWeapons => CountSelected(p => p.IsWeapon);
+    public int CurrentAccessories => CountSelected(p => p.IsAccessory && !p.IsUpgrade);
+    public int CurrentWeapons => CountSelected(p => p.IsWeapon && !p.IsUpgrade);
     public int MaxAccessories => maxAccessories;
     public int MaxWeapons => maxWeapons;
 
     public int RemainingAccessorySlots => Mathf.Max(0, maxAccessories - CurrentAccessories);
     public int RemainingWeaponSlots => Mathf.Max(0, maxWeapons - CurrentWeapons);
 
-    private void Awake()
-    {
-        SyncActiveToSelected();
-        RefreshStatsText();
-    }
-
     private void OnEnable()
     {
         SyncActiveToSelected();
-        RefreshStatsText();
     }
 
 #if UNITY_EDITOR
@@ -75,6 +70,7 @@ public class PowerUpChooser : MonoBehaviour
     public bool CanSelect(PowerUp pu)
     {
         if (pu == null) return false;
+        if (pu.IsUpgrade) return true;
         if (pu.IsAccessory && RemainingAccessorySlots <= 0) return false;
         if (pu.IsWeapon && RemainingWeaponSlots <= 0) return false;
         return true;

@@ -62,21 +62,10 @@ public class SimpleShooter : MonoBehaviour
     private Image iconImage;
     private AudioSource shootSource;
     private GameObject statsGameobjectInstance;
-    [Tooltip("Upgrade offered after this weapon has been obtained.")]
-    public WeaponUpgrades nextUpgrade;
-    PowerUpChooser powerUpChooser;
 
     private void Awake()
     {
         shootSource = GetComponent<AudioSource>();
-        powerUpChooser = GameObject.FindAnyObjectByType<PowerUpChooser>();
-
-        // Enqueue once, safely
-        if (nextUpgrade != null && nextUpgrade.Upgrade != null && powerUpChooser != null && powerUpChooser.powerUps != null)
-        {
-            if (!powerUpChooser.powerUps.Contains(nextUpgrade.Upgrade))
-                powerUpChooser.powerUps.Add(nextUpgrade.Upgrade);
-        }
 
         if (statsTextPrefab != null && uiParent != null)
         {
@@ -166,7 +155,7 @@ public class SimpleShooter : MonoBehaviour
             if (u != null && u.enabled && u.gameObject.activeInHierarchy)
                 enabledUpgrades++;
         }
-        sb.AppendLine($"Upgrades: <color={numColor}>{enabledUpgrades}</color>/<color={numColor}>{allUpgrades.Length}</color>");
+        sb.AppendLine($"Upgrades: <color={numColor}>{enabledUpgrades}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
 
 
         sb.AppendLine($"Damage: <color={numColor}>{damage}</color>");
