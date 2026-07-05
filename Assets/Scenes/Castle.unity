@@ -9832,13 +9832,13 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   levelEvents:
-  - level: 15
+  - level: 10
     onReached:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 730127411}
           m_TargetAssemblyTypeName: PowerUpChooser, Grim
-          m_MethodName: AddMaxWeapons
+          m_MethodName: AddMaxAccessories
           m_Mode: 3
           m_Arguments:
             m_ObjectArgument: {fileID: 0}
@@ -9848,9 +9848,15 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 2
+    fireOnce: 1
+    fired: 0
+  - level: 15
+    onReached:
+      m_PersistentCalls:
+        m_Calls:
         - m_Target: {fileID: 730127411}
           m_TargetAssemblyTypeName: PowerUpChooser, Grim
-          m_MethodName: AddMaxAccessories
+          m_MethodName: AddMaxWeapons
           m_Mode: 3
           m_Arguments:
             m_ObjectArgument: {fileID: 0}

@@ -59,7 +59,7 @@ public class Trigger2DEvent : MonoBehaviour
 
     public void Magnet(float value)
     {
-        FollowNearestOptimized[] fnp = FindObjectsByType<FollowNearestOptimized>(FindObjectsSortMode.None);
+        FollowNearestOptimized[] fnp = FindObjectsByType<FollowNearestOptimized>();
 
         foreach (var item in fnp)
         {

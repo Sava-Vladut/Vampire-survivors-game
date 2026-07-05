@@ -75,7 +75,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     {
         controllers.Clear();
 
-        var found = FindObjectsByType<WeaponRarityController>(FindObjectsSortMode.None)
+        var found = FindObjectsByType<WeaponRarityController>()
             .Where(c => c != null && c.isActiveAndEnabled);
 
         controllers.AddRange(found);

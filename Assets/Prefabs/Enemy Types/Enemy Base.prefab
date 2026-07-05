@@ -126,6 +126,7 @@ Transform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &562924106362761922
 SpriteRenderer:
+  serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -171,6 +172,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Sprite: {fileID: -7913929154398831701, guid: 881c60493058cae479eef67de6fb778d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -180,7 +182,6 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!50 &5725004345198136720
 Rigidbody2D:
@@ -226,6 +227,7 @@ MonoBehaviour:
   stoppingDistance: 0.5
   enableFlee: 0
   fleeBuffer: 0.25
+  knockbackDecay: 15
   repeatEvent: 1
   resetDistanceBuffer: 1
   onReachDestination:
@@ -507,6 +509,16 @@ MonoBehaviour:
     weight: 0.25
   - prefab: {fileID: 1459730382762690446, guid: 73bc9308489134641b4dc7828c6b5087, type: 3}
     weight: 0.25
+  - prefab: {fileID: 6256120963019748855, guid: 6659d0deb2fcfe44dbaedcb03d66ad05, type: 3}
+    weight: 0.1
+  - prefab: {fileID: 4504018010056212377, guid: a98913fc36a0d3c4694f67cba9aca605, type: 3}
+    weight: 0.1
+  - prefab: {fileID: 888738911138629854, guid: cf1cfcaa85c531b4393e086eb9c9a4f0, type: 3}
+    weight: 0.1
+  - prefab: {fileID: 7376802397002724314, guid: 8d812acf147e7524f9c2742ce37992f2, type: 3}
+    weight: 0.05
+  - prefab: {fileID: 5473153211096587149, guid: ac76d5efe86de2843b58a83ff6bc7a01, type: 3}
+    weight: 0.025
   amountOptions:
   - amount: 1
     weight: 1
@@ -561,6 +573,10 @@ MonoBehaviour:
   enablePoison: 1
   poisonDamagePerTick: 5
   health: {fileID: 0}
+  enableRegeneration: 1
+  regenerationPerTick: 5
+  enableXpBoost: 1
+  xpBoostMultiplier: 2
   defaultDuration: 5
   defaultTickInterval: 1
 --- !u!114 &7485042093931290822
@@ -833,6 +849,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
@@ -941,6 +958,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1069,10 +1087,10 @@ MonoBehaviour:
   statusApplyChance: 1
   statusEffectOnHit: 0
   statusEffectDuration: 3
+  knockbackForce: 0
   lifestealPercent: 0
   critChance: 0
   critMultiplier: 2
-  nextUpgrade: {fileID: 0}
   shootClip: {fileID: 0}
   stabClip: {fileID: 8300000, guid: 95c906fdaf654834fb592c668a587250, type: 3}
   slashEffect: {fileID: 0}
@@ -1285,6 +1303,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0

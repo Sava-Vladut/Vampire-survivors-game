@@ -143,7 +143,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
 
     private void DrawOwner(GameObject owner, string label, string detail)
     {
-        int id = owner.GetInstanceID();
+        int id = owner.GetEntityId();
         foldouts.TryGetValue(id, out bool expanded);
 
         using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -199,8 +199,9 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             bool bootsOnly =
                 type == AccessoriesUpgrades.StatUpgradeType.MoveSpeedFlat ||
                 type == AccessoriesUpgrades.StatUpgradeType.DashDistanceFlat;
+            bool armorOnly = type == AccessoriesUpgrades.StatUpgradeType.ThornsFlat;
             DrawCatalogRow(ObjectNames.NicifyVariableName(type.ToString()),
-                bootsOnly ? "Boots only" : "Any root accessory",
+                bootsOnly ? "Boots only" : armorOnly ? "Armor only" : "Any root accessory",
                 AccessoryRange(type));
         }
     }
@@ -222,9 +223,9 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private static string WeaponCompatibility(WeaponUpgrades.UpgradeType type)
     {
         if (type >= WeaponUpgrades.UpgradeType.KnifeDamageFlat &&
-            type <= WeaponUpgrades.UpgradeType.KnifeStatusEffectIndex) return "Knife";
+            type <= WeaponUpgrades.UpgradeType.KnifeExecuteChance) return "Knife";
         if (type >= WeaponUpgrades.UpgradeType.ShooterDamageFlat &&
-            type <= WeaponUpgrades.UpgradeType.ShooterStatusEffectIndex) return "Shooter";
+            type <= WeaponUpgrades.UpgradeType.ShooterChainHits) return "Shooter";
         return "WeaponTick";
     }
 
@@ -242,6 +243,9 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         if (name.Contains("EnableStatusEffect")) return "Enable";
         if (name.Contains("StatusEffectIndex")) return "Random status";
         if (name.Contains("DamageTypeIndex")) return "Damage type";
+        if (name.Contains("Knockback")) return "+0.5 to +3";
+        if (name.Contains("ExecuteChance")) return "+1% to +5%";
+        if (name.Contains("ChainHits")) return "+1 to +2";
         if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat")) return "+1 to +3";
         if (type == WeaponUpgrades.UpgradeType.KnifeRadiusFlat) return "+0.10 to +1.00";
         if (type == WeaponUpgrades.UpgradeType.KnifeRadiusPercent) return "+5% to +30%";
@@ -282,6 +286,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             case AccessoriesUpgrades.StatUpgradeType.PoisonResist: return "+5% to +20%";
             case AccessoriesUpgrades.StatUpgradeType.MoveSpeedFlat: return "+0.15 to +0.75";
             case AccessoriesUpgrades.StatUpgradeType.DashDistanceFlat: return "+0.25 to +1.50";
+            case AccessoriesUpgrades.StatUpgradeType.ThornsFlat: return "+2 to +12";
             default: return "—";
         }
     }

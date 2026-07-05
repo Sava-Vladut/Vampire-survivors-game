@@ -11,6 +11,8 @@ public class BulletDamageTrigger : MonoBehaviour
     [SerializeField] public int damageAmount = 10;
     [Tooltip("How many successful damage hits this bullet can apply before it is destroyed.")]
     [SerializeField] public int penetration = 1;
+    [Min(0f)] public float knockbackForce = 0f;
+    [Range(0f, 1f)] public float executeChance = 0f;
 
     [Header("Filters")]
     [Tooltip("Only objects on these layers will be damaged.")]
@@ -81,7 +83,18 @@ public class BulletDamageTrigger : MonoBehaviour
 
 
         // Apply damage
-        health.TakeDamage(damageAmount, damageType);
+        if (executeChance > 0f && Random.value < executeChance)
+            health.TakeDamage(health.CurrentHealth, damageType, false, false);
+        else
+            health.TakeDamage(damageAmount, damageType);
+
+        if (knockbackForce > 0f && other.GetComponentInParent<EnemyChaser>() is EnemyChaser chaser)
+        {
+            Vector2 direction = transform.right;
+            if (TryGetComponent(out Rigidbody2D rb) && rb.linearVelocity.sqrMagnitude > 0.0001f)
+                direction = rb.linearVelocity.normalized;
+            chaser.ApplyKnockback(direction * knockbackForce);
+        }
 
         if (!allowMultipleHits)
         {

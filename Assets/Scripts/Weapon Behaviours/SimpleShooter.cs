@@ -20,6 +20,9 @@ public class SimpleShooter : MonoBehaviour
     public float bulletLifetime = 5f;
     [Tooltip("Number of enemies a projectile can pass through before being destroyed.")]
     public int penetration = 1; // How many enemies the bullet can pass through before being destroyed
+    [Min(0f)] public float knockbackForce = 0f;
+    [Range(0f, 1f)] public float executeChance = 0f;
+    [Min(0)] public int chainHits = 0;
 
     [Header("Criticals")]
     [Tooltip("Chance for a projectile to deal critical damage.")]
@@ -263,10 +266,20 @@ public class SimpleShooter : MonoBehaviour
                     bulletDamage.damageAmount = finalDamage;
                     bulletDamage.damageType = damageType;
                     bulletDamage.penetration = penetration;
+                    bulletDamage.knockbackForce = knockbackForce;
+                    bulletDamage.executeChance = executeChance;
                     bulletDamage.statusApplyChance = statusApplyChance;
                     bulletDamage.applyStatusEffectOnHit = applyStatusEffectOnHit;
                     bulletDamage.statusEffectOnHit = statusEffectOnHit;
                     bulletDamage.statusEffectDuration = statusEffectDuration;
+                }
+                if (chainHits > 0)
+                {
+                    var chain = bullet.GetComponent<RB2DChainToTag>();
+                    if (chain == null) chain = bullet.AddComponent<RB2DChainToTag>();
+                    chain.maxChains = chainHits;
+                    if (bullet.TryGetComponent<BulletDamageTrigger>(out var chainDamage))
+                        chainDamage.penetration = Mathf.Max(chainDamage.penetration, chainHits + 1);
                 }
                 if (bullet.TryGetComponent<ExplosionDamage2D>(out var explosionDamage))
                     explosionDamage.baseDamage = finalDamage;

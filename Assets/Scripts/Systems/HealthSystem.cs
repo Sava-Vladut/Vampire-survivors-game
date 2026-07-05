@@ -135,6 +135,7 @@ public class SimpleHealth : MonoBehaviour
     public bool IsInvulnerable => isInvulnerable;
     public int CurrentHealth => Mathf.RoundToInt(currentHealth);
     public int MaxHealth => maxHealth;
+    public int thornsDamage;
 
     private void Awake()
     {
@@ -462,6 +463,7 @@ public class SimpleHealth : MonoBehaviour
         }
 
         currentHealth = Mathf.Clamp(currentHealth - dmg, 0, maxHealth);
+        ApplyThorns();
         SyncSlider();
 
                         // Damage popup (accumulate if an existing one is active) — per damage type
@@ -522,6 +524,26 @@ public class SimpleHealth : MonoBehaviour
 
         if (!IsAlive) Die();
         else if (invulnerabilityDuration > 0) StartCoroutine(InvulnerabilityCoroutine());
+    }
+
+    private void ApplyThorns()
+    {
+        if (thornsDamage <= 0 || !CompareTag("Player")) return;
+
+        EnemyChaser nearest = null;
+        float nearestSqr = float.PositiveInfinity;
+        foreach (var enemy in FindObjectsByType<EnemyChaser>())
+        {
+            float sqr = (enemy.transform.position - transform.position).sqrMagnitude;
+            if (sqr < nearestSqr)
+            {
+                nearestSqr = sqr;
+                nearest = enemy;
+            }
+        }
+
+        if (nearest != null && nearest.TryGetComponent(out SimpleHealth enemyHealth))
+            enemyHealth.TakeDamage(thornsDamage, DamageType.Physical, false, false);
     }
 
     private bool TryEvade(int rawDamage)

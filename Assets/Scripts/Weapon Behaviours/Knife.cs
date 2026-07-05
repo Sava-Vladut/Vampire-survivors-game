@@ -54,6 +54,7 @@ public class Knife : MonoBehaviour
     [Header("Knockback")]
     [SerializeField, Tooltip("Initial push speed applied to hit enemies, in units/sec. 0 disables knockback.")]
     public float knockbackForce = 0f;
+    [Range(0f, 1f)] public float executeChance = 0f;
 
     [Header("Lifesteal")]
     [Tooltip("Fraction of damage dealt that is restored as health.")]
@@ -269,7 +270,10 @@ public class Knife : MonoBehaviour
                     float mult = isCrit ? Mathf.Max(1f, critMultiplier) : 1f;
                     int dealt = Mathf.RoundToInt(damage * mult);
 
-                    health.TakeDamage(dealt, damageType);
+                    if (executeChance > 0f && Random.value < executeChance)
+                        health.TakeDamage(health.CurrentHealth, damageType, false, false);
+                    else
+                        health.TakeDamage(dealt, damageType);
 
                     // knockback (away from the hit origin)
                     if (knockbackForce > 0f)

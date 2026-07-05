@@ -28,6 +28,7 @@ public class AccessoriesUpgrades : MonoBehaviour
         PoisonResist,
         MoveSpeedFlat,
         DashDistanceFlat,
+        ThornsFlat,
     }
 
     [Header("Power-Up")]
@@ -112,6 +113,9 @@ public class AccessoriesUpgrades : MonoBehaviour
             case StatUpgradeType.PoisonResist:
                 health.AddPoisonResist(value);
                 break;
+            case StatUpgradeType.ThornsFlat:
+                health.thornsDamage += Mathf.RoundToInt(value);
+                break;
         }
     }
 
@@ -128,6 +132,7 @@ public class AccessoriesUpgrades : MonoBehaviour
     {
         var health = FindPlayerHealth();
         bool isBoots = IsBootsOwner();
+        bool isArmor = IsOwnerNamed("Armor");
 
         var allowed = new List<StatUpgradeType>();
         foreach (StatUpgradeType t in System.Enum.GetValues(typeof(StatUpgradeType)))
@@ -136,6 +141,7 @@ public class AccessoriesUpgrades : MonoBehaviour
             if (excludeTypes != null && excludeTypes.Contains(t)) continue;
             if ((t == StatUpgradeType.MoveSpeedFlat ||
                  t == StatUpgradeType.DashDistanceFlat) && !isBoots) continue;
+            if (t == StatUpgradeType.ThornsFlat && !isArmor) continue;
             // Percent types are useless without a base stat to scale
             if (t == StatUpgradeType.ArmorPercent && (health == null || health.armor <= 0f)) continue;
             if (t == StatUpgradeType.EvasionPercent && (health == null || health.evasion <= 0f)) continue;
@@ -174,6 +180,7 @@ public class AccessoriesUpgrades : MonoBehaviour
             case StatUpgradeType.PoisonResist: return Random.Range(0.05f, 0.20f);
             case StatUpgradeType.MoveSpeedFlat: return Random.Range(0.15f, 0.75f);
             case StatUpgradeType.DashDistanceFlat: return Random.Range(0.25f, 1.50f);
+            case StatUpgradeType.ThornsFlat: return Mathf.Round(Random.Range(2f, 12f));
         }
         return 0f;
     }
@@ -207,6 +214,7 @@ public class AccessoriesUpgrades : MonoBehaviour
             StatUpgradeType.PoisonResist => ($"Venom Ward +{pct}", $"Take {pct} less poison damage."),
             StatUpgradeType.MoveSpeedFlat => ($"Fleetfoot +{decimalValue}", $"Move {decimalValue} faster at all times."),
             StatUpgradeType.DashDistanceFlat => ($"Bounding Step +{decimalValue}", $"Dash and blink {decimalValue} farther."),
+            StatUpgradeType.ThornsFlat => ($"Spiked Plate +{flat}", $"Retaliate for {flat} physical damage whenever an enemy wounds you."),
             _ => ("No Upgrade", "This upgrade slot is empty."),
         };
 
@@ -251,12 +259,17 @@ public class AccessoriesUpgrades : MonoBehaviour
 
     private bool IsBootsOwner()
     {
+        return IsOwnerNamed("Boots");
+    }
+
+    private bool IsOwnerNamed(string expectedName)
+    {
         var owner = GetComponentInParent<Accessory>(true);
         if (owner == null) return false;
 
         return string.Equals(
             owner.AccesoryName?.Trim(),
-            "Boots",
+            expectedName,
             System.StringComparison.OrdinalIgnoreCase);
     }
 }

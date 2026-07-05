@@ -18,6 +18,7 @@ public class PowerUpSelectionUI : MonoBehaviour
 
     [Header("Reroll Button")]
     [SerializeField] private Button rerollButton;
+    [Min(0)][SerializeField] private int refreshesPerGame = 1;
 
     [Header("References")]
     [SerializeField] private PowerUpChooser powerUpChooser;
@@ -36,6 +37,7 @@ public class PowerUpSelectionUI : MonoBehaviour
 
     private int[] shownIndices;
     private bool warnedNoDefault;
+    private int refreshesRemaining;
     [Header("Behavior")]
     [SerializeField] private bool isFirstSelection = true; // first selection shows weapons only
 
@@ -45,6 +47,7 @@ public class PowerUpSelectionUI : MonoBehaviour
     private void Awake()
     {
         if (selectionPanel != null) selectionPanel.SetActive(false);
+        refreshesRemaining = refreshesPerGame;
 
         if (upgradeGenerator == null && powerUpChooser != null)
             upgradeGenerator = powerUpChooser.GetComponent<RandomUpgradeGenerator>();
@@ -80,7 +83,7 @@ public class PowerUpSelectionUI : MonoBehaviour
         if (rerollButton != null)
         {
             rerollButton.onClick.RemoveAllListeners();
-            rerollButton.onClick.AddListener(ShowSelection);
+            rerollButton.onClick.AddListener(RefreshSelection);
             rerollButton.gameObject.SetActive(false); // hidden until selection is shown
         }
     }
@@ -230,7 +233,7 @@ public class PowerUpSelectionUI : MonoBehaviour
         }
 
         if (rerollButton != null)
-            rerollButton.gameObject.SetActive(visible);
+            rerollButton.gameObject.SetActive(visible && refreshesRemaining > 0);
     }
 
     private void SelectPowerUp(int buttonSlot)
@@ -254,6 +257,13 @@ public class PowerUpSelectionUI : MonoBehaviour
     {
         Debug.Log("[PowerUpSelectionUI] Player skipped the power-up selection.");
         ClosePanel();
+    }
+
+    private void RefreshSelection()
+    {
+        if (refreshesRemaining <= 0) return;
+        refreshesRemaining--;
+        ShowSelection();
     }
 
     private void ClosePanel()

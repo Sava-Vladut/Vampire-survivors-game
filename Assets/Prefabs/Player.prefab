@@ -681,6 +681,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 8
   knockbackForce: 7
+  executeChance: 0
   lifestealPercent: 0
   critChance: 0.02
   critMultiplier: 2
@@ -1435,6 +1436,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
+  executeChance: 0
   lifestealPercent: 0
   critChance: 0.5
   critMultiplier: 1.5
@@ -1695,18 +1697,6 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 25
           m_FloatArgument: 5
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
@@ -2361,6 +2351,9 @@ MonoBehaviour:
   damageType: 0
   bulletLifetime: 5
   penetration: 3
+  knockbackForce: 0
+  executeChance: 0
+  chainHits: 0
   critChance: 0.25
   critMultiplier: 3
   applyStatusEffectOnHit: 0
@@ -3316,6 +3309,7 @@ MonoBehaviour:
   healthStatsText: {fileID: 0}
   defenseStatsText: {fileID: 0}
   movementStatsText: {fileID: 0}
+  thornsDamage: 0
 --- !u!61 &7754715335682866526
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -4221,18 +4215,6 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
@@ -5256,18 +5238,6 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 10
           m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
@@ -6400,6 +6370,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
+  executeChance: 0
   lifestealPercent: 0
   critChance: 0.02
   critMultiplier: 2
@@ -6930,18 +6901,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -7153,6 +7112,9 @@ MonoBehaviour:
   damageType: 0
   bulletLifetime: 1
   penetration: 1
+  knockbackForce: 0
+  executeChance: 0
+  chainHits: 0
   critChance: 0
   critMultiplier: 2
   applyStatusEffectOnHit: 0
@@ -8251,6 +8213,9 @@ MonoBehaviour:
   damageType: 0
   bulletLifetime: 3
   penetration: 1
+  knockbackForce: 0
+  executeChance: 0
+  chainHits: 0
   critChance: 0.05
   critMultiplier: 2
   applyStatusEffectOnHit: 0
@@ -9940,6 +9905,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
+  executeChance: 0
   lifestealPercent: 0
   critChance: 0
   critMultiplier: 2
@@ -11633,18 +11599,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -12772,18 +12726,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -13380,6 +13322,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
+  executeChance: 0
   lifestealPercent: 0
   critChance: 0.2
   critMultiplier: 2
@@ -14622,18 +14565,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}
   statsTextInstance: {fileID: 0}
@@ -15489,6 +15420,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
+  executeChance: 0
   lifestealPercent: 0
   critChance: 0.5
   critMultiplier: 1.5
@@ -17315,6 +17247,9 @@ MonoBehaviour:
   damageType: 0
   bulletLifetime: 3
   penetration: 1
+  knockbackForce: 0
+  executeChance: 0
+  chainHits: 0
   critChance: 0.3
   critMultiplier: 2
   applyStatusEffectOnHit: 0
@@ -18116,18 +18051,6 @@ MonoBehaviour:
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 10
           m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: Accessory, Grim
-        m_MethodName: RefreshUI
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2

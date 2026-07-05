@@ -9,9 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ceb773d10504e968f2171473b801a37, type: 3}
-  m_Name: WingmanPersistentData
+  m_Script: {fileID: 11500000, guid: 753bdb918c6038142acddbd7aae6958f, type: 3}
+  m_Name: NaughtyScriptableObjecA
   m_EditorClassIdentifier: 
-  indexLookUp: 
-  searchFields: []
-  selectedCompIds: []
+  listA:
+  - {fileID: 11400000, guid: 149474eb879a6a641b560ca17d48712f, type: 2}
+  - {fileID: 11400000, guid: 149474eb879a6a641b560ca17d48712f, type: 2}
+  myInt: 0
