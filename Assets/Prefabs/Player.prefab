@@ -14705,12 +14705,12 @@ MonoBehaviour:
   targetLayer:
     serializedVersion: 2
     m_Bits: 128
-  moveSpeed: 5
+  moveSpeed: 30
   searchRadius: 10
-  updateInterval: 1
+  updateInterval: 0.5
   playerTag: Player
   searchAroundPlayer: 1
-  stopDistance: 0.5
+  stopDistance: 0
   decelerationRadius: 2
   useRigidbodyMovement: 1
   otherFollowers: []
@@ -14723,7 +14723,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7215216717504392282}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -17053,11 +17053,11 @@ MonoBehaviour:
   bulletPrefab: {fileID: 1832326421807717072, guid: fd50f4cd2d529cc4ca815f03cc845514, type: 3}
   shootTransforms: []
   shootForce: 15
-  damage: 15
+  damage: 17
   damageType: 0
   bulletLifetime: 3
   penetration: 1
-  knockbackForce: 0
+  knockbackForce: 1
   cullThreshold: 0
   chainHits: 0
   critChance: 0.3
@@ -17067,7 +17067,7 @@ MonoBehaviour:
   statusEffectOnHit: 1
   statusEffectDuration: 3
   projectileCount: 1
-  spreadAngle: 30
+  spreadAngle: 10
   shootClip: {fileID: 8300000, guid: 28098e249b2b44641bec4d77c19f97ce, type: 3}
   statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
   uiParent: {fileID: 3771470944807517528}

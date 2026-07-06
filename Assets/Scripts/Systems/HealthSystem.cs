@@ -16,6 +16,15 @@ public class SimpleHealth : MonoBehaviour
         Poison = 4
     }
 
+    private static readonly DamageType[] DamageTypeOrder =
+    {
+        DamageType.Physical,
+        DamageType.Fire,
+        DamageType.Cold,
+        DamageType.Lightning,
+        DamageType.Poison
+    };
+
     [BoxGroup("Health")][SerializeField] public int maxHealth = 100;
     [BoxGroup("Health")]
     [Tooltip("If <=0, starts at maxHealth.")]
@@ -112,6 +121,8 @@ public class SimpleHealth : MonoBehaviour
     private Coroutine _flashRoutine;
     private int lastDamageTaken = 0;
     private DamageType lastDamageType = DamageType.Physical; // remember last type
+    private readonly int[] runDamageTakenByType = new int[DamageTypeOrder.Length];
+    private int runDamageTakenTotal = 0;
     private Snappy2DController movementController;
     private readonly System.Text.StringBuilder _statsBuilder = new System.Text.StringBuilder(256);
 
@@ -262,20 +273,23 @@ public class SimpleHealth : MonoBehaviour
     public void UpdateStatsText()
     {
         float referenceDamage = Mathf.Max(1, lastDamageTaken);
+        const string statColor = "#8888FF";
+        const string healthColor = "#FF6666";
+        const string currentHealthColor = "#80FF80";
 
         // HEALTH
         if (healthStatsText != null)
         {
             _statsBuilder.Clear();
-            _statsBuilder.AppendLine($"<b>Health</b>");
-            _statsBuilder.AppendLine($"Max Health: {maxHealth}");
-            _statsBuilder.Append($"Current: {CurrentHealth}");
+            _statsBuilder.AppendLine($"<b><color={healthColor}>Health</color></b>");
+            _statsBuilder.AppendLine($"Max Health: <color={healthColor}>{maxHealth}</color>");
+            _statsBuilder.Append($"Current: <color={currentHealthColor}>{CurrentHealth}</color>");
             if (enableTemporaryHealth && currentTemporaryHealth > 0)
             {
                 _statsBuilder.Append($" <color=#64C8FF>+{Mathf.RoundToInt(currentTemporaryHealth)}</color>");
             }
             _statsBuilder.AppendLine(); // New line
-            _statsBuilder.AppendLine($"Regen: {regenRate:F2}/s");
+            _statsBuilder.AppendLine($"Regen: <color={currentHealthColor}>{regenRate:F2}</color>/s");
             healthStatsText.text = _statsBuilder.ToString();
         }
 
@@ -290,14 +304,22 @@ public class SimpleHealth : MonoBehaviour
                 : 0f;
 
             _statsBuilder.Clear();
-            _statsBuilder.AppendLine($"<b>Defense</b>");
-            _statsBuilder.AppendLine($"Armor: {(int)armor} (Mitigation: {mitigation * 100f:F1}%)");
-            _statsBuilder.AppendLine($"Evasion: {(int)evasion} (Chance: {evasionChance * 100f:F1}%)");
-            _statsBuilder.AppendLine($"Fire Res: {fireResist * 100f:F0}%");
-            _statsBuilder.AppendLine($"Cold Res: {coldResist * 100f:F0}%");
-            _statsBuilder.AppendLine($"Lightning Res: {lightningResist * 100f:F0}%");
-            _statsBuilder.AppendLine($"Poison Res: {poisonResist * 100f:F0}%");
-            _statsBuilder.AppendLine($"Last Hit: {lastDamageTaken} ({lastDamageType})");
+            bool showRunDamage = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            if (showRunDamage)
+            {
+                AppendRunDamageStats(statColor);
+            }
+            else
+            {
+                _statsBuilder.AppendLine($"<b><color={statColor}>Defense</color></b>");
+                _statsBuilder.AppendLine($"Armor: <color={statColor}>{(int)armor}</color> (Mitigation: <color={statColor}>{mitigation * 100f:F1}%</color>)");
+                _statsBuilder.AppendLine($"Evasion: <color={statColor}>{(int)evasion}</color> (Chance: <color={statColor}>{evasionChance * 100f:F1}%</color>)");
+                _statsBuilder.AppendLine($"<color=#FF6600>Fire Res: {fireResist * 100f:F0}%</color>");
+                _statsBuilder.AppendLine($"<color=#4DB2FF>Cold Res: {coldResist * 100f:F0}%</color>");
+                _statsBuilder.AppendLine($"<color=#FFFF4D>Lightning Res: {lightningResist * 100f:F0}%</color>");
+                _statsBuilder.AppendLine($"<color=#80FF80>Poison Res: {poisonResist * 100f:F0}%</color>");
+                _statsBuilder.AppendLine($"Last Hit: <color={statColor}>{lastDamageTaken}</color> ({ColorDamageType(lastDamageType)})");
+            }
             defenseStatsText.text = _statsBuilder.ToString();
         }
 
@@ -305,13 +327,61 @@ public class SimpleHealth : MonoBehaviour
         if (movementStatsText != null && movementController != null)
         {
             _statsBuilder.Clear();
-            _statsBuilder.AppendLine($"<b>Movement</b>");
-            _statsBuilder.AppendLine($"Move Speed: {movementController.MoveSpeed:F2}");
-            _statsBuilder.AppendLine($"Dash Speed: {movementController.DashSpeed:F2}");
-            _statsBuilder.AppendLine($"Dash Duration: {movementController.DashDuration:F2}s");
-            _statsBuilder.AppendLine($"Dash Cooldown: {movementController.DashCooldown:F2}s");
+            _statsBuilder.AppendLine($"<b><color={statColor}>Movement</color></b>");
+            _statsBuilder.AppendLine($"Move Speed: <color={statColor}>{movementController.MoveSpeed:F2}</color>");
+            _statsBuilder.AppendLine($"Dash Speed: <color={statColor}>{movementController.DashSpeed:F2}</color>");
+            _statsBuilder.AppendLine($"Dash Duration: <color={statColor}>{movementController.DashDuration:F2}</color>s");
+            _statsBuilder.AppendLine($"Dash Cooldown: <color={statColor}>{movementController.DashCooldown:F2}</color>s");
             movementStatsText.text = _statsBuilder.ToString();
         }
+    }
+
+    private static string ColorDamageType(DamageType type)
+    {
+        string hex = type switch
+        {
+            DamageType.Fire => "#FF6600",
+            DamageType.Cold => "#4DB2FF",
+            DamageType.Lightning => "#FFFF4D",
+            DamageType.Poison => "#80FF80",
+            _ => "#D9D9D9"
+        };
+        return $"<color={hex}>{type}</color>";
+    }
+
+    private void AppendRunDamageStats(string statColor)
+    {
+        _statsBuilder.AppendLine($"<b><color={statColor}>Run Damage</color></b>");
+        _statsBuilder.AppendLine($"Total: <color={statColor}>{runDamageTakenTotal}</color>");
+
+        foreach (DamageType type in DamageTypeOrder)
+        {
+            int amount = runDamageTakenByType[(int)type];
+            _statsBuilder.AppendLine($"{ColorDamageType(type)}: <color={statColor}>{amount}</color>");
+        }
+
+        _statsBuilder.AppendLine($"Last Hit: <color={statColor}>{lastDamageTaken}</color> ({ColorDamageType(lastDamageType)})");
+    }
+
+    private void RegisterRunDamage(int amount, DamageType type)
+    {
+        if (amount <= 0) return;
+
+        int index = (int)type;
+        if (index < 0 || index >= runDamageTakenByType.Length) return;
+
+        runDamageTakenByType[index] += amount;
+        runDamageTakenTotal += amount;
+    }
+
+    private void ResetRunDamage()
+    {
+        for (int i = 0; i < runDamageTakenByType.Length; i++)
+            runDamageTakenByType[i] = 0;
+
+        runDamageTakenTotal = 0;
+        lastDamageTaken = 0;
+        lastDamageType = DamageType.Physical;
     }
 
     private void TryApplyAilments(StatusEffectSystem ses, DamageType type, int dmg)
@@ -462,6 +532,7 @@ public class SimpleHealth : MonoBehaviour
             }
         }
 
+        RegisterRunDamage(dmg, type);
         currentHealth = Mathf.Clamp(currentHealth - dmg, 0, maxHealth);
         ApplyThorns();
         SyncSlider();
@@ -654,6 +725,7 @@ public class SimpleHealth : MonoBehaviour
     {
         currentHealth = maxHealth;
         if (enableTemporaryHealth) currentTemporaryHealth = 0;
+        ResetRunDamage();
         SyncSlider();
         UpdateStatsText();
     }

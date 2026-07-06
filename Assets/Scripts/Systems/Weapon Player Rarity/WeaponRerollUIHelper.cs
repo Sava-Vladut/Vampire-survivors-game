@@ -1,5 +1,8 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using TMPro; // optional, only if you show labels with TMP
 using UnityEngine;
 using UnityEngine.Events;
@@ -24,9 +27,16 @@ public class WeaponRerollUIHelper : MonoBehaviour
     private readonly List<WeaponRarityController> controllers = new List<WeaponRarityController>();
     private int index = -1;
     private bool showRanges;
+    private Coroutine changeAnimation;
+    private Vector3 extraLabelBaseScale = Vector3.one;
+
+    private static readonly Regex RichTextTag = new Regex("<.*?>", RegexOptions.Compiled);
 
     private void Awake()
     {
+        if (selectedExtraLabel != null)
+            extraLabelBaseScale = selectedExtraLabel.rectTransform.localScale;
+
         if (prevButton != null)
         {
             prevButton.onClick.RemoveAllListeners();
@@ -57,7 +67,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
         for (int i = 0; i < controllers.Count; i++)
         {
             var c = controllers[i];
-            Debug.Log($" - #{i}: {c.name} | Extra: \"{GetExtraText(c)}\"");
+            Debug.Log($" - #{i}: {c.name} | Extra: \"{WeaponRerollTargetDisplay.GetExtraText(c)}\"");
         }
     }
 
@@ -66,6 +76,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
         bool ctrlHeld = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         if (ctrlHeld == showRanges) return;
 
+        StopChangeAnimation();
         showRanges = ctrlHeld;
         UpdateSelectionUI();
     }
@@ -110,9 +121,12 @@ public class WeaponRerollUIHelper : MonoBehaviour
 
     }
 
+    private void OnDisable() => StopChangeAnimation();
+
     public void SelectPrev()
     {
         if (controllers.Count == 0) return;
+        StopChangeAnimation();
         index = (index - 1 + controllers.Count) % controllers.Count;
         UpdateSelectionUI();
     }
@@ -120,6 +134,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     public void SelectNext()
     {
         if (controllers.Count == 0) return;
+        StopChangeAnimation();
         index = (index + 1) % controllers.Count;
         UpdateSelectionUI();
     }
@@ -140,16 +155,20 @@ public class WeaponRerollUIHelper : MonoBehaviour
             }
             else
             {
-                selectedExtraLabel.text = showRanges ? target.GetRangesSummaryText() : GetExtraText(target);
+                string normalStats = WeaponRerollTargetDisplay.GetExtraText(target);
+                selectedExtraLabel.text = showRanges
+                    ? target.GetStatsTextWithRanges(normalStats)
+                    : normalStats;
             }
         }
 
         // --- Icon ---
         if (selectedIcon != null)
         {
-            if (GetWeaponSprite(target) != null)
+            Sprite sprite = WeaponRerollTargetDisplay.GetSprite(target);
+            if (sprite != null)
             {
-                selectedIcon.sprite = GetWeaponSprite(target);
+                selectedIcon.sprite = sprite;
             }
         }
 
@@ -171,18 +190,18 @@ public class WeaponRerollUIHelper : MonoBehaviour
 
         UnityAction[] actions =
         {
-            () => { RefreshControllers(); CurrentTarget()?.RerollRarityAndStats(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RerollStats(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RerollRandomStat(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RerollRandomStatIntoAnother(); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.RandomizeRandomTier(true); UpdateSelectionUI(); },
-            () => { RefreshControllers(); CurrentTarget()?.UpgradeRarityKeepStats(); UpdateSelectionUI(); },
+            () => RunAnimatedAction(target => target.RerollRarityAndStats()),
+            () => RunAnimatedAction(target => target.RerollStats()),
+            () => RunAnimatedAction(target => target.RerollRandomStat()),
+            () => RunAnimatedAction(target => target.RerollRandomStatIntoAnother()),
+            () => RunAnimatedAction(target => target.RandomizeRandomTier(true)),
+            () => RunAnimatedAction(target => target.UpgradeRarityKeepStats()),
 
             // NEW 6: Remove a random applied upgrade
-            () => { RefreshControllers(); CurrentTarget()?.RemoveRandomUpgrade(); UpdateSelectionUI(); },
+            () => RunAnimatedAction(target => target.RemoveRandomUpgrade()),
 
             // NEW 7: Add a random applicable upgrade
-            () => { RefreshControllers(); CurrentTarget()?.AddRandomUpgrade(); UpdateSelectionUI(); },
+            () => RunAnimatedAction(target => target.AddRandomUpgrade()),
         };
 
         for (int i = 0; i < actionButtons.Length; i++)
@@ -196,49 +215,98 @@ public class WeaponRerollUIHelper : MonoBehaviour
         }
     }
 
-    private string GetExtraText(WeaponRarityController controller)
+    private void RunAnimatedAction(Action<WeaponRarityController> action)
     {
-        if (!controller) return "";
+        RefreshControllers();
+        var target = CurrentTarget();
+        if (target == null) return;
 
-        var shooter = controller.GetComponent<SimpleShooter>();
-        if (shooter != null)
-        {
-            shooter.UpdateStatsText();
-            return shooter.statsTextInstance != null ? shooter.statsTextInstance.text : "";
-        }
+        string before = WeaponRerollTargetDisplay.GetExtraText(target);
+        action(target);
+        UpdateSelectionUI();
 
+        if (selectedExtraLabel == null || showRanges) return;
 
-        var knife = controller.GetComponent<Knife>();
+        string after = selectedExtraLabel.text;
+        string highlighted = HighlightChangedLines(before, after);
+        if (highlighted == after) return;
 
-        if (knife != null)
-        {
-            knife.UpdateStatsText();
-            return knife.statsTextInstance != null ? knife.statsTextInstance.text : "";
-        }
-        // Accessory support
-        var accessory = controller.GetComponent<Accessory>();
-        if (accessory != null)
-        {
-            // Ensure description/UI are current
-            accessory.NotifyRootToRefresh();
-            return accessory.statsTextInstance != null ? accessory.statsTextInstance.text : "";
-        }
-        return "";
+        StopChangeAnimation();
+        changeAnimation = StartCoroutine(AnimateChangedStats(highlighted, after));
     }
 
-    private Sprite GetWeaponSprite(WeaponRarityController controller)
+    private IEnumerator AnimateChangedStats(string highlightedText, string finalText)
     {
-        if (!controller) return null;
+        RectTransform rect = selectedExtraLabel.rectTransform;
+        selectedExtraLabel.text = highlightedText;
 
-        var shooter = controller.GetComponent<SimpleShooter>();
-        if (shooter != null) return shooter.weaponSprite;
+        const float pulseDuration = 0.24f;
+        float elapsed = 0f;
+        while (elapsed < pulseDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / pulseDuration);
+            float eased = t < 0.5f
+                ? 4f * t * t * t
+                : 1f - Mathf.Pow(-2f * t + 2f, 3f) * 0.5f;
+            float pulse = Mathf.Sin(eased * Mathf.PI);
+            rect.localScale = extraLabelBaseScale * Mathf.Lerp(1f, 1.035f, pulse);
+            yield return null;
+        }
 
-        var knife = controller.GetComponent<Knife>();
-        if (knife != null) return knife.weaponSprite;
-
-        var accessory = controller.GetComponent<Accessory>();
-        if (accessory != null) return accessory.icon;
-
-        return null;
+        rect.localScale = extraLabelBaseScale;
+        yield return new WaitForSecondsRealtime(0.31f);
+        selectedExtraLabel.text = finalText;
+        changeAnimation = null;
     }
+
+    private static string HighlightChangedLines(string before, string after)
+    {
+        string[] beforeLines = before.Replace("\r", "").Split('\n');
+        string[] afterLines = after.Replace("\r", "").Split('\n');
+        var previousByKey = new Dictionary<string, string>();
+
+        foreach (string line in beforeLines)
+        {
+            string visible = RichTextTag.Replace(line, "").Trim();
+            if (visible.Length == 0) continue;
+            previousByKey[LineKey(visible)] = visible;
+        }
+
+        for (int i = 0; i < afterLines.Length; i++)
+        {
+            string visible = RichTextTag.Replace(afterLines[i], "").Trim();
+            if (visible.Length == 0) continue;
+
+            bool unchanged = previousByKey.TryGetValue(LineKey(visible), out string previous) &&
+                             string.Equals(previous, visible, StringComparison.Ordinal);
+            if (!unchanged)
+                afterLines[i] = $"<mark=#66FF9955>{afterLines[i]}</mark>";
+        }
+
+        return string.Join("\n", afterLines);
+    }
+
+    private static string LineKey(string visibleLine)
+    {
+        int colon = visibleLine.IndexOf(':');
+        if (colon >= 0)
+            return visibleLine.Substring(0, colon).Trim();
+
+        int tierStart = visibleLine.LastIndexOf('(');
+        return tierStart > 0 ? visibleLine.Substring(0, tierStart).Trim() : visibleLine;
+    }
+
+    private void StopChangeAnimation()
+    {
+        if (changeAnimation != null)
+        {
+            StopCoroutine(changeAnimation);
+            changeAnimation = null;
+        }
+
+        if (selectedExtraLabel != null)
+            selectedExtraLabel.rectTransform.localScale = extraLabelBaseScale;
+    }
+
 }
