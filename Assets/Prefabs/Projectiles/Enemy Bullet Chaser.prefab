@@ -170,6 +170,7 @@ MonoBehaviour:
   damageType: 0
   damageAmount: 5
   penetration: 1
+  knockbackForce: 5
   damageLayers:
     serializedVersion: 2
     m_Bits: 64

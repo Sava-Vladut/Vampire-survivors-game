@@ -14,6 +14,10 @@ public class Snappy2DController : MonoBehaviour
     [Tooltip("When not instant: how fast velocity moves toward target. Higher = snappier.")]
     [SerializeField] private float acceleration = 50f;
 
+    [Header("Knockback")]
+    [Tooltip("How fast knockback velocity fades, in units per second squared. Higher = snappier recovery.")]
+    [SerializeField] private float knockbackDecay = 20f;
+
     [Header("UI")]
     [SerializeField] private Slider dashSlider;
 
@@ -40,6 +44,7 @@ public class Snappy2DController : MonoBehaviour
     private Vector2 input;
     private Vector2 targetVelocity;
     private Vector2 velocity; // used when smoothing
+    private Vector2 knockbackVelocity;
 
     private bool isDashing;
     private float dashEndTime;
@@ -53,6 +58,12 @@ public class Snappy2DController : MonoBehaviour
     public float DashDuration => dashDuration;
     public float DashDistance => dashIsBlink ? blinkDistance : dashSpeed * dashDuration;
     public float DashCooldown => dashCooldown;
+
+    public void ApplyKnockback(Vector2 impulse)
+    {
+        if (impulse.sqrMagnitude <= 0f) return;
+        knockbackVelocity += impulse;
+    }
 
     private void Awake()
 
@@ -207,7 +218,8 @@ public class Snappy2DController : MonoBehaviour
 
         if (isDashing)
         {
-            rb.linearVelocity = dashDirection * dashSpeed;
+            rb.linearVelocity = dashDirection * dashSpeed + knockbackVelocity;
+            DecayKnockback();
             if (Time.time >= dashEndTime)
                 isDashing = false;
             return;
@@ -243,6 +255,13 @@ public class Snappy2DController : MonoBehaviour
         }
 
         // Finally, apply the calculated velocity to the rigidbody
-        rb.linearVelocity = intendedVelocity;
+        rb.linearVelocity = intendedVelocity + knockbackVelocity;
+        DecayKnockback();
+    }
+
+    private void DecayKnockback()
+    {
+        if (knockbackVelocity == Vector2.zero) return;
+        knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDecay * Time.fixedDeltaTime);
     }
 }

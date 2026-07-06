@@ -149,6 +149,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   damageAmount: 10
   penetration: 1
+  knockbackForce: 5
   damageLayers:
     serializedVersion: 2
     m_Bits: 192

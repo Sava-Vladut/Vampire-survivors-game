@@ -226,6 +226,7 @@ MonoBehaviour:
   radius: 5
   baseDamage: 55
   useDistanceFalloff: 1
+  knockbackForce: 8
   scaleChildToRadius: 1
   damageLayers:
     serializedVersion: 2

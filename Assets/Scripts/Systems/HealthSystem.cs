@@ -24,16 +24,20 @@ public class SimpleHealth : MonoBehaviour
         DamageType.Poison
     };
 
+    [Header("Health")]
     [SerializeField] public int maxHealth = 100;
     [Tooltip("If <=0, starts at maxHealth.")]
     [SerializeField] private int startingHealth = 100;
 
+    [Header("Damage Immunity")]
     [Tooltip("Seconds of invulnerability after taking damage.")]
     [SerializeField] private float invulnerabilityDuration = 1f;
 
+    [Header("Regeneration")]
     [Tooltip("Health regenerated per second. Can be fractional. Does not grant temporary health.")]
     [SerializeField] public float regenRate = 0f;
 
+    [Header("Temporary Health")]
     [Tooltip("If true, healing past max health grants a temporary, decaying health shield.")]
     [SerializeField] private bool enableTemporaryHealth = true;
     [Tooltip("How fast temporary health depletes per second.")]
@@ -41,6 +45,7 @@ public class SimpleHealth : MonoBehaviour
     [Tooltip("How long to wait after gaining temp health before it starts decaying.")]
     [SerializeField] private float tempHealthDecayDelay = 1.5f;
 
+    [Header("Armor")]
     [Tooltip("Flat armor rating. More armor = more mitigation on small hits.")]
     [SerializeField] public float armor = 0f;
     [Tooltip("How quickly mitigation falls off as the hit gets bigger. Higher = big hits bypass sooner.")]
@@ -48,20 +53,27 @@ public class SimpleHealth : MonoBehaviour
     [Tooltip("Cap the maximum mitigation fraction (0..0.95). 0.8 = up to 80% reduction on tiny hits.")]
     [Range(0f, 0.95f)][SerializeField] private float maxMitigation = 0.8f;
 
+    [Header("Evasion")]
     [SerializeField] public float evasion = 0f;
     [SerializeField] private float evasionScaling = 10f;
     [SerializeField, Range(0f, 0.95f)] private float maxEvasion = 0.8f;
 
+    [Header("Counter Damage")]
+    public int thornsDamage;
+
+    [Header("Resistances")]
     [Tooltip("0..0.95 fraction of damage reduced for each type.")]
     [Range(0f, 0.95f)] public float fireResist = 0f;
     [Range(0f, 0.95f)] public float coldResist = 0f;
     [Range(0f, 0.95f)] public float lightningResist = 0f;
     [Range(0f, 0.95f)] public float poisonResist = 0f;
 
+    [Header("Health UI")]
     [Tooltip("Optional slider to show current health.")]
     [SerializeField] public Slider healthSlider;
     [SerializeField] public TextMeshProUGUI healthText;
 
+    [Header("Stats UI")]
     [Tooltip("Prefab root GameObject that contains a TextMeshProUGUI somewhere in its children.")]
     [SerializeField] private GameObject statsTextPrefab;
     [SerializeField] private Transform uiParent;
@@ -69,19 +81,23 @@ public class SimpleHealth : MonoBehaviour
     [Tooltip("Sprite to show above the stats text.")]
     [SerializeField] private Sprite iconSprite;
 
+    [Header("Effects and Audio")]
     [SerializeField] private Volume playerVolume;
     [SerializeField] private GameObject[] deathObjects;
     [SerializeField] private AudioClip[] damageClip;
     [SerializeField] private AudioClip[] deathClip;
     [SerializeField] private GameObject bloodSFX;
 
+    [Header("Loot")]
     [Tooltip("Weighted loot table. On death we roll once and spawn the result (if any).")]
     [SerializeField] private LootTable2D loot;
 
+    [Header("Hit Flash")]
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Color hitColor = new Color(1f, 0.5f, 0.5f, 1f);
     [SerializeField] private float hitFlashDuration = 0.1f;
 
+    [Header("Damage Popup")]
     [Tooltip("Prefab with a TextMeshPro or TextMeshProUGUI to display damage taken.")]
     [SerializeField] private GameObject damagePopupPrefab;
     [Tooltip("Offset from entity position when spawning damage popup.")]
@@ -134,7 +150,6 @@ public class SimpleHealth : MonoBehaviour
     public bool IsInvulnerable => isInvulnerable;
     public int CurrentHealth => Mathf.RoundToInt(currentHealth);
     public int MaxHealth => maxHealth;
-    public int thornsDamage;
 
     private void Awake()
     {

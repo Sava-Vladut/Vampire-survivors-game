@@ -3132,6 +3132,7 @@ MonoBehaviour:
   allowDiagonal: 1
   instant: 1
   acceleration: 50
+  knockbackDecay: 20
   dashSlider: {fileID: 9073139496275943802}
   dashSpeed: 15
   dashDuration: 0.05

@@ -225,7 +225,6 @@ MonoBehaviour:
   target: {fileID: 0}
   moveSpeed: 1
   stoppingDistance: 0.5
-  bypassWalls: 1
   enableFlee: 0
   fleeBuffer: 0.25
   knockbackDecay: 15
@@ -259,6 +258,7 @@ MonoBehaviour:
   evasion: 0
   evasionScaling: 10
   maxEvasion: 0.8
+  thornsDamage: 0
   fireResist: 0
   coldResist: 0
   lightningResist: 0
@@ -288,7 +288,6 @@ MonoBehaviour:
   healthStatsText: {fileID: 0}
   defenseStatsText: {fileID: 0}
   movementStatsText: {fileID: 0}
-  thornsDamage: 0
 --- !u!61 &4859893581985587488
 BoxCollider2D:
   m_ObjectHideFlags: 0

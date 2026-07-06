@@ -92,13 +92,8 @@ public class BulletDamageTrigger : MonoBehaviour
         else
             health.TakeDamage(damageAmount, damageType);
 
-        if (knockbackForce > 0f && other.GetComponentInParent<EnemyChaser>() is EnemyChaser chaser)
-        {
-            Vector2 direction = transform.right;
-            if (TryGetComponent(out Rigidbody2D rb) && rb.linearVelocity.sqrMagnitude > 0.0001f)
-                direction = rb.linearVelocity.normalized;
-            chaser.ApplyKnockback(direction * knockbackForce);
-        }
+        if (knockbackForce > 0f)
+            ApplyKnockback(other);
 
         if (!allowMultipleHits)
         {
@@ -156,5 +151,31 @@ public class BulletDamageTrigger : MonoBehaviour
     private static bool IsInLayerMask(GameObject go, LayerMask mask)
     {
         return (mask.value & (1 << go.layer)) != 0;
+    }
+
+    private void ApplyKnockback(Collider2D other)
+    {
+        Vector2 impulse = GetKnockbackDirection(other) * knockbackForce;
+
+        if (other.GetComponentInParent<EnemyChaser>() is EnemyChaser chaser)
+        {
+            chaser.ApplyKnockback(impulse);
+            return;
+        }
+
+        if (other.GetComponentInParent<Snappy2DController>() is Snappy2DController playerMovement)
+            playerMovement.ApplyKnockback(impulse);
+    }
+
+    private Vector2 GetKnockbackDirection(Collider2D other)
+    {
+        if (TryGetComponent(out Rigidbody2D rb) && rb.linearVelocity.sqrMagnitude > 0.0001f)
+            return rb.linearVelocity.normalized;
+
+        Vector2 awayFromSource = (Vector2)other.bounds.center - (Vector2)transform.position;
+        if (awayFromSource.sqrMagnitude > 0.0001f)
+            return awayFromSource.normalized;
+
+        return transform.right;
     }
 }

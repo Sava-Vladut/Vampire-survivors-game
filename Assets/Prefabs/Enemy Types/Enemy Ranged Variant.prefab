@@ -145,6 +145,7 @@ MonoBehaviour:
   damage: 12
   damageType: 0
   bulletLifetime: 5
+  knockbackForce: 5
   critChance: 0
   critMultiplier: 2
   applyStatusEffectOnHit: 0

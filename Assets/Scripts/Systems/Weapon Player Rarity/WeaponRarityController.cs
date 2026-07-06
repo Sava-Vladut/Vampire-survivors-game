@@ -272,13 +272,18 @@ public class WeaponRarityController : MonoBehaviour
     }
 
     /// <summary>
-    /// Upgrades rarity by one step (max Legendary), keeps current stats, and tries to add one unique upgrade.
+    /// Upgrades rarity by one step, keeps current stats, and tries to add one unique upgrade.
+    /// If already at max rarity, rerolls all modifiers at the current rarity instead.
     /// </summary>
     public bool UpgradeRarityKeepStats()
     {
         var prev = current;
         var next = RarityRollRules.NextRarity(prev);
-        if (next == prev) return false;
+        if (next == prev)
+        {
+            RerollStats();
+            return true;
+        }
 
         current = next;
         tiers.RollAll(rng);

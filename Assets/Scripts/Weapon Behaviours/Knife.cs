@@ -307,15 +307,7 @@ public class Knife : MonoBehaviour
 
                     // knockback (away from the hit origin)
                     if (knockbackForce > 0f)
-                    {
-                        EnemyChaser chaser = col.GetComponent<EnemyChaser>();
-                        if (chaser != null)
-                        {
-                            Vector2 dir = (Vector2)col.transform.position - (Vector2)origin.position;
-                            dir = dir.sqrMagnitude > 1e-6f ? dir.normalized : Random.insideUnitCircle.normalized;
-                            chaser.ApplyKnockback(dir * knockbackForce);
-                        }
-                    }
+                        ApplyKnockback(col, origin.position);
 
                     // lifesteal
                     if (lifestealPercent > 0f && parentHealth != null && parentHealth.IsAlive)
@@ -376,6 +368,27 @@ public class Knife : MonoBehaviour
             spriteRenderer.sortingLayerID = rangeRenderer.sortingLayerID;
 
         go.AddComponent<SplashCircleFade>().Init(spriteRenderer, splashCircleColor, splashCircleDuration);
+    }
+
+    private void ApplyKnockback(Collider2D col, Vector3 originPosition)
+    {
+        Vector2 direction = (Vector2)col.bounds.center - (Vector2)originPosition;
+        if (direction.sqrMagnitude <= 1e-6f)
+            direction = (Vector2)col.transform.position - (Vector2)originPosition;
+        if (direction.sqrMagnitude <= 1e-6f)
+            direction = Random.insideUnitCircle;
+        if (direction.sqrMagnitude <= 1e-6f)
+            direction = Vector2.right;
+
+        Vector2 impulse = direction.normalized * knockbackForce;
+        if (col.GetComponentInParent<EnemyChaser>() is EnemyChaser chaser)
+        {
+            chaser.ApplyKnockback(impulse);
+            return;
+        }
+
+        if (col.GetComponentInParent<Snappy2DController>() is Snappy2DController playerMovement)
+            playerMovement.ApplyKnockback(impulse);
     }
 
     public int RollBaseDamage()

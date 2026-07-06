@@ -7,6 +7,7 @@ public class ExplosionDamage2D : MonoBehaviour
     [SerializeField] public float radius = 2f;
     [SerializeField] public int baseDamage = 20;
     [SerializeField] private bool useDistanceFalloff = true;
+    [SerializeField, Min(0f)] private float knockbackForce = 0f;
 
     [Header("Visuals")]
     [Tooltip("Scale the first child GameObject so it visually matches the radius.")]
@@ -57,6 +58,7 @@ public class ExplosionDamage2D : MonoBehaviour
             if (dmg > 0)
             {
                 health.TakeDamage(dmg, SimpleHealth.DamageType.Physical);
+                ApplyKnockback(center, col);
                 _hitOnce.Add(health);
             }
         }
@@ -72,6 +74,30 @@ public class ExplosionDamage2D : MonoBehaviour
 
         float scaled = baseDamage * (1f - t);
         return Mathf.CeilToInt(scaled);
+    }
+
+    private void ApplyKnockback(Vector2 center, Collider2D col)
+    {
+        if (knockbackForce <= 0f) return;
+
+        Vector2 closestPoint = col.ClosestPoint(center);
+        Vector2 direction = closestPoint - center;
+        if (direction.sqrMagnitude <= 0.0001f)
+            direction = (Vector2)col.bounds.center - center;
+        if (direction.sqrMagnitude <= 0.0001f)
+            direction = Random.insideUnitCircle;
+        if (direction.sqrMagnitude <= 0.0001f)
+            direction = Vector2.right;
+
+        Vector2 impulse = direction.normalized * knockbackForce;
+        if (col.GetComponentInParent<EnemyChaser>() is EnemyChaser chaser)
+        {
+            chaser.ApplyKnockback(impulse);
+            return;
+        }
+
+        if (col.GetComponentInParent<Snappy2DController>() is Snappy2DController playerMovement)
+            playerMovement.ApplyKnockback(impulse);
     }
 
     private void Cleanup()
