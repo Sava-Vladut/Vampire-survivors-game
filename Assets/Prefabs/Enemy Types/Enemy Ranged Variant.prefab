@@ -141,7 +141,8 @@ MonoBehaviour:
   bulletPrefab: {fileID: 1832326421807717072, guid: 1f7be2eebcfd8854781b2baf0cf619ed, type: 3}
   shootTransforms: []
   shootForce: 20
-  damage: 8
+  minDamage: 4
+  damage: 12
   damageType: 0
   bulletLifetime: 5
   critChance: 0

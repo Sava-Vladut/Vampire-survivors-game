@@ -215,12 +215,21 @@ public sealed class DamageFlatUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.Scale(c.ranges.damageFlatAdd, c.tiers.damageFlat, 0);
-        int add = c.RangeIntInclusive(r.x, r.y);
-        int before = c.damage.Damage;
-        c.damage.Damage = before + add;
-        notes.AppendLine($"+{add} Damage ({c.Roman(c.tiers.damageFlat)})");
-        return () => c.damage.Damage -= add;
+        int minAdd = c.RangeIntInclusive(r.x, r.y);
+        int maxAdd = c.RangeIntInclusive(r.x, r.y);
+        if (minAdd > maxAdd) (minAdd, maxAdd) = (maxAdd, minAdd);
+
+        c.damage.MinDamage += minAdd;
+        c.damage.MaxDamage += maxAdd;
+        notes.AppendLine($"+{FormatIntRange(minAdd, maxAdd)} Damage ({c.Roman(c.tiers.damageFlat)})");
+        return () =>
+        {
+            c.damage.MinDamage -= minAdd;
+            c.damage.MaxDamage -= maxAdd;
+        };
     }
+
+    private static string FormatIntRange(int min, int max) => min == max ? min.ToString() : $"{min}-{max}";
 }
 
 
@@ -233,12 +242,29 @@ public sealed class DamagePercentAsFlatUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.damageMult, c.tiers.damagePercent);
-        float mult = c.RangeFloat(r.x, r.y);
-        int baseDmg = c.damage.Damage;
-        int delta = Mathf.RoundToInt(baseDmg * (mult - 1f));
-        c.damage.Damage = baseDmg + delta;
-        notes.AppendLine($"+{(mult - 1f) * 100f:F0}% Damage ({c.Roman(c.tiers.damagePercent)})");
-        return () => c.damage.Damage -= delta;
+        float minMult = c.RangeFloat(r.x, r.y);
+        float maxMult = c.RangeFloat(r.x, r.y);
+        if (minMult > maxMult) (minMult, maxMult) = (maxMult, minMult);
+
+        int baseMin = c.damage.MinDamage;
+        int baseMax = c.damage.MaxDamage;
+        int minDelta = Mathf.RoundToInt(baseMin * (minMult - 1f));
+        int maxDelta = Mathf.RoundToInt(baseMax * (maxMult - 1f));
+        c.damage.MinDamage = baseMin + minDelta;
+        c.damage.MaxDamage = baseMax + maxDelta;
+        notes.AppendLine($"+{FormatPercentRange(minMult - 1f, maxMult - 1f)} Damage ({c.Roman(c.tiers.damagePercent)})");
+        return () =>
+        {
+            c.damage.MinDamage -= minDelta;
+            c.damage.MaxDamage -= maxDelta;
+        };
+    }
+
+    private static string FormatPercentRange(float min, float max)
+    {
+        string minText = $"{min * 100f:F0}%";
+        string maxText = $"{max * 100f:F0}%";
+        return minText == maxText ? minText : $"{minText}-{maxText}";
     }
 }
 

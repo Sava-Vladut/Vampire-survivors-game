@@ -48,6 +48,7 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
         int cur = Mathf.Max(0, listener.spawnedChatters.Count);
         float interval = Mathf.Max(0f, listener.spawnIncreaseInterval);
         int cap = Mathf.Max(0, listener.minPower * Mathf.Max(1, listener.maxSpawnPerPowerRatio));
+        int totalEnemyPower = GetTotalEnemyPower();
 
         // --- Current spawns vs global cap ---
         sb.AppendLine($"{h}<b>Spawns:</b></color> {v}{cur}</color> / {v}{cap}</color>");
@@ -56,13 +57,31 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
 
         // --- Min power and upgrade chance ---
         float chance = Mathf.Clamp01(listener.chanceToUpgradeMinPower);
-        sb.AppendLine($"{h}<b>Power:</b></color> {v}{listener.minPower}</color>");
+        sb.AppendLine($"{h}<b>Min Power:</b></color> {v}{listener.minPower}</color>");
+        sb.AppendLine($"{h}<b>Enemy Power:</b></color> {v}{totalEnemyPower}</color>");
         if (interval > 0f)
             sb.AppendLine($"{n}Chance to +1 every {interval:0}s:</color> {v}{chance * 100f:0}%</color>");
         else
             sb.AppendLine($"{n}Power growth:</color> {v}disabled</color>");
 
         return sb.ToString();
+    }
+
+    private int GetTotalEnemyPower()
+    {
+        int total = 0;
+
+        for (int i = 0; i < listener.spawnedChatters.Count; i++)
+        {
+            GameObject enemy = listener.spawnedChatters[i];
+            if (!enemy) continue;
+
+            ChatterStats stats = enemy.GetComponent<ChatterStats>();
+            if (stats != null)
+                total += Mathf.Max(0, stats.power);
+        }
+
+        return total;
     }
 
     private static string ColorTag(string hexNoHash) => $"<color=#{hexNoHash}>";

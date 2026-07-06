@@ -62,6 +62,8 @@ public class TwitchListener : MonoBehaviour
 
     // Stopwatch time
     private float elapsedSeconds = 0f;
+    private PlayerSafeZoneStatus playerSafeZoneStatus;
+    private Transform cachedSafeZonePlayer;
     // Track spawned chatters
     [SerializeField] public List<GameObject> spawnedChatters = new();
     [SerializeField] public List<Chatter> chatters = new();
@@ -87,8 +89,12 @@ public class TwitchListener : MonoBehaviour
                 spawnedChatters.RemoveAt(i);
 
         if (player == null) return; // ✅ Prevents MissingReferenceException
-        // Only update stopwatch if the game isn't paused
-        if (Time.timeScale > 0f)
+        bool gameRunning = Time.timeScale > 0f;
+        bool timerPausedBySafeZone = IsTimerPausedBySafeZone();
+
+        // Only update stopwatch and timer-gated progression if the game isn't paused
+        // and the player is not resting inside a safe zone.
+        if (gameRunning && !timerPausedBySafeZone)
         {
             elapsedSeconds += Time.deltaTime;
 
@@ -104,38 +110,62 @@ public class TwitchListener : MonoBehaviour
             }
 
 
-            // Reposition chatters if they drift too far
-            for (int i = spawnedChatters.Count - 1; i >= 0; i--)
-            {
-                GameObject chatterObj = spawnedChatters[i];
-                if (chatterObj == null) continue;
-
-                float dist = Vector3.Distance(player.position, chatterObj.transform.position);
-                if (dist > maxDistanceFromPlayer)
-                {
-                    Vector3? newPos = FindValidSpawnPosition();
-                    if (newPos.HasValue)
-                    {
-                        // Teleport chatter safely
-                        Rigidbody2D rb = chatterObj.GetComponent<Rigidbody2D>();
-                        if (rb != null)
-                            rb.position = newPos.Value; // physics-safe teleport
-                        else
-                            chatterObj.transform.position = newPos.Value;
-
-                        Debug.Log($"[TwitchListener] Repositioned {chatterObj.name} to stay near player.");
-                    }
-                }
-            }
-
             if (alwaysSpawnMaxEnemies)
                 EnsureMaxSpawns();
-
         }
+
+        if (gameRunning)
+            RepositionFarChatters();
 
         // Update stopwatch UI
         if (stopwatchText != null)
             stopwatchText.text = FormatTime(elapsedSeconds);
+    }
+
+    private bool IsTimerPausedBySafeZone()
+    {
+        PlayerSafeZoneStatus status = GetPlayerSafeZoneStatus();
+        return status != null && status.IsSafeZoneActive;
+    }
+
+    private PlayerSafeZoneStatus GetPlayerSafeZoneStatus()
+    {
+        if (player == null)
+            return null;
+
+        if (cachedSafeZonePlayer != player)
+        {
+            cachedSafeZonePlayer = player;
+            playerSafeZoneStatus = null;
+        }
+
+        if (playerSafeZoneStatus == null)
+            playerSafeZoneStatus = player.GetComponentInParent<PlayerSafeZoneStatus>();
+
+        return playerSafeZoneStatus;
+    }
+
+    private void RepositionFarChatters()
+    {
+        for (int i = spawnedChatters.Count - 1; i >= 0; i--)
+        {
+            GameObject chatterObj = spawnedChatters[i];
+            if (chatterObj == null) continue;
+
+            float dist = Vector3.Distance(player.position, chatterObj.transform.position);
+            if (dist <= maxDistanceFromPlayer) continue;
+
+            Vector3? newPos = FindValidSpawnPosition();
+            if (!newPos.HasValue) continue;
+
+            Rigidbody2D rb = chatterObj.GetComponent<Rigidbody2D>();
+            if (rb != null)
+                rb.position = newPos.Value;
+            else
+                chatterObj.transform.position = newPos.Value;
+
+            Debug.Log($"[TwitchListener] Repositioned {chatterObj.name} to stay near player.");
+        }
     }
 
     private void OnDestroy()

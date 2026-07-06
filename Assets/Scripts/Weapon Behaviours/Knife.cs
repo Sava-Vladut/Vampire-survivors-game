@@ -22,7 +22,9 @@ public class Knife : MonoBehaviour
     [Header("AOE Damage")]
     [SerializeField, Tooltip("Main hit radius for selecting enemies.")]
     public float radius = 1f;
-    [SerializeField, Tooltip("Base damage dealt to main target.")]
+    [SerializeField, Min(0), Tooltip("Minimum base damage rolled for each main hit before crits.")]
+    public int minDamage = 10;
+    [SerializeField, Min(0), Tooltip("Maximum base damage rolled for each main hit before crits.")]
     public int damage = 10;
     [SerializeField, Tooltip("Damage category used for resistances, weaknesses, and damage coloring.")]
     public SimpleHealth.DamageType damageType;
@@ -41,6 +43,16 @@ public class Knife : MonoBehaviour
     public float splashRadius = 0;
     [SerializeField, Tooltip("Damage dealt to enemies inside splashRadius (percentage of main damage).")]
     [Range(0f, 1f)] public float splashDamagePercent = 0.5f;
+
+    [Header("Splash Visual")]
+    [SerializeField, Tooltip("Draw a temporary transparent circle when splash damage triggers.")]
+    private bool showSplashCircle = true;
+    [SerializeField, Tooltip("Color and opacity of the runtime splash circle.")]
+    private Color splashCircleColor = new Color(1f, 1f, 1f, 0.25f);
+    [SerializeField, Min(0.01f), Tooltip("How long the splash circle remains visible.")]
+    private float splashCircleDuration = 0.18f;
+    [SerializeField, Tooltip("SpriteRenderer order for the splash circle.")]
+    private int splashCircleSortingOrder = 5;
 
     [Header("On Hit Effects")]
     [Tooltip("Whether successful hits can apply a status effect.")]
@@ -68,6 +80,12 @@ public class Knife : MonoBehaviour
     [Range(0f, 1f)] public float critChance = 0f;
     [Tooltip("Damage multiplier applied when a critical hit occurs.")]
     [Min(1f)] public float critMultiplier = 2f;
+
+    [Header("Unique Effects")]
+    [Tooltip("Chance for a successful hit to repeat for partial damage.")]
+    [Range(0f, 1f)] public float echoStrikeChance = 0f;
+    [Tooltip("Fraction of the original hit damage dealt by Echo Strike.")]
+    [Range(0f, 1f)] public float echoStrikeDamagePercent = 0.5f;
 
     [Header("SFX")]
     [Tooltip("Audio clip played whenever the knife attacks.")]
@@ -167,7 +185,7 @@ public class Knife : MonoBehaviour
             }
             sb.AppendLine($"Upgrades: <color={numColor}>{enabledCount}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
 
-            sb.AppendLine($"Damage: <color={numColor}>{damage}</color>");
+            sb.AppendLine($"Damage: <color={numColor}>{GetDamageRangeText()}</color>");
             string dtColor = GetDamageTypeHex(damageType);
             sb.AppendLine($"Damage Type: <color={dtColor}>{damageType}</color>");
             sb.AppendLine($"Radius: <color={numColor}>{radius:F2}</color>");
@@ -178,6 +196,8 @@ public class Knife : MonoBehaviour
 
             sb.AppendLine($"Lifesteal: <color={numColor}>{(lifestealPercent * 100f):F0}</color>%");
             sb.AppendLine($"Crit: <color={numColor}>{(critChance * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
+            if (echoStrikeChance > 0f)
+                sb.AppendLine($"Echo Strike: <color={numColor}>{echoStrikeChance * 100f:F0}</color>% for <color={numColor}>{echoStrikeDamagePercent * 100f:F0}</color>% dmg");
             if (knockbackForce > 0f)
                 sb.AppendLine($"Knockback: <color={numColor}>{knockbackForce:F1}</color>");
             sb.AppendLine($"Max Targets: <color={numColor}>{maxTargetsPerTick}</color>");
@@ -269,15 +289,21 @@ public class Knife : MonoBehaviour
                     }
 
                     // main hit
-                    bool isCrit = Random.value < Mathf.Clamp01(critChance);
-                    float mult = isCrit ? Mathf.Max(1f, critMultiplier) : 1f;
-                    int dealt = Mathf.RoundToInt(damage * mult);
+                    int dealt = RollHitDamage();
 
                     bool cull = cullThreshold > 0f && health.CurrentHealth <= health.MaxHealth * cullThreshold;
                     if (cull)
                         health.TakeDamage(health.CurrentHealth, damageType, false, false);
                     else
                         health.TakeDamage(dealt, damageType);
+
+                    if (!cull && echoStrikeChance > 0f && health.IsAlive && Random.value <= Mathf.Clamp01(echoStrikeChance))
+                    {
+                        int echoDamage = Mathf.Max(1, Mathf.RoundToInt(dealt * Mathf.Clamp01(echoStrikeDamagePercent)));
+                        health.TakeDamage(echoDamage, damageType);
+                        if (slashEffect != null)
+                            Instantiate(slashEffect, col.transform.position, Quaternion.identity);
+                    }
 
                     // knockback (away from the hit origin)
                     if (knockbackForce > 0f)
@@ -301,6 +327,7 @@ public class Knife : MonoBehaviour
                     // splash
                     if (splashRadius > 0f && splashDamagePercent > 0f)
                     {
+                        SpawnSplashCircle(col.transform.position);
                         Collider2D[] splashHits = Physics2D.OverlapCircleAll(col.transform.position, splashRadius, targetMask);
                         for (int si = 0; si < splashHits.Length; si++)
                         {
@@ -332,6 +359,119 @@ public class Knife : MonoBehaviour
         }
     }
 
+    private void SpawnSplashCircle(Vector3 center)
+    {
+        if (!showSplashCircle || splashRadius <= 0f || splashCircleColor.a <= 0f)
+            return;
+
+        var go = new GameObject("Knife Splash Circle");
+        go.transform.position = center;
+        go.transform.localScale = Vector3.one * (splashRadius * 2f);
+
+        var spriteRenderer = go.AddComponent<SpriteRenderer>();
+        spriteRenderer.sprite = GetSplashCircleSprite();
+        spriteRenderer.color = splashCircleColor;
+        spriteRenderer.sortingOrder = splashCircleSortingOrder;
+        if (rangeRenderer != null)
+            spriteRenderer.sortingLayerID = rangeRenderer.sortingLayerID;
+
+        go.AddComponent<SplashCircleFade>().Init(spriteRenderer, splashCircleColor, splashCircleDuration);
+    }
+
+    public int RollBaseDamage()
+    {
+        int min = Mathf.Max(0, Mathf.Min(minDamage, damage));
+        int max = Mathf.Max(0, Mathf.Max(minDamage, damage));
+        return Random.Range(min, max + 1);
+    }
+
+    public int RollHitDamage()
+    {
+        int baseDamage = RollBaseDamage();
+        if (Random.value < Mathf.Clamp01(critChance))
+            return Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier));
+
+        return baseDamage;
+    }
+
+    private string GetDamageRangeText()
+    {
+        int min = Mathf.Max(0, Mathf.Min(minDamage, damage));
+        int max = Mathf.Max(0, Mathf.Max(minDamage, damage));
+        return min == max ? max.ToString() : $"{min}-{max}";
+    }
+
+    private static Sprite splashCircleSprite;
+
+    private static Sprite GetSplashCircleSprite()
+    {
+        if (splashCircleSprite != null)
+            return splashCircleSprite;
+
+        const int size = 64;
+        var texture = new Texture2D(size, size, TextureFormat.ARGB32, false)
+        {
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.HideAndDontSave
+        };
+
+        var pixels = new Color[size * size];
+        Vector2 center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+        float radius = (size - 1) * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float distance = Vector2.Distance(new Vector2(x, y), center) / radius;
+                float alpha = Mathf.Clamp01(1f - Mathf.InverseLerp(0.82f, 1f, distance));
+                pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+            }
+        }
+
+        texture.SetPixels(pixels);
+        texture.Apply();
+
+        splashCircleSprite = Sprite.Create(
+            texture,
+            new Rect(0f, 0f, size, size),
+            new Vector2(0.5f, 0.5f),
+            size);
+        splashCircleSprite.hideFlags = HideFlags.HideAndDontSave;
+        return splashCircleSprite;
+    }
+
+    private sealed class SplashCircleFade : MonoBehaviour
+    {
+        private SpriteRenderer spriteRenderer;
+        private Color startColor;
+        private float duration;
+        private float elapsed;
+
+        public void Init(SpriteRenderer renderer, Color color, float lifetime)
+        {
+            spriteRenderer = renderer;
+            startColor = color;
+            duration = Mathf.Max(0.01f, lifetime);
+        }
+
+        private void Update()
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            if (spriteRenderer != null)
+            {
+                Color color = startColor;
+                color.a = Mathf.Lerp(startColor.a, 0f, t);
+                spriteRenderer.color = color;
+            }
+
+            if (t >= 1f)
+                Destroy(gameObject);
+        }
+    }
+
 
     [ContextMenu("Sync Range Visual Now")]
     private void UpdateRangeVisual()
@@ -359,6 +499,9 @@ public class Knife : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
+        minDamage = Mathf.Max(0, minDamage);
+        damage = Mathf.Max(minDamage, damage);
+
         if (Application.isEditor && !Application.isPlaying)
             UpdateRangeVisual();
     }

@@ -225,6 +225,7 @@ MonoBehaviour:
   target: {fileID: 0}
   moveSpeed: 1
   stoppingDistance: 0.5
+  bypassWalls: 1
   enableFlee: 0
   fleeBuffer: 0.25
   knockbackDecay: 15
@@ -1073,7 +1074,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 1.06
-  damage: 8
+  minDamage: 4
+  damage: 12
   damageType: 0
   targetMask:
     serializedVersion: 2
@@ -1082,6 +1084,10 @@ MonoBehaviour:
   hitOrigins: []
   splashRadius: 0
   splashDamagePercent: 0.5
+  showSplashCircle: 1
+  splashCircleColor: {r: 1, g: 1, b: 1, a: 0.25}
+  splashCircleDuration: 0.18
+  splashCircleSortingOrder: 5
   applyStatusEffectOnHit: 0
   statusApplyChance: 1
   statusEffectOnHit: 0
@@ -1091,6 +1097,8 @@ MonoBehaviour:
   lifestealPercent: 0
   critChance: 0
   critMultiplier: 2
+  echoStrikeChance: 0
+  echoStrikeDamagePercent: 0.5
   shootClip: {fileID: 0}
   stabClip: {fileID: 8300000, guid: 95c906fdaf654834fb592c668a587250, type: 3}
   slashEffect: {fileID: 0}

@@ -273,14 +273,24 @@ public class MonsterRarity : MonoBehaviour
     private void Up_Knife_Dmg_Flat()
     {
         int add = UnityEngine.Random.Range(KnifeDamageFlat.x, KnifeDamageFlat.y + 1);
-        foreach (var k in knives) if (k) k.damage = Mathf.Max(0, k.damage + add);
+        foreach (var k in knives)
+        {
+            if (!k) continue;
+            k.minDamage = Mathf.Max(0, k.minDamage + add);
+            k.damage = Mathf.Max(k.minDamage, k.damage + add);
+        }
         WN("Melee Damage", $"+{add}");
     }
 
     private void Up_Knife_Dmg_Mult()
     {
         float m = UnityEngine.Random.Range(KnifeDamageMult.x, KnifeDamageMult.y);
-        foreach (var k in knives) if (k) k.damage = Mathf.RoundToInt(k.damage * m);
+        foreach (var k in knives)
+        {
+            if (!k) continue;
+            k.minDamage = Mathf.Max(0, Mathf.RoundToInt(k.minDamage * m));
+            k.damage = Mathf.Max(k.minDamage, Mathf.RoundToInt(k.damage * m));
+        }
         WN("Melee Damage", $"+{(m - 1f) * 100f:F0}%");
     }
 
@@ -308,14 +318,24 @@ public class MonsterRarity : MonoBehaviour
     private void Up_Shooter_Dmg_Flat()
     {
         int add = UnityEngine.Random.Range(shooterDamageFlat.x, shooterDamageFlat.y + 1);
-        foreach (var s in shooters) if (s) s.damage = Mathf.Max(0, s.damage + add);
+        foreach (var s in shooters)
+        {
+            if (!s) continue;
+            s.minDamage = Mathf.Max(0, s.minDamage + add);
+            s.damage = Mathf.Max(s.minDamage, s.damage + add);
+        }
         WN("Ranged Damage", $"+{add}");
     }
 
     private void Up_Shooter_Dmg_Mult()
     {
         float m = UnityEngine.Random.Range(shooterDamageMult.x, shooterDamageMult.y);
-        foreach (var s in shooters) if (s) s.damage = Mathf.RoundToInt(s.damage * m);
+        foreach (var s in shooters)
+        {
+            if (!s) continue;
+            s.minDamage = Mathf.Max(0, Mathf.RoundToInt(s.minDamage * m));
+            s.damage = Mathf.Max(s.minDamage, Mathf.RoundToInt(s.damage * m));
+        }
         WN("Ranged Damage", $"+{(m - 1f) * 100f:F0}%");
     }
 

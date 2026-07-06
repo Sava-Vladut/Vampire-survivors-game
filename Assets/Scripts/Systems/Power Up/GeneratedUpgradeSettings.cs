@@ -25,8 +25,17 @@ public class GeneratedUpgradeSettings : ScriptableObject
         public bool wholeNumbers;
     }
 
+    [Serializable]
+    public class PowerUpRaritySetting
+    {
+        public PowerUpRarity rarity;
+        [Min(0f)] public float frequency = 1f;
+        [Min(0f)] public float strengthMultiplier = 1f;
+    }
+
     public List<WeaponRange> weaponRanges = new();
     public List<AccessoryRange> accessoryRanges = new();
+    public List<PowerUpRaritySetting> raritySettings = new();
 
     private static GeneratedUpgradeSettings cached;
 
@@ -57,6 +66,26 @@ public class GeneratedUpgradeSettings : ScriptableObject
                 continue;
             accessoryRanges.Add(new AccessoryRange { type = type, min = min, max = max, wholeNumbers = whole });
         }
+
+        EnsureAllRarities();
+    }
+
+    private void EnsureAllRarities()
+    {
+        raritySettings ??= new List<PowerUpRaritySetting>();
+
+        foreach (PowerUpRarity rarity in Enum.GetValues(typeof(PowerUpRarity)))
+        {
+            if (raritySettings.Exists(entry => entry.rarity == rarity))
+                continue;
+
+            raritySettings.Add(new PowerUpRaritySetting
+            {
+                rarity = rarity,
+                frequency = GetDefaultRarityFrequency(rarity),
+                strengthMultiplier = GetDefaultRarityMultiplier(rarity)
+            });
+        }
     }
 
     public WeaponRange FindWeaponRange(WeaponUpgrades.UpgradeType type) =>
@@ -64,6 +93,9 @@ public class GeneratedUpgradeSettings : ScriptableObject
 
     public AccessoryRange FindAccessoryRange(AccessoriesUpgrades.StatUpgradeType type) =>
         accessoryRanges.Find(entry => entry.type == type);
+
+    public PowerUpRaritySetting FindRaritySetting(PowerUpRarity rarity) =>
+        raritySettings?.Find(entry => entry.rarity == rarity);
 
     public static bool TryRollWeapon(WeaponUpgrades.UpgradeType type, out float value)
     {
@@ -77,6 +109,40 @@ public class GeneratedUpgradeSettings : ScriptableObject
 
         value = Roll(range.min, range.max, range.wholeNumbers);
         return true;
+    }
+
+    public static PowerUpRarity RollPowerUpRarity()
+    {
+        var settings = Load();
+        var raritySettings = settings != null ? settings.raritySettings : null;
+        if (raritySettings == null || raritySettings.Count == 0)
+            return RollDefaultRarity();
+
+        float total = 0f;
+        foreach (var entry in raritySettings)
+            if (entry != null)
+                total += Mathf.Max(0f, entry.frequency);
+
+        if (total <= 0f)
+            return PowerUpRarity.Common;
+
+        float roll = UnityEngine.Random.value * total;
+        foreach (var entry in raritySettings)
+        {
+            if (entry == null) continue;
+            roll -= Mathf.Max(0f, entry.frequency);
+            if (roll <= 0f)
+                return entry.rarity;
+        }
+
+        return PowerUpRarity.Common;
+    }
+
+    public static float GetPowerUpRarityMultiplier(PowerUpRarity rarity)
+    {
+        var settings = Load();
+        var entry = settings != null ? settings.FindRaritySetting(rarity) : null;
+        return entry != null ? Mathf.Max(0f, entry.strengthMultiplier) : GetDefaultRarityMultiplier(rarity);
     }
 
     public static bool TryRollAccessory(AccessoriesUpgrades.StatUpgradeType type, out float value)
@@ -99,6 +165,31 @@ public class GeneratedUpgradeSettings : ScriptableObject
         float max = Mathf.Max(a, b);
         float rolled = Mathf.Approximately(min, max) ? min : UnityEngine.Random.Range(min, max);
         return wholeNumbers ? Mathf.Round(rolled) : rolled;
+    }
+
+    public static float GetDefaultRarityFrequency(PowerUpRarity rarity)
+    {
+        return rarity switch
+        {
+            PowerUpRarity.Uncommon => 1f,
+            PowerUpRarity.Rare => 1f,
+            _ => 1f,
+        };
+    }
+
+    public static float GetDefaultRarityMultiplier(PowerUpRarity rarity)
+    {
+        return rarity switch
+        {
+            PowerUpRarity.Uncommon => 1.5f,
+            PowerUpRarity.Rare => 2f,
+            _ => 1f,
+        };
+    }
+
+    private static PowerUpRarity RollDefaultRarity()
+    {
+        return (PowerUpRarity)UnityEngine.Random.Range(0, 3);
     }
 
     private static bool TryGetWeaponDefaults(WeaponUpgrades.UpgradeType type, out float min, out float max, out bool whole)
@@ -142,6 +233,8 @@ public class GeneratedUpgradeSettings : ScriptableObject
             case WeaponUpgrades.UpgradeType.BurstCountPercent: min = 0.05f; max = 0.25f; return true;
             case WeaponUpgrades.UpgradeType.BurstSpacingFlat: min = 0.01f; max = 0.15f; return true;
             case WeaponUpgrades.UpgradeType.BurstSpacingPercent: min = 0.05f; max = 0.25f; return true;
+            case WeaponUpgrades.UpgradeType.KnifeEchoStrikeChance: min = 0.08f; max = 0.20f; return true;
+            case WeaponUpgrades.UpgradeType.ShooterForkShotChance: min = 0.08f; max = 0.20f; return true;
             default: return false;
         }
     }

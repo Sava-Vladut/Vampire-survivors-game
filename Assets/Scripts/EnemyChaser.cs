@@ -35,6 +35,8 @@ public class EnemyChaser : MonoBehaviour
     private Rigidbody2D rb;
     private StatusEffectSystem cachedStatusEffects;
     private SimpleHealth cachedHealth;
+    private PlayerSafeZoneStatus targetSafeZoneStatus;
+    private Transform cachedSafeZoneTarget;
     private bool hasReached;
     private Vector2 knockbackVelocity;
 
@@ -84,11 +86,12 @@ public class EnemyChaser : MonoBehaviour
         Vector2 targetPos = target.position;
         Vector2 toTarget = targetPos - currentPos;
         float distSqr = toTarget.sqrMagnitude;
+        bool frozenBySafeZone = IsFrozenBySafeZone(distSqr);
 
         // Decide desired direction (flee/approach with deadband) using squared distances
         Vector2 desiredDir = Vector2.zero;
         bool needsMove = false;
-        if (enableFlee)
+        if (!frozenBySafeZone && enableFlee)
         {
             float buffer = Mathf.Max(0f, fleeBuffer);
             float lower = Mathf.Max(0f, stoppingDistance - buffer);
@@ -121,7 +124,7 @@ public class EnemyChaser : MonoBehaviour
         }
 
         // Fire reach event on first entry
-        if (distSqr <= stoppingDistance * stoppingDistance && !hasReached)
+        if (!frozenBySafeZone && distSqr <= stoppingDistance * stoppingDistance && !hasReached)
         {
             hasReached = true;
             onReachDestination?.Invoke();
@@ -132,10 +135,45 @@ public class EnemyChaser : MonoBehaviour
 
         // Apply velocity (knockback is blended in on top of chase movement)
         float speed = moveSpeed * mult;
-        rb.linearVelocity = (needsMove ? (desiredDir * speed) : Vector2.zero) + knockbackVelocity;
-        knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDecay * Time.fixedDeltaTime);
+        if (frozenBySafeZone)
+        {
+            rb.linearVelocity = Vector2.zero;
+            knockbackVelocity = Vector2.zero;
+        }
+        else
+        {
+            rb.linearVelocity = (needsMove ? (desiredDir * speed) : Vector2.zero) + knockbackVelocity;
+            knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDecay * Time.fixedDeltaTime);
+        }
 
         ResetReachedIfFar(distSqr);
+    }
+
+    private bool IsFrozenBySafeZone(float distSqr)
+    {
+        PlayerSafeZoneStatus status = GetTargetSafeZoneStatus();
+        if (status == null || !status.IsSafeZoneActive)
+            return false;
+
+        float freezeRadius = status.EnemyFreezeRadius;
+        return freezeRadius > 0f && distSqr <= freezeRadius * freezeRadius;
+    }
+
+    private PlayerSafeZoneStatus GetTargetSafeZoneStatus()
+    {
+        if (target == null)
+            return null;
+
+        if (cachedSafeZoneTarget != target)
+        {
+            cachedSafeZoneTarget = target;
+            targetSafeZoneStatus = null;
+        }
+
+        if (targetSafeZoneStatus == null)
+            targetSafeZoneStatus = target.GetComponentInParent<PlayerSafeZoneStatus>();
+
+        return targetSafeZoneStatus;
     }
 
     private void ResetReachedIfFar(float distSqr)

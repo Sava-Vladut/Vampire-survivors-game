@@ -176,11 +176,21 @@ public class PowerUpSelectionUI : MonoBehaviour
                     var pu = powerUpChooser.powerUps[shownIndices[i]];
                     descriptionTexts[i].text = string.Empty;
 
+                    if (pu.IsUpgrade)
+                    {
+                        string rarityName = PowerUp.GetRarityDisplayName(pu.rarity).ToUpperInvariant();
+                        string rarityColor = PowerUp.GetRarityColor(pu.rarity);
+                        descriptionTexts[i].text += $"<b><color={rarityColor}>[{rarityName}]</color></b> ";
+                    }
+
                     if (pu.IsWeapon)
                         descriptionTexts[i].text += "<b>[WEAPON] </b>";
 
                     if (pu.IsAccessory)
                         descriptionTexts[i].text += "<b>[ACCESSORY] </b>";
+
+                    if (pu.IsUpgrade || pu.IsWeapon || pu.IsAccessory)
+                        descriptionTexts[i].text += "\n";
 
                     descriptionTexts[i].text += pu.powerUpDescription;
                 }

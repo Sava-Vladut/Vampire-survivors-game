@@ -13,7 +13,9 @@ public class SimpleShooter : MonoBehaviour
 
     [Tooltip("Initial movement speed applied to spawned projectiles.")]
     public float shootForce = 10f;
-    [Tooltip("Base damage assigned to each spawned projectile.")]
+    [Min(0), Tooltip("Minimum base damage rolled for each spawned projectile before crits.")]
+    public int minDamage = 15;
+    [Min(0), Tooltip("Maximum base damage rolled for each spawned projectile before crits.")]
     public int damage = 15;
     [SerializeField, Tooltip("Damage category used for resistances, weaknesses, and damage coloring.")]
     public SimpleHealth.DamageType damageType;
@@ -48,6 +50,14 @@ public class SimpleShooter : MonoBehaviour
     public int projectileCount = 1;
     [Tooltip("Total cone in degrees. Each projectile gets a random angle within [-spread/2, +spread/2].")]
     public float spreadAngle = 0f;
+
+    [Header("Unique Effects")]
+    [Tooltip("Chance for each projectile to split into two weaker angled side shots.")]
+    [Range(0f, 1f)] public float forkShotChance = 0f;
+    [Tooltip("Angle offset used by forked side shots.")]
+    [Range(0f, 90f)] public float forkShotAngle = 18f;
+    [Tooltip("Damage fraction dealt by each forked side shot.")]
+    [Range(0f, 1f)] public float forkShotDamagePercent = 0.5f;
 
     [Header("SFX")]
     [Tooltip("Audio clip played whenever the weapon fires.")]
@@ -164,7 +174,7 @@ public class SimpleShooter : MonoBehaviour
         sb.AppendLine($"Upgrades: <color={numColor}>{enabledUpgrades}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
 
 
-        sb.AppendLine($"Damage: <color={numColor}>{damage}</color>");
+        sb.AppendLine($"Damage: <color={numColor}>{GetDamageRangeText()}</color>");
         string dtColor = GetDamageTypeHex(damageType);
         sb.AppendLine($"Damage Type: <color={dtColor}>{damageType}</color>");
         sb.AppendLine($"Attack Delay: {delay}");
@@ -173,6 +183,8 @@ public class SimpleShooter : MonoBehaviour
         sb.AppendLine($"Projectile Count: <color={numColor}>{Mathf.Max(1, projectileCount)}</color>");
         sb.AppendLine($"Penetration: {penetration}");
         sb.AppendLine($"Crit: <color={numColor}>{(Mathf.Clamp01(critChance) * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
+        if (forkShotChance > 0f)
+            sb.AppendLine($"Forked Rounds: <color={numColor}>{forkShotChance * 100f:F0}</color>% for <color={numColor}>{forkShotDamagePercent * 100f:F0}</color>% dmg");
 
         if (applyStatusEffectOnHit)
         {
@@ -253,47 +265,92 @@ public class SimpleShooter : MonoBehaviour
                     baseDir.x * sin + baseDir.y * cos
                 );
 
-                var bullet = Instantiate(bulletPrefab, origin.position, Quaternion.identity);
+                int finalDamage = RollHitDamage();
 
-                // Face travel direction
-                float rotDeg = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
-                bullet.transform.rotation = Quaternion.Euler(0, 0, rotDeg);
+                SpawnProjectile(origin.position, shootDir, finalDamage);
 
-                // Crit calc
-                int finalDamage = (Random.value < critChance)
-                    ? Mathf.RoundToInt(damage * critMultiplier)
-                    : damage;
-
-                if (bullet.TryGetComponent<BulletDamageTrigger>(out var bulletDamage))
+                if (forkShotChance > 0f && Random.value <= Mathf.Clamp01(forkShotChance))
                 {
-                    bulletDamage.damageAmount = finalDamage;
-                    bulletDamage.damageType = damageType;
-                    bulletDamage.penetration = penetration;
-                    bulletDamage.knockbackForce = knockbackForce;
-                    bulletDamage.cullThreshold = cullThreshold;
-                    bulletDamage.statusApplyChance = statusApplyChance;
-                    bulletDamage.applyStatusEffectOnHit = applyStatusEffectOnHit;
-                    bulletDamage.statusEffectOnHit = statusEffectOnHit;
-                    bulletDamage.statusEffectDuration = statusEffectDuration;
+                    int forkDamage = Mathf.Max(1, Mathf.RoundToInt(finalDamage * Mathf.Clamp01(forkShotDamagePercent)));
+                    float forkAngle = Mathf.Max(0f, forkShotAngle);
+                    SpawnProjectile(origin.position, Rotate(shootDir, -forkAngle), forkDamage);
+                    SpawnProjectile(origin.position, Rotate(shootDir, forkAngle), forkDamage);
                 }
-                if (chainHits > 0)
-                {
-                    var chain = bullet.GetComponent<RB2DChainToTag>();
-                    if (chain == null) chain = bullet.AddComponent<RB2DChainToTag>();
-                    chain.maxChains = chainHits;
-                    if (bullet.TryGetComponent<BulletDamageTrigger>(out var chainDamage))
-                        chainDamage.penetration = Mathf.Max(chainDamage.penetration, chainHits + 1);
-                }
-                if (bullet.TryGetComponent<ExplosionDamage2D>(out var explosionDamage))
-                    explosionDamage.baseDamage = finalDamage;
-
-                if (bullet.TryGetComponent<Rigidbody2D>(out var rb))
-                    rb.linearVelocity = shootDir * shootForce;
-
-                if (bulletLifetime > 0f)
-                    Destroy(bullet, bulletLifetime);
             }
         }
+    }
+
+    private void SpawnProjectile(Vector3 originPosition, Vector2 shootDir, int finalDamage)
+    {
+        var bullet = Instantiate(bulletPrefab, originPosition, Quaternion.identity);
+
+        float rotDeg = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
+        bullet.transform.rotation = Quaternion.Euler(0, 0, rotDeg);
+
+        if (bullet.TryGetComponent<BulletDamageTrigger>(out var bulletDamage))
+        {
+            bulletDamage.damageAmount = finalDamage;
+            bulletDamage.damageType = damageType;
+            bulletDamage.penetration = penetration;
+            bulletDamage.knockbackForce = knockbackForce;
+            bulletDamage.cullThreshold = cullThreshold;
+            bulletDamage.statusApplyChance = statusApplyChance;
+            bulletDamage.applyStatusEffectOnHit = applyStatusEffectOnHit;
+            bulletDamage.statusEffectOnHit = statusEffectOnHit;
+            bulletDamage.statusEffectDuration = statusEffectDuration;
+        }
+
+        if (chainHits > 0)
+        {
+            var chain = bullet.GetComponent<RB2DChainToTag>();
+            if (chain == null) chain = bullet.AddComponent<RB2DChainToTag>();
+            chain.maxChains = chainHits;
+            if (bullet.TryGetComponent<BulletDamageTrigger>(out var chainDamage))
+                chainDamage.penetration = Mathf.Max(chainDamage.penetration, chainHits + 1);
+        }
+
+        if (bullet.TryGetComponent<ExplosionDamage2D>(out var explosionDamage))
+            explosionDamage.baseDamage = finalDamage;
+
+        if (bullet.TryGetComponent<Rigidbody2D>(out var rb))
+            rb.linearVelocity = shootDir * shootForce;
+
+        if (bulletLifetime > 0f)
+            Destroy(bullet, bulletLifetime);
+    }
+
+    private static Vector2 Rotate(Vector2 direction, float degrees)
+    {
+        float rad = degrees * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(rad);
+        float sin = Mathf.Sin(rad);
+        return new Vector2(
+            direction.x * cos - direction.y * sin,
+            direction.x * sin + direction.y * cos
+        );
+    }
+
+    public int RollBaseDamage()
+    {
+        int min = Mathf.Max(0, Mathf.Min(minDamage, damage));
+        int max = Mathf.Max(0, Mathf.Max(minDamage, damage));
+        return Random.Range(min, max + 1);
+    }
+
+    public int RollHitDamage()
+    {
+        int baseDamage = RollBaseDamage();
+        if (Random.value < Mathf.Clamp01(critChance))
+            return Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier));
+
+        return baseDamage;
+    }
+
+    private string GetDamageRangeText()
+    {
+        int min = Mathf.Max(0, Mathf.Min(minDamage, damage));
+        int max = Mathf.Max(0, Mathf.Max(minDamage, damage));
+        return min == max ? max.ToString() : $"{min}-{max}";
     }
 
 
@@ -319,4 +376,12 @@ public class SimpleShooter : MonoBehaviour
             Gizmos.DrawWireSphere(transform.position, 0.1f);
         }
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        minDamage = Mathf.Max(0, minDamage);
+        damage = Mathf.Max(minDamage, damage);
+    }
+#endif
 }

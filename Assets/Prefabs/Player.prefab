@@ -630,7 +630,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 2.5
-  damage: 35
+  minDamage: 17
+  damage: 53
   damageType: 0
   targetMask:
     serializedVersion: 2
@@ -1385,7 +1386,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 2
-  damage: 15
+  minDamage: 7
+  damage: 23
   damageType: 0
   targetMask:
     serializedVersion: 2
@@ -2310,7 +2312,8 @@ MonoBehaviour:
   bulletPrefab: {fileID: 1832326421807717072, guid: fd50f4cd2d529cc4ca815f03cc845514, type: 3}
   shootTransforms: []
   shootForce: 20
-  damage: 30
+  minDamage: 15
+  damage: 45
   damageType: 0
   bulletLifetime: 5
   penetration: 3
@@ -6223,7 +6226,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 0.7
-  damage: 5
+  minDamage: 2
+  damage: 8
   damageType: 0
   targetMask:
     serializedVersion: 2
@@ -6978,7 +6982,8 @@ MonoBehaviour:
   bulletPrefab: {fileID: 1832326421807717072, guid: fd50f4cd2d529cc4ca815f03cc845514, type: 3}
   shootTransforms: []
   shootForce: 20
-  damage: 10
+  minDamage: 5
+  damage: 15
   damageType: 0
   bulletLifetime: 1
   penetration: 1
@@ -8079,7 +8084,8 @@ MonoBehaviour:
   - {fileID: 1662257835036019346}
   - {fileID: 6657320218566297732}
   shootForce: 12
-  damage: 11
+  minDamage: 5
+  damage: 17
   damageType: 0
   bulletLifetime: 3
   penetration: 1
@@ -9760,7 +9766,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 1.9
-  damage: 10
+  minDamage: 5
+  damage: 15
   damageType: 0
   targetMask:
     serializedVersion: 2
@@ -13178,7 +13185,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 5.25
-  damage: 20
+  minDamage: 10
+  damage: 30
   damageType: 0
   targetMask:
     serializedVersion: 2
@@ -15410,7 +15418,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 0.7
-  damage: 17
+  minDamage: 8
+  damage: 26
   damageType: 0
   targetMask:
     serializedVersion: 2
@@ -17053,7 +17062,8 @@ MonoBehaviour:
   bulletPrefab: {fileID: 1832326421807717072, guid: fd50f4cd2d529cc4ca815f03cc845514, type: 3}
   shootTransforms: []
   shootForce: 15
-  damage: 17
+  minDamage: 8
+  damage: 26
   damageType: 0
   bulletLifetime: 3
   penetration: 1

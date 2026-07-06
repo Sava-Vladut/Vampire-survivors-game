@@ -1,4 +1,3 @@
-﻿using NaughtyAttributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -25,88 +24,66 @@ public class SimpleHealth : MonoBehaviour
         DamageType.Poison
     };
 
-    [BoxGroup("Health")][SerializeField] public int maxHealth = 100;
-    [BoxGroup("Health")]
+    [SerializeField] public int maxHealth = 100;
     [Tooltip("If <=0, starts at maxHealth.")]
     [SerializeField] private int startingHealth = 100;
 
-    [BoxGroup("Invulnerability")]
     [Tooltip("Seconds of invulnerability after taking damage.")]
     [SerializeField] private float invulnerabilityDuration = 1f;
 
-    [BoxGroup("Regeneration")]
     [Tooltip("Health regenerated per second. Can be fractional. Does not grant temporary health.")]
     [SerializeField] public float regenRate = 0f;
 
-    [BoxGroup("Temporary Health")]
     [Tooltip("If true, healing past max health grants a temporary, decaying health shield.")]
     [SerializeField] private bool enableTemporaryHealth = true;
-    [BoxGroup("Temporary Health")]
     [Tooltip("How fast temporary health depletes per second.")]
     [SerializeField] private float tempHealthDecayRate = 5f;
-    [BoxGroup("Temporary Health")]
     [Tooltip("How long to wait after gaining temp health before it starts decaying.")]
     [SerializeField] private float tempHealthDecayDelay = 1.5f;
 
-    [BoxGroup("Armor (Small-hit mitigation)")]
     [Tooltip("Flat armor rating. More armor = more mitigation on small hits.")]
     [SerializeField] public float armor = 0f;
-    [BoxGroup("Armor (Small-hit mitigation)")]
     [Tooltip("How quickly mitigation falls off as the hit gets bigger. Higher = big hits bypass sooner.")]
     [SerializeField] private float armorScaling = 10f;
-    [BoxGroup("Armor (Small-hit mitigation)")]
     [Tooltip("Cap the maximum mitigation fraction (0..0.95). 0.8 = up to 80% reduction on tiny hits.")]
     [Range(0f, 0.95f)][SerializeField] private float maxMitigation = 0.8f;
 
-    [BoxGroup("Evasion (Chance to completely dodge small hits)")]
     [SerializeField] public float evasion = 0f;
-    [BoxGroup("Evasion (Chance to completely dodge small hits)")]
     [SerializeField] private float evasionScaling = 10f;
-    [BoxGroup("Evasion (Chance to completely dodge small hits)")]
     [SerializeField, Range(0f, 0.95f)] private float maxEvasion = 0.8f;
 
-    [BoxGroup("Resistances (% damage reduced AFTER armor)")]
     [Tooltip("0..0.95 fraction of damage reduced for each type.")]
     [Range(0f, 0.95f)] public float fireResist = 0f;
-    [BoxGroup("Resistances (% damage reduced AFTER armor)")]
     [Range(0f, 0.95f)] public float coldResist = 0f;
-    [BoxGroup("Resistances (% damage reduced AFTER armor)")]
     [Range(0f, 0.95f)] public float lightningResist = 0f;
-    [BoxGroup("Resistances (% damage reduced AFTER armor)")]
     [Range(0f, 0.95f)] public float poisonResist = 0f;
 
-    [BoxGroup("UI")]
     [Tooltip("Optional slider to show current health.")]
     [SerializeField] public Slider healthSlider;
-    [BoxGroup("UI")][SerializeField] public TextMeshProUGUI healthText;
+    [SerializeField] public TextMeshProUGUI healthText;
 
-    [BoxGroup("Stats Display")]
     [Tooltip("Prefab root GameObject that contains a TextMeshProUGUI somewhere in its children.")]
     [SerializeField] private GameObject statsTextPrefab;
-    [BoxGroup("Stats Display")][SerializeField] private Transform uiParent;
-    [BoxGroup("Stats Display")][TextArea][SerializeField] public string extraTextField;
-    [BoxGroup("Stats Display")]
+    [SerializeField] private Transform uiParent;
+    [TextArea][SerializeField] public string extraTextField;
     [Tooltip("Sprite to show above the stats text.")]
     [SerializeField] private Sprite iconSprite;
 
-    [BoxGroup("SFX")][SerializeField] private Volume playerVolume;
-    [BoxGroup("SFX")][SerializeField] private GameObject[] deathObjects;
-    [BoxGroup("SFX")][SerializeField] private AudioClip[] damageClip;
-    [BoxGroup("SFX")][SerializeField] private AudioClip[] deathClip;
-    [BoxGroup("SFX")][SerializeField] private GameObject bloodSFX;
+    [SerializeField] private Volume playerVolume;
+    [SerializeField] private GameObject[] deathObjects;
+    [SerializeField] private AudioClip[] damageClip;
+    [SerializeField] private AudioClip[] deathClip;
+    [SerializeField] private GameObject bloodSFX;
 
-    [BoxGroup("Loot")]
     [Tooltip("Weighted loot table. On death we roll once and spawn the result (if any).")]
     [SerializeField] private LootTable2D loot;
 
-    [BoxGroup("Hit Flash")][SerializeField] private SpriteRenderer spriteRenderer;
-    [BoxGroup("Hit Flash")][SerializeField] private Color hitColor = new Color(1f, 0.5f, 0.5f, 1f);
-    [BoxGroup("Hit Flash")][SerializeField] private float hitFlashDuration = 0.1f;
+    [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Color hitColor = new Color(1f, 0.5f, 0.5f, 1f);
+    [SerializeField] private float hitFlashDuration = 0.1f;
 
-    [BoxGroup("Damage Popup")]
     [Tooltip("Prefab with a TextMeshPro or TextMeshProUGUI to display damage taken.")]
     [SerializeField] private GameObject damagePopupPrefab;
-    [BoxGroup("Damage Popup")]
     [Tooltip("Offset from entity position when spawning damage popup.")]
     [SerializeField] private Vector3 popupOffset = new Vector3(0f, 1f, 0f);
 
@@ -138,6 +115,7 @@ public class SimpleHealth : MonoBehaviour
 
     private Image iconImage;
     private AudioLowPassFilter filter;
+    private PlayerSafeZoneStatus safeZoneStatus;
     // Active damage popups per damage type for accumulation
     private readonly Dictionary<DamageType, TMP_Text> _activeDamagePopups = new Dictionary<DamageType, TMP_Text>();
     private bool hasDied;
@@ -370,6 +348,7 @@ public class SimpleHealth : MonoBehaviour
                 _statsBuilder.AppendLine($"<b><color={statColor}>Defense</color></b>");
                 _statsBuilder.AppendLine($"Armor: <color={statColor}>{(int)armor}</color> (Mitigation: <color={statColor}>{mitigation * 100f:F1}%</color>)");
                 _statsBuilder.AppendLine($"Evasion: <color={statColor}>{(int)evasion}</color> (Chance: <color={statColor}>{evasionChance * 100f:F1}%</color>)");
+                _statsBuilder.AppendLine($"Thorns: <color={statColor}>{thornsDamage}</color>");
                 _statsBuilder.AppendLine($"<color=#FF6600>Fire Res: {fireResist * 100f:F0}%</color>");
                 _statsBuilder.AppendLine($"<color=#4DB2FF>Cold Res: {coldResist * 100f:F0}%</color>");
                 _statsBuilder.AppendLine($"<color=#FFFF4D>Lightning Res: {lightningResist * 100f:F0}%</color>");
@@ -504,7 +483,7 @@ public class SimpleHealth : MonoBehaviour
     // NEW: main overload with type
     public void TakeDamage(int amount, DamageType type = DamageType.Physical, bool mitigatable = true, bool applyAilments = true)
     {
-        if (amount <= 0 || isInvulnerable || !IsAlive) return;
+        if (amount <= 0 || IsProtectedBySafeZone() || isInvulnerable || !IsAlive) return;
 
         float incomingDamage = amount;
 
@@ -651,6 +630,17 @@ public class SimpleHealth : MonoBehaviour
 
         if (!IsAlive) Die();
         else if (invulnerabilityDuration > 0) StartInvulnerability(invulnerabilityDuration);
+    }
+
+    private bool IsProtectedBySafeZone()
+    {
+        if (!CompareTag("Player"))
+            return false;
+
+        if (safeZoneStatus == null)
+            TryGetComponent(out safeZoneStatus);
+
+        return safeZoneStatus != null && safeZoneStatus.IsSafeZoneActive;
     }
 
     private void ApplyThorns()
@@ -893,6 +883,14 @@ public class SimpleHealth : MonoBehaviour
         UpdateStatsText();
     }
 
+    public void GiveThorns(float amount)
+    {
+        int roundedAmount = Mathf.RoundToInt(amount);
+        if (roundedAmount == 0) return;
+        thornsDamage = Mathf.Max(0, thornsDamage + roundedAmount);
+        UpdateStatsText();
+    }
+
     // OPTIONAL HELPERS: adjust resistances at runtime
     public void GiveResistance(DamageType type, float amount)
     {
@@ -979,6 +977,14 @@ public class SimpleHealth : MonoBehaviour
     public void SetEvasion(float value)
     {
         evasion = Mathf.Max(0f, value);
+        UpdateStatsText();
+    }
+
+    public void AddThorns(float amount) => GiveThorns(amount);
+
+    public void SetThorns(int value)
+    {
+        thornsDamage = Mathf.Max(0, value);
         UpdateStatsText();
     }
 

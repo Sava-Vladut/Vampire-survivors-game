@@ -114,7 +114,7 @@ public class AccessoriesUpgrades : MonoBehaviour
                 health.AddPoisonResist(value);
                 break;
             case StatUpgradeType.ThornsFlat:
-                health.thornsDamage += Mathf.RoundToInt(value);
+                health.GiveThorns(value);
                 break;
         }
     }
@@ -150,13 +150,15 @@ public class AccessoriesUpgrades : MonoBehaviour
         if (allowed.Count == 0) return false;
 
         upgradeType = allowed[Random.Range(0, allowed.Count)];
-        value = GetRandomValueForType(upgradeType);
+        PowerUpRarity rarity = PowerUp.RollRandomRarity();
+        value = GetRandomValueForType(upgradeType) * PowerUp.GetRarityMultiplier(rarity);
 
         Upgrade = new PowerUp
         {
             powerUpObject = gameObject,
             IsAccessory = true,
-            IsUpgrade = true
+            IsUpgrade = true,
+            rarity = rarity
         };
         TryAssignIconFromParent();
         SetUpgradeInfo();

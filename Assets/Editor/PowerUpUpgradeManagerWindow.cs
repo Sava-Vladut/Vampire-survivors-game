@@ -16,7 +16,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private bool showWeapons = true;
     private bool showAccessories = true;
     private bool showCatalog = true;
-    private readonly Dictionary<int, bool> foldouts = new();
+    private readonly Dictionary<EntityId, bool> foldouts = new();
     private GeneratedUpgradeSettings settings;
 
     [MenuItem("Tools/Power Ups/Upgrade Manager")]
@@ -147,7 +147,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
 
     private void DrawOwner(GameObject owner, string label, string detail)
     {
-        int id = owner.GetEntityId();
+        EntityId id = owner.GetEntityId();
         foldouts.TryGetValue(id, out bool expanded);
 
         using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -184,6 +184,8 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
 
     private void DrawGeneratedCatalogContents()
     {
+        DrawRaritySettings();
+
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Weapon upgrades", EditorStyles.boldLabel);
         DrawHeader();
@@ -206,6 +208,69 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             bool armorOnly = type == AccessoriesUpgrades.StatUpgradeType.ThornsFlat;
             DrawAccessoryCatalogRow(type,
                 bootsOnly ? "Boots only" : armorOnly ? "Armor only" : "Any root accessory");
+        }
+    }
+
+    private void DrawRaritySettings()
+    {
+        EditorGUILayout.LabelField("Rarity odds and strength", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "Frequency is a relative weight. Strength multiplies generated upgrade values after the stat is rolled.",
+            MessageType.None);
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Rarity", EditorStyles.miniBoldLabel, GUILayout.MinWidth(140f));
+            EditorGUILayout.LabelField("Frequency", EditorStyles.miniBoldLabel, GUILayout.Width(80f));
+            EditorGUILayout.LabelField("Chance", EditorStyles.miniBoldLabel, GUILayout.Width(70f));
+            EditorGUILayout.LabelField("Strength", EditorStyles.miniBoldLabel, GUILayout.Width(95f));
+        }
+
+        float totalFrequency = 0f;
+        if (settings != null && settings.raritySettings != null)
+        {
+            foreach (var entry in settings.raritySettings)
+                if (entry != null)
+                    totalFrequency += Mathf.Max(0f, entry.frequency);
+        }
+
+        foreach (PowerUpRarity rarity in Enum.GetValues(typeof(PowerUpRarity)))
+        {
+            var entry = settings != null ? settings.FindRaritySetting(rarity) : null;
+            if (entry == null) continue;
+
+            DrawRarityRow(entry, totalFrequency);
+        }
+    }
+
+    private void DrawRarityRow(GeneratedUpgradeSettings.PowerUpRaritySetting entry, float totalFrequency)
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            var rarityStyle = new GUIStyle(EditorStyles.miniLabel);
+            if (ColorUtility.TryParseHtmlString(PowerUp.GetRarityColor(entry.rarity), out Color rarityColor))
+                rarityStyle.normal.textColor = rarityColor;
+
+            EditorGUILayout.LabelField(PowerUp.GetRarityDisplayName(entry.rarity), rarityStyle, GUILayout.MinWidth(140f));
+
+            EditorGUI.BeginChangeCheck();
+            float nextFrequency = Mathf.Max(0f, EditorGUILayout.FloatField(entry.frequency, GUILayout.Width(80f)));
+            float chance = totalFrequency > 0f ? Mathf.Max(0f, entry.frequency) / totalFrequency : 0f;
+            EditorGUILayout.LabelField($"{chance * 100f:F0}%", EditorStyles.miniLabel, GUILayout.Width(70f));
+
+            using (new EditorGUILayout.HorizontalScope(GUILayout.Width(95f)))
+            {
+                float nextStrength = Mathf.Max(0f, EditorGUILayout.FloatField(entry.strengthMultiplier, GUILayout.Width(65f)));
+                EditorGUILayout.LabelField("x", EditorStyles.miniLabel, GUILayout.Width(15f));
+
+                if (!EditorGUI.EndChangeCheck()) return;
+
+                Undo.RecordObject(settings, "Change Power-Up Rarity Settings");
+                entry.frequency = nextFrequency;
+                entry.strengthMultiplier = nextStrength;
+                EditorUtility.SetDirty(settings);
+                AssetDatabase.SaveAssets();
+            }
         }
     }
 
@@ -239,6 +304,8 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
                           typeName.Contains("CritChance") ||
                           typeName.Contains("StatusApplyChanceFlat") ||
                           typeName.Contains("CullThreshold") ||
+                          typeName.Contains("EchoStrikeChance") ||
+                          typeName.Contains("ForkShotChance") ||
                           type == WeaponUpgrades.UpgradeType.KnifeLifestealFlat;
         DrawEditableRow(ObjectNames.NicifyVariableName(typeName), WeaponCompatibility(type), range, percentage);
     }
@@ -322,8 +389,11 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
 
         int weaponCount = asset.weaponRanges.Count;
         int accessoryCount = asset.accessoryRanges.Count;
+        int rarityCount = asset.raritySettings?.Count ?? 0;
         asset.EnsureAllRanges();
-        if (weaponCount != asset.weaponRanges.Count || accessoryCount != asset.accessoryRanges.Count)
+        if (weaponCount != asset.weaponRanges.Count ||
+            accessoryCount != asset.accessoryRanges.Count ||
+            rarityCount != asset.raritySettings.Count)
         {
             EditorUtility.SetDirty(asset);
             AssetDatabase.SaveAssets();
@@ -337,6 +407,8 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             type <= WeaponUpgrades.UpgradeType.KnifeCullThreshold) return "Knife";
         if (type >= WeaponUpgrades.UpgradeType.ShooterDamageFlat &&
             type <= WeaponUpgrades.UpgradeType.ShooterChainHits) return "Shooter";
+        if (type == WeaponUpgrades.UpgradeType.KnifeEchoStrikeChance) return "Knife";
+        if (type == WeaponUpgrades.UpgradeType.ShooterForkShotChance) return "Shooter";
         return "WeaponTick";
     }
 
@@ -377,6 +449,8 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         if (type == WeaponUpgrades.UpgradeType.BurstCountPercent) return "+5% to +25%";
         if (type == WeaponUpgrades.UpgradeType.BurstSpacingFlat) return "0.01s to 0.15s";
         if (type == WeaponUpgrades.UpgradeType.BurstSpacingPercent) return "5% to 25%";
+        if (type == WeaponUpgrades.UpgradeType.KnifeEchoStrikeChance) return "+8% to +20%";
+        if (type == WeaponUpgrades.UpgradeType.ShooterForkShotChance) return "+8% to +20%";
         return "—";
     }
 

@@ -27,6 +27,7 @@ public class WeaponTick : MonoBehaviour
     public UnityEvent onTick;
 
     private Coroutine tickCoroutine;
+    private PlayerSafeZoneStatus safeZoneStatus;
 
     private void Awake()
     {
@@ -54,7 +55,7 @@ public class WeaponTick : MonoBehaviour
     /// <summary>Immediately invokes a single tick (does not affect coroutine schedule).</summary>
     public void TriggerNow()
     {
-        onTick?.Invoke();
+        InvokeTickIfAllowed();
     }
 
     /// <summary>Stops and restarts the timer from scratch.</summary>
@@ -68,7 +69,7 @@ public class WeaponTick : MonoBehaviour
     {
         if (!burstEnabled || burstCount <= 1)
         {
-            onTick?.Invoke();
+            InvokeTickIfAllowed();
             return;
         }
         StartCoroutine(DoBurstOnce());
@@ -94,7 +95,7 @@ public class WeaponTick : MonoBehaviour
                 // Fire a burst
                 for (int i = 0; i < currentBurstCount; i++)
                 {
-                    onTick?.Invoke();
+                    InvokeTickIfAllowed();
 
                     // Spacing between ticks inside the burst (skip after the last one)
                     if (i < currentBurstCount - 1)
@@ -110,7 +111,7 @@ public class WeaponTick : MonoBehaviour
             else
             {
                 // Single tick mode
-                onTick?.Invoke();
+                InvokeTickIfAllowed();
             }
 
             if (!repeat) break;
@@ -126,13 +127,13 @@ public class WeaponTick : MonoBehaviour
 
         if (!burstEnabled || safeBurstCount <= 1)
         {
-            onTick?.Invoke();
+            InvokeTickIfAllowed();
             yield break;
         }
 
         for (int i = 0; i < safeBurstCount; i++)
         {
-            onTick?.Invoke();
+            InvokeTickIfAllowed();
             if (i < safeBurstCount - 1)
             {
                 if (useUnscaledTime)
@@ -141,6 +142,22 @@ public class WeaponTick : MonoBehaviour
                     yield return new WaitForSeconds(safeBurstSpacing);
             }
         }
+    }
+
+    private void InvokeTickIfAllowed()
+    {
+        if (IsBlockedBySafeZone())
+            return;
+
+        onTick?.Invoke();
+    }
+
+    private bool IsBlockedBySafeZone()
+    {
+        if (safeZoneStatus == null)
+            safeZoneStatus = GetComponentInParent<PlayerSafeZoneStatus>();
+
+        return safeZoneStatus != null && safeZoneStatus.IsSafeZoneActive;
     }
 
     private void OnDisable()

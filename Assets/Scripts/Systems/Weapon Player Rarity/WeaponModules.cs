@@ -1,6 +1,11 @@
 using UnityEngine;
 
-public interface IDamageModule { int Damage { get; set; } }
+public interface IDamageModule
+{
+    int Damage { get; set; }
+    int MinDamage { get; set; }
+    int MaxDamage { get; set; }
+}
 public interface ICritModule { float CritChance { get; set; } float CritMultiplier { get; set; } }
 public interface IAttackSpeedModule { float Interval { get; set; } }
 public interface IKnifeModule
@@ -43,7 +48,17 @@ public sealed class KnifeAdapter : IDamageModule, ICritModule, IKnifeModule, IUI
 {
     private readonly Knife k;
     public KnifeAdapter(Knife k) { this.k = k; }
-    public int Damage { get => k.damage; set => k.damage = value; }
+    public int Damage { get => k.damage; set => MaxDamage = value; }
+    public int MinDamage
+    {
+        get => k.minDamage;
+        set
+        {
+            k.minDamage = Mathf.Max(0, value);
+            k.damage = Mathf.Max(k.minDamage, k.damage);
+        }
+    }
+    public int MaxDamage { get => k.damage; set => k.damage = Mathf.Max(k.minDamage, value); }
     public float CritChance { get => k.critChance; set => k.critChance = Mathf.Clamp01(value); }
     public float CritMultiplier { get => k.critMultiplier; set => k.critMultiplier = value; }
     public float LifestealPercent { get => k.lifestealPercent; set => k.lifestealPercent = Mathf.Clamp01(value); }
@@ -58,7 +73,17 @@ public sealed class ShooterAdapter : IDamageModule, ICritModule, IShooterModule,
 {
     private readonly SimpleShooter s;
     public ShooterAdapter(SimpleShooter s) { this.s = s; }
-    public int Damage { get => s.damage; set => s.damage = value; }
+    public int Damage { get => s.damage; set => MaxDamage = value; }
+    public int MinDamage
+    {
+        get => s.minDamage;
+        set
+        {
+            s.minDamage = Mathf.Max(0, value);
+            s.damage = Mathf.Max(s.minDamage, s.damage);
+        }
+    }
+    public int MaxDamage { get => s.damage; set => s.damage = Mathf.Max(s.minDamage, value); }
     public float CritChance { get => s.critChance; set => s.critChance = Mathf.Clamp01(value); }
     public float CritMultiplier { get => s.critMultiplier; set => s.critMultiplier = value; }
     public float BulletLifetime { get => s.bulletLifetime; set => s.bulletLifetime = value; }

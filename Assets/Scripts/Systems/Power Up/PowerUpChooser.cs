@@ -3,6 +3,13 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
+public enum PowerUpRarity
+{
+    Common,
+    Uncommon,
+    Rare
+}
+
 [System.Serializable]
 public class PowerUp
 {
@@ -25,9 +32,45 @@ public class PowerUp
     [Tooltip("Icon representing this power-up. If null, UI will use its default icon.")]
     [ShowAssetPreview] public Sprite powerUpIcon;
 
+    [Header("Rarity")]
+    [Tooltip("Multiplier tier for generated upgrade values.")]
+    public PowerUpRarity rarity = PowerUpRarity.Common;
+
     [Header("Spawn Weight")]
     [Tooltip("Relative chance for this power-up to appear in selection. Higher = more common.")]
     [Min(0f)] public float weight = 1f;
+
+    public float RarityMultiplier => GetRarityMultiplier(rarity);
+
+    public static PowerUpRarity RollRandomRarity()
+    {
+        return GeneratedUpgradeSettings.RollPowerUpRarity();
+    }
+
+    public static float GetRarityMultiplier(PowerUpRarity rarity)
+    {
+        return GeneratedUpgradeSettings.GetPowerUpRarityMultiplier(rarity);
+    }
+
+    public static string GetRarityDisplayName(PowerUpRarity rarity)
+    {
+        return rarity switch
+        {
+            PowerUpRarity.Uncommon => "Uncommon",
+            PowerUpRarity.Rare => "Rare",
+            _ => "Common",
+        };
+    }
+
+    public static string GetRarityColor(PowerUpRarity rarity)
+    {
+        return rarity switch
+        {
+            PowerUpRarity.Uncommon => "#33CC66",
+            PowerUpRarity.Rare => "#4D8DFF",
+            _ => "#D9D9D9",
+        };
+    }
 }
 
 public class PowerUpChooser : MonoBehaviour
