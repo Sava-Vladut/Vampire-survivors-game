@@ -119,6 +119,7 @@ public class SimpleHealth : MonoBehaviour
     private Color _originalColor;
     private bool _hasOriginalColor;
     private Coroutine _flashRoutine;
+    private Coroutine _invulnerabilityRoutine;
     private int lastDamageTaken = 0;
     private DamageType lastDamageType = DamageType.Physical; // remember last type
     private readonly int[] runDamageTakenByType = new int[DamageTypeOrder.Length];
@@ -129,7 +130,6 @@ public class SimpleHealth : MonoBehaviour
     // Cached components for performance
     private DPSChecker _dpsChecker;
     private StatusEffectSystem _statusEffectSystem;
-    private OrthoScrollZoom _orthoScrollZoom;
 
     // Stats UI (matches Knife.cs pattern)
     [HideInInspector] public TextMeshProUGUI healthStatsText;
@@ -138,9 +138,19 @@ public class SimpleHealth : MonoBehaviour
 
     private Image iconImage;
     private AudioLowPassFilter filter;
-    // Cache the currently active damage popup's text to accumulate values
     // Active damage popups per damage type for accumulation
     private readonly Dictionary<DamageType, TMP_Text> _activeDamagePopups = new Dictionary<DamageType, TMP_Text>();
+    private bool hasDied;
+    private bool statsDirty = true;
+    private bool showRunDamageStats;
+    private bool hasMovementSnapshot;
+    private float lastMoveSpeed;
+    private float lastDashSpeed;
+    private float lastDashDuration;
+    private float lastDashCooldown;
+    private static EnemyChaser[] cachedThornsTargets = System.Array.Empty<EnemyChaser>();
+    private static float nextThornsTargetRefreshTime;
+    private const float ThornsTargetRefreshInterval = 0.2f;
 
     public bool IsAlive => currentHealth > 0f || (enableTemporaryHealth && currentTemporaryHealth > 0f);
     public bool IsInvulnerable => isInvulnerable;
@@ -160,7 +170,6 @@ public class SimpleHealth : MonoBehaviour
         soundSource = GetComponent<AudioSource>();
         _dpsChecker = GetComponent<DPSChecker>();
         _statusEffectSystem = GetComponent<StatusEffectSystem>();
-        _orthoScrollZoom = FindAnyObjectByType<OrthoScrollZoom>();
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -198,11 +207,9 @@ public class SimpleHealth : MonoBehaviour
             if (iconImage != null && iconSprite != null)
                 iconImage.sprite = iconSprite;
         }
-    }
 
-    private void Start()
-    {
-        ResetHealth();
+        UpdateVolume();
+        UpdateStatsText();
     }
 
     private void UpdateVolume()
@@ -233,14 +240,19 @@ public class SimpleHealth : MonoBehaviour
         if (_hasOriginalColor && spriteRenderer != null)
             spriteRenderer.color = _originalColor;
         _flashRoutine = null;
+        _invulnerabilityRoutine = null;
+        isInvulnerable = false;
     }
 
     private void Update()
     {
+        bool healthChanged = false;
+
         // Health Regeneration (does NOT grant temporary health)
         if (regenRate > 0f && currentHealth > 0f && currentHealth < maxHealth)
         {
             currentHealth = Mathf.Min(currentHealth + regenRate * Time.deltaTime, maxHealth);
+            healthChanged = true;
         }
 
         // Temporary Health Decay Logic
@@ -257,6 +269,7 @@ public class SimpleHealth : MonoBehaviour
                 {
                     currentTemporaryHealth = 0;
                 }
+                healthChanged = true;
             }
         }
 
@@ -265,13 +278,57 @@ public class SimpleHealth : MonoBehaviour
             Die();
         }
 
-        UpdateVolume();
-        UpdateStatsText();
-        SyncSlider(); // Sync slider every frame to show decay
+        if (healthChanged)
+        {
+            SyncSlider();
+            UpdateVolume();
+            MarkStatsDirty();
+        }
+
+        bool shouldShowRunDamage = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        if (showRunDamageStats != shouldShowRunDamage)
+        {
+            showRunDamageStats = shouldShowRunDamage;
+            MarkStatsDirty();
+        }
+
+        if (HasMovementStatsChanged())
+            MarkStatsDirty();
+
+        if (statsDirty)
+            UpdateStatsText();
+    }
+
+    private void MarkStatsDirty()
+    {
+        statsDirty = true;
+    }
+
+    private bool HasMovementStatsChanged()
+    {
+        if (movementStatsText == null || movementController == null)
+            return false;
+
+        if (!hasMovementSnapshot ||
+            !Mathf.Approximately(lastMoveSpeed, movementController.MoveSpeed) ||
+            !Mathf.Approximately(lastDashSpeed, movementController.DashSpeed) ||
+            !Mathf.Approximately(lastDashDuration, movementController.DashDuration) ||
+            !Mathf.Approximately(lastDashCooldown, movementController.DashCooldown))
+        {
+            hasMovementSnapshot = true;
+            lastMoveSpeed = movementController.MoveSpeed;
+            lastDashSpeed = movementController.DashSpeed;
+            lastDashDuration = movementController.DashDuration;
+            lastDashCooldown = movementController.DashCooldown;
+            return true;
+        }
+
+        return false;
     }
 
     public void UpdateStatsText()
     {
+        statsDirty = false;
         float referenceDamage = Mathf.Max(1, lastDamageTaken);
         const string statColor = "#8888FF";
         const string healthColor = "#FF6666";
@@ -304,8 +361,7 @@ public class SimpleHealth : MonoBehaviour
                 : 0f;
 
             _statsBuilder.Clear();
-            bool showRunDamage = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-            if (showRunDamage)
+            if (showRunDamageStats)
             {
                 AppendRunDamageStats(statColor);
             }
@@ -391,26 +447,19 @@ public class SimpleHealth : MonoBehaviour
         float dmgFrac = Mathf.Clamp01((float)dmg / Mathf.Max(1, maxHealth));
         int dotDamage = Mathf.Max(1, Mathf.RoundToInt(dmg * 0.20f));
 
-        const float shockMult = 1;
-        const float igniteMult = 1;
-        const float poisonMult = 1;
-        const float bleedMult = 1;
-
         float roll = Random.value;
 
         switch (type)
         {
             case DamageType.Lightning:
                 {
-                    float chance = Mathf.Clamp01(dmgFrac * shockMult);
-                    if (roll < chance)
+                    if (roll < dmgFrac)
                         ses.AddStatus(StatusEffectSystem.StatusType.Shock, 5f, 1f);
                     break;
                 }
             case DamageType.Fire:
                 {
-                    float chance = Mathf.Clamp01(dmgFrac * igniteMult);
-                    if (roll < chance)
+                    if (roll < dmgFrac)
                     {
                         ses.AddStatus(StatusEffectSystem.StatusType.Ignite, 5f, 1f);
                         ses.igniteDamagePerTick = dotDamage;
@@ -419,8 +468,7 @@ public class SimpleHealth : MonoBehaviour
                 }
             case DamageType.Cold:
                 {
-                    float chance = Mathf.Clamp01(dmgFrac * igniteMult);
-                    if (roll < chance)
+                    if (roll < dmgFrac)
                     {
                         ses.AddStatus(StatusEffectSystem.StatusType.Frozen, 3f, 1f);
                     }
@@ -428,18 +476,16 @@ public class SimpleHealth : MonoBehaviour
                 }
             case DamageType.Poison:
                 {
-                    float chance = Mathf.Clamp01(dmgFrac * poisonMult);
-                    if (roll < chance)
+                    if (roll < dmgFrac)
                     {
                         ses.AddStatus(StatusEffectSystem.StatusType.Poison, 15f, 0.5f);
-                        ses.poisonDamagePerTick = 1;
+                        ses.poisonDamagePerTick = dotDamage;
                     }
                     break;
                 }
             case DamageType.Physical:
                 {
-                    float chance = Mathf.Clamp01(dmgFrac * bleedMult);
-                    if (roll < chance)
+                    if (roll < dmgFrac)
                     {
                         ses.AddStatus(StatusEffectSystem.StatusType.Bleeding, 5f, 1f);
                         ses.bleedingDamagePerTick = dotDamage;
@@ -460,41 +506,48 @@ public class SimpleHealth : MonoBehaviour
     {
         if (amount <= 0 || isInvulnerable || !IsAlive) return;
 
-        int incomingDamage = amount;
+        float incomingDamage = amount;
 
         // Absorb damage with temporary health first
         if (enableTemporaryHealth && currentTemporaryHealth > 0)
         {
             float damageAbsorbedByTemp = Mathf.Min(incomingDamage, currentTemporaryHealth);
             currentTemporaryHealth -= damageAbsorbedByTemp;
-            incomingDamage -= (int)damageAbsorbedByTemp;
+            incomingDamage -= damageAbsorbedByTemp;
 
             if (incomingDamage <= 0)
             {
                 SyncSlider();
-                UpdateStatsText();
+                MarkStatsDirty();
                 // Optional: You could show a different colored damage popup for absorbed damage here.
                 return;
             }
         }
 
-        if (currentHealth <= 0) return; // Don't continue if only temp health was left
+        if (currentHealth <= 0)
+        {
+            SyncSlider();
+            MarkStatsDirty();
+            if (!IsAlive) Die();
+            return;
+        }
 
-        int dmg = incomingDamage;
+        float dmg = incomingDamage;
 
         if (mitigatable)
         {
             // Evasion check BEFORE armor/resistance
-            if (TryEvade(amount))
+            if (TryEvade(incomingDamage))
             {
                 lastDamageTaken = 0;
                 lastDamageType = type;
+                MarkStatsDirty();
 
                 // Show "Dodged" popup
                 if (damagePopupPrefab != null)
                 {
                     GameObject popup = Instantiate(damagePopupPrefab, transform);
-                popup.transform.localPosition = popupOffset;
+                    popup.transform.localPosition = popupOffset;
                     var tmpUI = popup.GetComponentInChildren<TextMeshProUGUI>();
                     if (tmpUI != null)
                     {
@@ -517,27 +570,28 @@ public class SimpleHealth : MonoBehaviour
 
         if (dmg <= 0) return;
 
-        lastDamageTaken = dmg;
-        lastDamageType = type;
-        _dpsChecker?.RegisterDamage(dmg);
-
         // ailments
         if (_statusEffectSystem != null)
         {
             if (_statusEffectSystem.HasStatus(StatusEffectSystem.StatusType.Shock))
                 dmg *= 2;
-            if (applyAilments)
-            {
-                TryApplyAilments(_statusEffectSystem, type, dmg);
-            }
         }
 
-        RegisterRunDamage(dmg, type);
+        int displayedDamage = Mathf.Max(1, Mathf.RoundToInt(dmg));
+        lastDamageTaken = displayedDamage;
+        lastDamageType = type;
+        _dpsChecker?.RegisterDamage(displayedDamage);
+
+        if (_statusEffectSystem != null && applyAilments)
+            TryApplyAilments(_statusEffectSystem, type, displayedDamage);
+
+        RegisterRunDamage(displayedDamage, type);
         currentHealth = Mathf.Clamp(currentHealth - dmg, 0, maxHealth);
         ApplyThorns();
         SyncSlider();
+        UpdateVolume();
 
-                        // Damage popup (accumulate if an existing one is active) — per damage type
+        // Damage popup (accumulate if an existing one is active) per damage type
         if (damagePopupPrefab != null)
         {
             Color popupColor = GetDamageColor(type);
@@ -547,7 +601,7 @@ public class SimpleHealth : MonoBehaviour
             {
                 int currentVal = 0;
                 if (!int.TryParse(activeText.text, out currentVal)) currentVal = 0;
-                currentVal += dmg;
+                currentVal += displayedDamage;
                 activeText.text = currentVal.ToString();
                 activeText.color = popupColor;
             }
@@ -567,12 +621,14 @@ public class SimpleHealth : MonoBehaviour
                 }
                 if (tmp != null)
                 {
-                    tmp.text = dmg.ToString();
+                    tmp.text = displayedDamage.ToString();
                     tmp.color = popupColor;
                     _activeDamagePopups[type] = tmp;
                 }
             }
-        }if (bloodSFX != null)
+        }
+
+        if (bloodSFX != null)
         {
             Quaternion randomRotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
             Instantiate(bloodSFX, transform.position, randomRotation);
@@ -591,10 +647,10 @@ public class SimpleHealth : MonoBehaviour
             _flashRoutine = StartCoroutine(FlashRedCoroutine());
         }
 
-        UpdateStatsText();
+        MarkStatsDirty();
 
         if (!IsAlive) Die();
-        else if (invulnerabilityDuration > 0) StartCoroutine(InvulnerabilityCoroutine());
+        else if (invulnerabilityDuration > 0) StartInvulnerability(invulnerabilityDuration);
     }
 
     private void ApplyThorns()
@@ -603,8 +659,18 @@ public class SimpleHealth : MonoBehaviour
 
         EnemyChaser nearest = null;
         float nearestSqr = float.PositiveInfinity;
-        foreach (var enemy in FindObjectsByType<EnemyChaser>())
+
+        if (Time.time >= nextThornsTargetRefreshTime || cachedThornsTargets.Length == 0)
         {
+            cachedThornsTargets = FindObjectsByType<EnemyChaser>();
+            nextThornsTargetRefreshTime = Time.time + ThornsTargetRefreshInterval;
+        }
+
+        foreach (var enemy in cachedThornsTargets)
+        {
+            if (enemy == null || !enemy.isActiveAndEnabled) continue;
+            if (!enemy.TryGetComponent(out SimpleHealth enemyHealth) || !enemyHealth.IsAlive) continue;
+
             float sqr = (enemy.transform.position - transform.position).sqrMagnitude;
             if (sqr < nearestSqr)
             {
@@ -613,11 +679,11 @@ public class SimpleHealth : MonoBehaviour
             }
         }
 
-        if (nearest != null && nearest.TryGetComponent(out SimpleHealth enemyHealth))
-            enemyHealth.TakeDamage(thornsDamage, DamageType.Physical, false, false);
+        if (nearest != null && nearest.TryGetComponent(out SimpleHealth thornTargetHealth))
+            thornTargetHealth.TakeDamage(thornsDamage, DamageType.Physical, false, false);
     }
 
-    private bool TryEvade(int rawDamage)
+    private bool TryEvade(float rawDamage)
     {
         if (rawDamage <= 0 || evasion <= 0f || evasionScaling <= 0f) return false;
         float chance = evasion / (evasion + evasionScaling * rawDamage);
@@ -625,19 +691,18 @@ public class SimpleHealth : MonoBehaviour
         return Random.value < chance;
     }
 
-    private int ApplyArmor(int rawDamage)
+    private float ApplyArmor(float rawDamage)
     {
         if (rawDamage <= 0 || armor <= 0f || armorScaling <= 0f) return rawDamage;
         float m = armor / (armor + armorScaling * rawDamage);
         if (maxMitigation > 0f) m = Mathf.Min(m, maxMitigation);
-        float reduced = rawDamage * (1f - m);
-        return Mathf.Max(0, Mathf.RoundToInt(reduced));
+        return Mathf.Max(0f, rawDamage * (1f - m));
     }
 
     // per-type resistance after armor
-    private int ApplyResistance(int rawDamage, DamageType type)
+    private float ApplyResistance(float rawDamage, DamageType type)
     {
-        if (rawDamage <= 0) return 0;
+        if (rawDamage <= 0) return 0f;
 
         float resist = 0f;
         switch (type)
@@ -649,8 +714,7 @@ public class SimpleHealth : MonoBehaviour
         }
 
         resist = Mathf.Clamp(resist, 0f, 0.95f);
-        float reduced = rawDamage * (1f - resist);
-        return Mathf.Max(0, Mathf.RoundToInt(reduced));
+        return Mathf.Max(0f, rawDamage * (1f - resist));
     }
 
     // Map damage types to popup colors
@@ -708,31 +772,46 @@ public class SimpleHealth : MonoBehaviour
         }
 
         SyncSlider();
+        UpdateVolume();
         UpdateStatsText();
     }
 
     public void Kill()
     {
-        if (!IsAlive) return;
+        if (hasDied || !IsAlive) return;
         currentHealth = 0;
         if (enableTemporaryHealth) currentTemporaryHealth = 0;
         SyncSlider();
+        UpdateVolume();
         UpdateStatsText();
         Die();
     }
 
     public void ResetHealth()
     {
+        hasDied = false;
+        isInvulnerable = false;
+        if (_invulnerabilityRoutine != null)
+        {
+            StopCoroutine(_invulnerabilityRoutine);
+            _invulnerabilityRoutine = null;
+        }
         currentHealth = maxHealth;
         if (enableTemporaryHealth) currentTemporaryHealth = 0;
+        tempHealthDecayTimer = 0f;
+        _activeDamagePopups.Clear();
         ResetRunDamage();
         SyncSlider();
+        UpdateVolume();
         UpdateStatsText();
     }
 
     private void Die()
     {
-        if (deathObjects.Length > 0)
+        if (hasDied) return;
+        hasDied = true;
+
+        if (deathObjects != null && deathObjects.Length > 0)
         {
             foreach (var obj in deathObjects)
             {
@@ -796,6 +875,7 @@ public class SimpleHealth : MonoBehaviour
         maxHealth += amount;
         currentHealth = Mathf.Clamp(currentHealth + amount, 0, maxHealth);
         SyncSlider();
+        UpdateVolume();
         UpdateStatsText();
     }
 
@@ -835,6 +915,7 @@ public class SimpleHealth : MonoBehaviour
         maxHealth = Mathf.Max(1, value);
         currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
         SyncSlider();
+        UpdateVolume();
         UpdateStatsText();
     }
 
@@ -846,7 +927,9 @@ public class SimpleHealth : MonoBehaviour
     public void SetHealth(int value)
     {
         currentHealth = Mathf.Clamp(value, 0, maxHealth);
+        if (currentHealth > 0f) hasDied = false;
         SyncSlider();
+        UpdateVolume();
         UpdateStatsText();
     }
 
@@ -867,7 +950,9 @@ public class SimpleHealth : MonoBehaviour
     public void SetHealthByPercentage(float percentage)
     {
         currentHealth = Mathf.Clamp(maxHealth * percentage / 100f, 0, maxHealth);
+        if (currentHealth > 0f) hasDied = false;
         SyncSlider();
+        UpdateVolume();
         UpdateStatsText();
     }
 
@@ -905,32 +990,35 @@ public class SimpleHealth : MonoBehaviour
     public void AddLightningResist(float amount) => GiveResistance(DamageType.Lightning, amount);
     public void SetLightningResist(float value) { lightningResist = Mathf.Clamp(value, 0f, 0.95f); UpdateStatsText(); }
     public void AddPoisonResist(float amount) => GiveResistance(DamageType.Poison, amount);
-    public void SetPoisonResist(float value) { poisonResist = Mathf.Clamp(poisonResist + value, 0f, 0.95f); UpdateStatsText(); }
+    public void SetPoisonResist(float value) { poisonResist = Mathf.Clamp(value, 0f, 0.95f); UpdateStatsText(); }
 
     // --- Invulnerability ---
     public void SetInvulnerable(float duration)
     {
         if (duration > 0)
         {
-            StartCoroutine(InvulnerabilityCoroutineWithDuration(duration));
+            StartInvulnerability(duration);
         }
     }
 
-    private System.Collections.IEnumerator InvulnerabilityCoroutineWithDuration(float duration)
+    private void StartInvulnerability(float duration)
+    {
+        if (_invulnerabilityRoutine != null)
+            StopCoroutine(_invulnerabilityRoutine);
+
+        _invulnerabilityRoutine = StartCoroutine(InvulnerabilityCoroutine(duration));
+    }
+
+    private System.Collections.IEnumerator InvulnerabilityCoroutine(float duration)
     {
         isInvulnerable = true;
         yield return new WaitForSeconds(duration);
         isInvulnerable = false;
+        _invulnerabilityRoutine = null;
     }
 
     #endregion
 
-    private System.Collections.IEnumerator InvulnerabilityCoroutine()
-    {
-        isInvulnerable = true;
-        yield return new WaitForSeconds(invulnerabilityDuration);
-        isInvulnerable = false;
-    }
 }
 
 
