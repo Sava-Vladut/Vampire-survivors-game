@@ -578,8 +578,8 @@ public class WeaponRarityController : MonoBehaviour
         Add(c.attack != null, new AttackSpeedUpgrade(), UpgradeType.AttackSpeed);
         Add(c.crit != null, new CritUpgrade(), UpgradeType.Crit);
 
-        // Health / Defense candidates (if SimpleHealth available)
-        if (c.health != null)
+        // Accessories can roll health/defense modifiers, but weapons cannot.
+        if (c.health != null && c.knife == null && c.shooter == null)
         {
             Add(true, new HpFlatUpgrade(), UpgradeType.HpFlat);
             Add(true, new HpPercentUpgrade(), UpgradeType.HpPercent);

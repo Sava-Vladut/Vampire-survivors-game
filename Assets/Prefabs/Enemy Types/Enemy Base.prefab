@@ -33,7 +33,7 @@ RectTransform:
   m_Father: {fileID: 7429161463055242363}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -287,6 +287,7 @@ MonoBehaviour:
   healthStatsText: {fileID: 0}
   defenseStatsText: {fileID: 0}
   movementStatsText: {fileID: 0}
+  thornsDamage: 0
 --- !u!61 &4859893581985587488
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -720,7 +721,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7429161463055242363
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1088,6 +1089,7 @@ MonoBehaviour:
   statusEffectOnHit: 0
   statusEffectDuration: 3
   knockbackForce: 0
+  cullThreshold: 0
   lifestealPercent: 0
   critChance: 0
   critMultiplier: 2

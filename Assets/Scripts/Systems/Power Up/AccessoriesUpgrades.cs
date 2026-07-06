@@ -165,6 +165,9 @@ public class AccessoriesUpgrades : MonoBehaviour
 
     private static float GetRandomValueForType(StatUpgradeType t)
     {
+        if (GeneratedUpgradeSettings.TryRollAccessory(t, out float configuredValue))
+            return configuredValue;
+
         switch (t)
         {
             case StatUpgradeType.MaxHealthFlat: return Mathf.Round(Random.Range(15f, 60f));

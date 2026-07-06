@@ -188,9 +188,12 @@ public class TwitchListener : MonoBehaviour
 
     private void OnChatMessage(Chatter chatter)
     {
-        if (alwaysSpawnMaxEnemies) return;
         if (player == null) return;
         chatters.Add(chatter);
+
+        // EnsureMaxSpawns() (driven from Update) handles spawning/naming in this mode;
+        // we still needed to record the chatter above so it has a real name to draw from.
+        if (alwaysSpawnMaxEnemies) return;
 
         var entry = PickWeightedEntry();
         if (entry == null || entry.prefab == null) return;
@@ -247,11 +250,13 @@ public class TwitchListener : MonoBehaviour
         var stats = instantiatedChatter.GetComponent<ChatterStats>();
         if (stats != null)
         {
-            stats.nameGUI.text = finalName;
             if (stats.nameGUI != null)
+            {
+                stats.nameGUI.text = finalName;
                 stats.nameGUI.color = chatter != null ? chatter.GetNameColor() : Color.white;
-            if (alwaysSpawnMaxEnemies && stats.nameGUI != null)
-                stats.nameGUI.enabled = false;
+                // Only hide the tag for generic filler spawns that have no real chatter behind them.
+                stats.nameGUI.enabled = chatter != null;
+            }
             if (chatter != null)
             {
                 foreach (ChatterBadge b in chatter.tags.badges)
@@ -283,8 +288,11 @@ public class TwitchListener : MonoBehaviour
         {
             var entry = PickWeightedEntry();
             if (entry == null || entry.prefab == null) break;
-            string nameOverride = $"Enemy ({spawnedChatters.Count + 1})";
-            TrySpawnChatter(null, entry.prefab, nameOverride);
+
+            // Prefer a real Twitch chatter's display name over a generic placeholder.
+            Chatter chatter = chatters.Count > 0 ? chatters[(spawnedChatters.Count + i) % chatters.Count] : null;
+            string nameOverride = chatter != null ? null : $"Enemy ({spawnedChatters.Count + 1})";
+            TrySpawnChatter(chatter, entry.prefab, nameOverride);
         }
     }
 

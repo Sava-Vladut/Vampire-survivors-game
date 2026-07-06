@@ -376,7 +376,7 @@ public class WeaponUpgrades : MonoBehaviour
                 knife.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
                 break;
             case UpgradeType.KnifeDamageTypeIndex:
-                knife.damageType = ClampToDamageType(Mathf.RoundToInt(value));
+                knife.damageType = ResolveDifferentDamageType(knife.damageType, value);
                 break;
             case UpgradeType.KnifeKnockbackFlat:
                 knife.knockbackForce += value;
@@ -443,7 +443,7 @@ public class WeaponUpgrades : MonoBehaviour
                 shooter.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
                 break;
             case UpgradeType.ShooterDamageTypeIndex:
-                shooter.damageType = ClampToDamageType(Mathf.RoundToInt(value));
+                shooter.damageType = ResolveDifferentDamageType(shooter.damageType, value);
                 break;
             case UpgradeType.ShooterKnockbackFlat:
                 shooter.knockbackForce += value;
@@ -486,6 +486,17 @@ public class WeaponUpgrades : MonoBehaviour
     {
         // Ensure value maps into enum range 0..4
         return (SimpleHealth.DamageType)Mathf.Clamp(rawIndex, 0, 4);
+    }
+
+    private static SimpleHealth.DamageType ResolveDifferentDamageType(
+        SimpleHealth.DamageType current,
+        float rolledValue)
+    {
+        var rolled = ClampToDamageType(Mathf.RoundToInt(rolledValue));
+        if (rolled != current) return rolled;
+
+        int count = System.Enum.GetValues(typeof(SimpleHealth.DamageType)).Length;
+        return (SimpleHealth.DamageType)(((int)current + 1) % count);
     }
 
     // ---------------------- Runtime generation ----------------------
@@ -542,33 +553,39 @@ public class WeaponUpgrades : MonoBehaviour
 
     private float GetRandomValueForType(UpgradeType t)
     {
+        if (GeneratedUpgradeSettings.TryRollWeapon(t, out float configuredValue))
+            return configuredValue;
+
         switch (t)
         {
             // Shared Knife + Shooter ranges
             case UpgradeType.KnifeDamageFlat:
             case UpgradeType.ShooterDamageFlat:
-                return Random.Range(2f, 12f);
+                return Random.Range(1f, 6f);
             case UpgradeType.KnifeDamagePercent:
             case UpgradeType.ShooterDamagePercent:
-                return Random.Range(0.05f, 0.25f);
+                return Random.Range(0.03f, 0.12f);
+            case UpgradeType.KnifeDamageTypeIndex:
+            case UpgradeType.ShooterDamageTypeIndex:
+                return RandomDamageTypeIndexDifferentFromParent();
             case UpgradeType.KnifeCritChanceFlat:
             case UpgradeType.ShooterCritChanceFlat:
-                return Random.Range(0.03f, 0.20f);
+                return Random.Range(0.02f, 0.10f);
             case UpgradeType.KnifeCritMultiplierFlat:
             case UpgradeType.ShooterCritMultiplierFlat:
-                return Random.Range(0.10f, 0.60f);
+                return Random.Range(0.05f, 0.30f);
             case UpgradeType.KnifeStatusApplyChanceFlat:
             case UpgradeType.ShooterStatusApplyChanceFlat:
-                return Random.Range(0.05f, 0.30f);
+                return Random.Range(0.03f, 0.15f);
             case UpgradeType.KnifeStatusApplyChancePercent:
             case UpgradeType.ShooterStatusApplyChancePercent:
-                return Random.Range(0.10f, 0.50f);
+                return Random.Range(0.05f, 0.25f);
             case UpgradeType.KnifeStatusDurationFlat:
             case UpgradeType.ShooterStatusDurationFlat:
-                return Random.Range(0.5f, 3.0f);
+                return Random.Range(0.25f, 1.5f);
             case UpgradeType.KnifeStatusDurationPercent:
             case UpgradeType.ShooterStatusDurationPercent:
-                return Random.Range(0.10f, 0.50f);
+                return Random.Range(0.05f, 0.25f);
             case UpgradeType.KnifeEnableStatusEffect:
             case UpgradeType.ShooterEnableStatusEffect:
                 return 0f; // toggle only
@@ -577,44 +594,60 @@ public class WeaponUpgrades : MonoBehaviour
                 return RandomStatusEffectIndex();
             case UpgradeType.KnifeKnockbackFlat:
             case UpgradeType.ShooterKnockbackFlat:
-                return Random.Range(0.5f, 3f);
+                return Random.Range(0.25f, 1.5f);
             case UpgradeType.KnifeCullThreshold:
             case UpgradeType.ShooterCullThreshold:
-                return Random.Range(0.02f, 0.06f);
+                return Random.Range(0.01f, 0.03f);
             case UpgradeType.ShooterChainHits:
-                return Mathf.Round(Random.Range(1f, 2.99f));
+                return 1f;
 
-            // Small integer counts (1..3)
+            // Small integer counts (1..2)
             case UpgradeType.KnifeMaxTargetsFlat:
             case UpgradeType.ShooterProjectileCount:
             case UpgradeType.BurstCountFlat:
-                return Mathf.Round(Random.Range(1f, 3.99f));
+                return Mathf.Round(Random.Range(1f, 2.99f));
 
             // Knife
-            case UpgradeType.KnifeRadiusFlat: return Random.Range(0.1f, 1.0f);
-            case UpgradeType.KnifeRadiusPercent: return Random.Range(0.05f, 0.30f);
-            case UpgradeType.KnifeLifestealFlat: return Random.Range(0.02f, 0.15f);
-            case UpgradeType.KnifeLifestealPercent: return Random.Range(0.10f, 0.40f);
-            case UpgradeType.KnifeSplashRadiusFlat: return Random.Range(0.20f, 1.50f);
-            case UpgradeType.KnifeSplashRadiusPercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.KnifeSplashDamagePercentFlat: return Random.Range(0.05f, 0.30f);
-            case UpgradeType.KnifeSplashDamagePercentPercent: return Random.Range(0.10f, 0.50f);
+            case UpgradeType.KnifeRadiusFlat: return Random.Range(0.05f, 0.50f);
+            case UpgradeType.KnifeRadiusPercent: return Random.Range(0.03f, 0.15f);
+            case UpgradeType.KnifeLifestealFlat: return Random.Range(0.01f, 0.08f);
+            case UpgradeType.KnifeLifestealPercent: return Random.Range(0.05f, 0.20f);
+            case UpgradeType.KnifeSplashRadiusFlat: return Random.Range(0.10f, 0.75f);
+            case UpgradeType.KnifeSplashRadiusPercent: return Random.Range(0.05f, 0.25f);
+            case UpgradeType.KnifeSplashDamagePercentFlat: return Random.Range(0.03f, 0.15f);
+            case UpgradeType.KnifeSplashDamagePercentPercent: return Random.Range(0.05f, 0.25f);
 
             // Shooter
-            case UpgradeType.ShooterSpreadAngleFlat: return Random.Range(2f, 20f);
-            case UpgradeType.ShooterSpreadAnglePercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.ShooterProjectileSpeedFlat: return Random.Range(0.5f, 5f);
-            case UpgradeType.ShooterProjectileSpeedPercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.ShooterLifetimeFlat: return Random.Range(0.3f, 2f);
-            case UpgradeType.ShooterLifetimePercent: return Random.Range(0.10f, 0.50f);
+            case UpgradeType.ShooterSpreadAngleFlat: return Random.Range(1f, 10f);
+            case UpgradeType.ShooterSpreadAnglePercent: return Random.Range(0.05f, 0.25f);
+            case UpgradeType.ShooterProjectileSpeedFlat: return Random.Range(0.25f, 2.5f);
+            case UpgradeType.ShooterProjectileSpeedPercent: return Random.Range(0.05f, 0.25f);
+            case UpgradeType.ShooterLifetimeFlat: return Random.Range(0.15f, 1f);
+            case UpgradeType.ShooterLifetimePercent: return Random.Range(0.05f, 0.25f);
 
             // Tick
-            case UpgradeType.TickRateFlat: return Random.Range(0.05f, 0.50f);
-            case UpgradeType.TickRatePercent: return Random.Range(0.05f, 0.30f);
-            case UpgradeType.BurstCountPercent: return Random.Range(0.10f, 0.50f);
-            case UpgradeType.BurstSpacingFlat: return Random.Range(0.02f, 0.30f);
-            case UpgradeType.BurstSpacingPercent: return Random.Range(0.10f, 0.50f);
+            case UpgradeType.TickRateFlat: return Random.Range(0.03f, 0.25f);
+            case UpgradeType.TickRatePercent: return Random.Range(0.03f, 0.15f);
+            case UpgradeType.BurstCountPercent: return Random.Range(0.05f, 0.25f);
+            case UpgradeType.BurstSpacingFlat: return Random.Range(0.01f, 0.15f);
+            case UpgradeType.BurstSpacingPercent: return Random.Range(0.05f, 0.25f);
         }
         return 0f;
+    }
+
+    private float RandomDamageTypeIndexDifferentFromParent()
+    {
+        var parent = transform.parent;
+        SimpleHealth.DamageType current = SimpleHealth.DamageType.Physical;
+
+        if (parent != null && parent.TryGetComponent(out Knife knife))
+            current = knife.damageType;
+        else if (parent != null && parent.TryGetComponent(out SimpleShooter shooter))
+            current = shooter.damageType;
+
+        int count = System.Enum.GetValues(typeof(SimpleHealth.DamageType)).Length;
+        int rolled = Random.Range(0, count - 1);
+        if (rolled >= (int)current) rolled++;
+        return rolled;
     }
 }

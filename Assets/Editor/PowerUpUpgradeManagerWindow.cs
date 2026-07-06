@@ -6,6 +6,8 @@ using UnityEngine;
 public class PowerUpUpgradeManagerWindow : EditorWindow
 {
     private const string DefaultPlayerPrefab = "Assets/Prefabs/Player.prefab";
+    private const string SettingsDirectory = "Assets/Resources";
+    private const string SettingsPath = SettingsDirectory + "/GeneratedUpgradeSettings.asset";
 
     private GameObject prefabAsset;
     private GameObject prefabRoot;
@@ -15,6 +17,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private bool showAccessories = true;
     private bool showCatalog = true;
     private readonly Dictionary<int, bool> foldouts = new();
+    private GeneratedUpgradeSettings settings;
 
     [MenuItem("Tools/Power Ups/Upgrade Manager")]
     private static void Open() =>
@@ -23,6 +26,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private void OnEnable()
     {
         prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(DefaultPlayerPrefab);
+        settings = LoadOrCreateSettings();
     }
 
     private void OnDisable() => UnloadPrefab();
@@ -178,7 +182,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         EditorGUILayout.EndScrollView();
     }
 
-    private static void DrawGeneratedCatalogContents()
+    private void DrawGeneratedCatalogContents()
     {
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Weapon upgrades", EditorStyles.boldLabel);
@@ -187,7 +191,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         {
             if (!WeaponUpgrades.IsGeneratedType(type))
                 continue;
-            DrawCatalogRow(ObjectNames.NicifyVariableName(type.ToString()), WeaponCompatibility(type), WeaponRange(type));
+            DrawWeaponCatalogRow(type);
         }
 
         EditorGUILayout.Space();
@@ -200,14 +204,21 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
                 type == AccessoriesUpgrades.StatUpgradeType.MoveSpeedFlat ||
                 type == AccessoriesUpgrades.StatUpgradeType.DashDistanceFlat;
             bool armorOnly = type == AccessoriesUpgrades.StatUpgradeType.ThornsFlat;
-            DrawCatalogRow(ObjectNames.NicifyVariableName(type.ToString()),
-                bootsOnly ? "Boots only" : armorOnly ? "Armor only" : "Any root accessory",
-                AccessoryRange(type));
+            DrawAccessoryCatalogRow(type,
+                bootsOnly ? "Boots only" : armorOnly ? "Armor only" : "Any root accessory");
         }
     }
 
-    private static void DrawHeader() =>
-        DrawCatalogRow("Upgrade", "Available for", "Generated value", true);
+    private static void DrawHeader()
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField("Upgrade", EditorStyles.miniBoldLabel, GUILayout.MinWidth(220f));
+            EditorGUILayout.LabelField("Available for", EditorStyles.miniBoldLabel, GUILayout.Width(130f));
+            EditorGUILayout.LabelField("Min", EditorStyles.miniBoldLabel, GUILayout.Width(70f));
+            EditorGUILayout.LabelField("Max", EditorStyles.miniBoldLabel, GUILayout.Width(70f));
+        }
+    }
 
     private static void DrawCatalogRow(string name, string target, string range, bool header = false)
     {
@@ -218,6 +229,106 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             EditorGUILayout.LabelField(target, style, GUILayout.Width(130f));
             EditorGUILayout.LabelField(range, style, GUILayout.Width(120f));
         }
+    }
+
+    private void DrawWeaponCatalogRow(WeaponUpgrades.UpgradeType type)
+    {
+        var range = settings != null ? settings.FindWeaponRange(type) : null;
+        string typeName = type.ToString();
+        bool percentage = typeName.Contains("Percent") ||
+                          typeName.Contains("CritChance") ||
+                          typeName.Contains("StatusApplyChanceFlat") ||
+                          typeName.Contains("CullThreshold") ||
+                          type == WeaponUpgrades.UpgradeType.KnifeLifestealFlat;
+        DrawEditableRow(ObjectNames.NicifyVariableName(typeName), WeaponCompatibility(type), range, percentage);
+    }
+
+    private void DrawAccessoryCatalogRow(AccessoriesUpgrades.StatUpgradeType type, string target)
+    {
+        var range = settings != null ? settings.FindAccessoryRange(type) : null;
+        bool percentage = type.ToString().Contains("Percent") ||
+                          type == AccessoriesUpgrades.StatUpgradeType.FireResist ||
+                          type == AccessoriesUpgrades.StatUpgradeType.ColdResist ||
+                          type == AccessoriesUpgrades.StatUpgradeType.LightningResist ||
+                          type == AccessoriesUpgrades.StatUpgradeType.PoisonResist;
+        DrawEditableRow(ObjectNames.NicifyVariableName(type.ToString()), target, range, percentage);
+    }
+
+    private void DrawEditableRow(string name, string target, object rangeObject, bool percentage)
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField(name, EditorStyles.miniLabel, GUILayout.MinWidth(220f));
+            EditorGUILayout.LabelField(target, EditorStyles.miniLabel, GUILayout.Width(130f));
+
+            float min;
+            float max;
+            bool wholeNumbers;
+            if (rangeObject is GeneratedUpgradeSettings.WeaponRange weapon)
+            {
+                min = weapon.min;
+                max = weapon.max;
+                wholeNumbers = weapon.wholeNumbers;
+            }
+            else if (rangeObject is GeneratedUpgradeSettings.AccessoryRange accessory)
+            {
+                min = accessory.min;
+                max = accessory.max;
+                wholeNumbers = accessory.wholeNumbers;
+            }
+            else
+            {
+                EditorGUILayout.LabelField("Random enum value", EditorStyles.miniLabel, GUILayout.Width(140f));
+                return;
+            }
+
+            float displayScale = percentage ? 100f : 1f;
+            EditorGUI.BeginChangeCheck();
+            float nextMin = wholeNumbers
+                ? EditorGUILayout.IntField(Mathf.RoundToInt(min), GUILayout.Width(70f))
+                : EditorGUILayout.FloatField(min * displayScale, GUILayout.Width(70f)) / displayScale;
+            float nextMax = wholeNumbers
+                ? EditorGUILayout.IntField(Mathf.RoundToInt(max), GUILayout.Width(70f))
+                : EditorGUILayout.FloatField(max * displayScale, GUILayout.Width(70f)) / displayScale;
+            if (!EditorGUI.EndChangeCheck()) return;
+
+            Undo.RecordObject(settings, "Change Generated Upgrade Range");
+            nextMax = Mathf.Max(nextMin, nextMax);
+            if (rangeObject is GeneratedUpgradeSettings.WeaponRange changedWeapon)
+            {
+                changedWeapon.min = nextMin;
+                changedWeapon.max = nextMax;
+            }
+            else if (rangeObject is GeneratedUpgradeSettings.AccessoryRange changedAccessory)
+            {
+                changedAccessory.min = nextMin;
+                changedAccessory.max = nextMax;
+            }
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+        }
+    }
+
+    private static GeneratedUpgradeSettings LoadOrCreateSettings()
+    {
+        var asset = AssetDatabase.LoadAssetAtPath<GeneratedUpgradeSettings>(SettingsPath);
+        if (asset == null)
+        {
+            if (!AssetDatabase.IsValidFolder(SettingsDirectory))
+                AssetDatabase.CreateFolder("Assets", "Resources");
+            asset = CreateInstance<GeneratedUpgradeSettings>();
+            AssetDatabase.CreateAsset(asset, SettingsPath);
+        }
+
+        int weaponCount = asset.weaponRanges.Count;
+        int accessoryCount = asset.accessoryRanges.Count;
+        asset.EnsureAllRanges();
+        if (weaponCount != asset.weaponRanges.Count || accessoryCount != asset.accessoryRanges.Count)
+        {
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssets();
+        }
+        return asset;
     }
 
     private static string WeaponCompatibility(WeaponUpgrades.UpgradeType type)
@@ -232,40 +343,40 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private static string WeaponRange(WeaponUpgrades.UpgradeType type)
     {
         string name = type.ToString();
-        if (name.Contains("DamageFlat")) return "+2 to +12";
-        if (name.Contains("DamagePercent")) return "+5% to +25%";
-        if (name.Contains("CritChance")) return "+3% to +20%";
-        if (name.Contains("CritMultiplier")) return "+0.10 to +0.60";
-        if (name.Contains("StatusApplyChanceFlat")) return "+5% to +30%";
-        if (name.Contains("StatusApplyChancePercent")) return "+10% to +50%";
-        if (name.Contains("StatusDurationFlat")) return "+0.5s to +3s";
-        if (name.Contains("StatusDurationPercent")) return "+10% to +50%";
+        if (name.Contains("DamageFlat")) return "+1 to +6";
+        if (name.Contains("DamagePercent")) return "+3% to +12%";
+        if (name.Contains("CritChance")) return "+2% to +10%";
+        if (name.Contains("CritMultiplier")) return "+0.05 to +0.30";
+        if (name.Contains("StatusApplyChanceFlat")) return "+3% to +15%";
+        if (name.Contains("StatusApplyChancePercent")) return "+5% to +25%";
+        if (name.Contains("StatusDurationFlat")) return "+0.25s to +1.5s";
+        if (name.Contains("StatusDurationPercent")) return "+5% to +25%";
         if (name.Contains("EnableStatusEffect")) return "Enable";
         if (name.Contains("StatusEffectIndex")) return "Random status";
         if (name.Contains("DamageTypeIndex")) return "Damage type";
-        if (name.Contains("Knockback")) return "+0.5 to +3";
-        if (name.Contains("CullThreshold")) return "+2% to +6%";
-        if (name.Contains("ChainHits")) return "+1 to +2";
-        if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat")) return "+1 to +3";
-        if (type == WeaponUpgrades.UpgradeType.KnifeRadiusFlat) return "+0.10 to +1.00";
-        if (type == WeaponUpgrades.UpgradeType.KnifeRadiusPercent) return "+5% to +30%";
-        if (type == WeaponUpgrades.UpgradeType.KnifeLifestealFlat) return "+2% to +15%";
-        if (type == WeaponUpgrades.UpgradeType.KnifeLifestealPercent) return "+10% to +40%";
-        if (type == WeaponUpgrades.UpgradeType.KnifeSplashRadiusFlat) return "+0.20 to +1.50";
-        if (type == WeaponUpgrades.UpgradeType.KnifeSplashRadiusPercent) return "+10% to +50%";
-        if (type == WeaponUpgrades.UpgradeType.KnifeSplashDamagePercentFlat) return "+5% to +30%";
-        if (type == WeaponUpgrades.UpgradeType.KnifeSplashDamagePercentPercent) return "+10% to +50%";
-        if (type == WeaponUpgrades.UpgradeType.ShooterSpreadAngleFlat) return "+2° to +20°";
-        if (type == WeaponUpgrades.UpgradeType.ShooterSpreadAnglePercent) return "+10% to +50%";
-        if (type == WeaponUpgrades.UpgradeType.ShooterProjectileSpeedFlat) return "+0.5 to +5";
-        if (type == WeaponUpgrades.UpgradeType.ShooterProjectileSpeedPercent) return "+10% to +50%";
-        if (type == WeaponUpgrades.UpgradeType.ShooterLifetimeFlat) return "+0.3s to +2s";
-        if (type == WeaponUpgrades.UpgradeType.ShooterLifetimePercent) return "+10% to +50%";
-        if (type == WeaponUpgrades.UpgradeType.TickRateFlat) return "0.05s to 0.50s";
-        if (type == WeaponUpgrades.UpgradeType.TickRatePercent) return "5% to 30%";
-        if (type == WeaponUpgrades.UpgradeType.BurstCountPercent) return "+10% to +50%";
-        if (type == WeaponUpgrades.UpgradeType.BurstSpacingFlat) return "0.02s to 0.30s";
-        if (type == WeaponUpgrades.UpgradeType.BurstSpacingPercent) return "10% to 50%";
+        if (name.Contains("Knockback")) return "+0.25 to +1.5";
+        if (name.Contains("CullThreshold")) return "+1% to +3%";
+        if (name.Contains("ChainHits")) return "+1";
+        if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat")) return "+1 to +2";
+        if (type == WeaponUpgrades.UpgradeType.KnifeRadiusFlat) return "+0.05 to +0.50";
+        if (type == WeaponUpgrades.UpgradeType.KnifeRadiusPercent) return "+3% to +15%";
+        if (type == WeaponUpgrades.UpgradeType.KnifeLifestealFlat) return "+1% to +8%";
+        if (type == WeaponUpgrades.UpgradeType.KnifeLifestealPercent) return "+5% to +20%";
+        if (type == WeaponUpgrades.UpgradeType.KnifeSplashRadiusFlat) return "+0.10 to +0.75";
+        if (type == WeaponUpgrades.UpgradeType.KnifeSplashRadiusPercent) return "+5% to +25%";
+        if (type == WeaponUpgrades.UpgradeType.KnifeSplashDamagePercentFlat) return "+3% to +15%";
+        if (type == WeaponUpgrades.UpgradeType.KnifeSplashDamagePercentPercent) return "+5% to +25%";
+        if (type == WeaponUpgrades.UpgradeType.ShooterSpreadAngleFlat) return "+1° to +10°";
+        if (type == WeaponUpgrades.UpgradeType.ShooterSpreadAnglePercent) return "+5% to +25%";
+        if (type == WeaponUpgrades.UpgradeType.ShooterProjectileSpeedFlat) return "+0.25 to +2.5";
+        if (type == WeaponUpgrades.UpgradeType.ShooterProjectileSpeedPercent) return "+5% to +25%";
+        if (type == WeaponUpgrades.UpgradeType.ShooterLifetimeFlat) return "+0.15s to +1s";
+        if (type == WeaponUpgrades.UpgradeType.ShooterLifetimePercent) return "+5% to +25%";
+        if (type == WeaponUpgrades.UpgradeType.TickRateFlat) return "0.03s to 0.25s";
+        if (type == WeaponUpgrades.UpgradeType.TickRatePercent) return "3% to 15%";
+        if (type == WeaponUpgrades.UpgradeType.BurstCountPercent) return "+5% to +25%";
+        if (type == WeaponUpgrades.UpgradeType.BurstSpacingFlat) return "0.01s to 0.15s";
+        if (type == WeaponUpgrades.UpgradeType.BurstSpacingPercent) return "5% to 25%";
         return "—";
     }
 
