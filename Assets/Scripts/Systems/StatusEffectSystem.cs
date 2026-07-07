@@ -88,6 +88,7 @@ public class StatusEffectSystem : MonoBehaviour
     }
 
     private readonly Dictionary<StatusType, Effect> _active = new Dictionary<StatusType, Effect>(8);
+    private readonly Dictionary<StatusType, GameObject> _sources = new Dictionary<StatusType, GameObject>(8);
     private static readonly List<StatusType> _keysCache = new List<StatusType>(8);
     private float currentXpMultiplier = 1f;
     private enum BuiltInEvent { Started, Refreshed, Tick, Ended }
@@ -127,6 +128,7 @@ public class StatusEffectSystem : MonoBehaviour
             if (e.remaining <= 0f)
             {
                 _active.Remove(type);
+                _sources.Remove(type);
                 HandleBuiltIn(type, BuiltInEvent.Ended);
                 OnEnd?.Invoke(type);
             }
@@ -157,7 +159,7 @@ public class StatusEffectSystem : MonoBehaviour
     /// and resets tick cadence. Does NOT fire OnStart again on refresh.
     /// </summary>
 
-    public void AddStatus(StatusType type, float duration, float tickInterval = 1f)
+    public void AddStatus(StatusType type, float duration, float tickInterval = 1f, GameObject sourceObject = null)
     {
         duration = Mathf.Max(0f, duration);
         if (duration <= 0f) return;
@@ -168,6 +170,8 @@ public class StatusEffectSystem : MonoBehaviour
             e.remaining = duration;              // reset remaining time
                                                  // keep e.tickInterval, e.tickTimer, e.tickCount as-is
                                                  // ignore tickInterval parameter on refresh
+            if (sourceObject != null)
+                _sources[type] = sourceObject;
             HandleBuiltIn(type, BuiltInEvent.Refreshed);
         }
         else
@@ -181,6 +185,8 @@ public class StatusEffectSystem : MonoBehaviour
                 tickCount = 0
             };
             _active.Add(type, e);
+            if (sourceObject != null)
+                _sources[type] = sourceObject;
             OnStart?.Invoke(type);
             HandleBuiltIn(type, BuiltInEvent.Started);
         }
@@ -192,6 +198,7 @@ public class StatusEffectSystem : MonoBehaviour
     {
         if (_active.Remove(type))
         {
+            _sources.Remove(type);
             HandleBuiltIn(type, BuiltInEvent.Ended);
             OnEnd?.Invoke(type);
         }
@@ -217,6 +224,7 @@ public class StatusEffectSystem : MonoBehaviour
             OnEnd?.Invoke(k);
         }
         _active.Clear();
+        _sources.Clear();
     }
 
 
@@ -304,7 +312,7 @@ public class StatusEffectSystem : MonoBehaviour
                 int dmg = Mathf.Max(1, Mathf.RoundToInt(bleedingDamagePerTick));
                 // Uses your health system's public API:
                 // SimpleHealth.TakeDamage(int amount)
-                health.TakeDamage(dmg, SimpleHealth.DamageType.Physical, false, false); // will handle armor, invuln, popup, etc. :contentReference[oaicite:1]{index=1}
+                health.TakeDamage(dmg, SimpleHealth.DamageType.Physical, false, false, GetSource(type), "Bleeding"); // will handle armor, invuln, popup, etc.
             }
             // If no health found, we silently skip (no debug spam).
         }
@@ -316,7 +324,7 @@ public class StatusEffectSystem : MonoBehaviour
                 int dmg = Mathf.Max(1, Mathf.RoundToInt(igniteDamagePerTick));
                 // Uses your health system's public API:
                 // SimpleHealth.TakeDamage(int amount)
-                health.TakeDamage(dmg, SimpleHealth.DamageType.Fire, false, false);
+                health.TakeDamage(dmg, SimpleHealth.DamageType.Fire, false, false, GetSource(type), "Ignite");
             }
             // If no health found, we silently skip (no debug spam).
         }
@@ -328,7 +336,7 @@ public class StatusEffectSystem : MonoBehaviour
                 int dmg = Mathf.Max(1, Mathf.RoundToInt(poisonDamagePerTick));
                 // Uses your health system's public API:
                 // SimpleHealth.TakeDamage(int amount)
-                health.TakeDamage(dmg, SimpleHealth.DamageType.Poison, false, false);
+                health.TakeDamage(dmg, SimpleHealth.DamageType.Poison, false, false, GetSource(type), "Poison");
             }
             // If no health found, we silently skip (no debug spam).
         }
@@ -344,6 +352,11 @@ public class StatusEffectSystem : MonoBehaviour
             }
             // If no health found, we silently skip (no debug spam).
         }
+    }
+
+    private GameObject GetSource(StatusType type)
+    {
+        return _sources.TryGetValue(type, out GameObject source) ? source : null;
     }
 
 #if UNITY_EDITOR

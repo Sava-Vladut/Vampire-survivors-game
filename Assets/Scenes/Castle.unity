@@ -9687,18 +9687,25 @@ MonoBehaviour:
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 10
   - powerUpName: Reaper's Ledger
-    powerUpDescription: Damage grows by 0.1% for each enemy killed, up to +150%.
+    powerUpDescription: Damage increases by 0.1% per kill. Max +150%.
     powerUpObject: {fileID: 8812001001}
     IsAccessory: 1
     IsWeapon: 0
     powerUpIcon: {fileID: 5540992825214292966, guid: ae3a69ce3f6fc0e42b49c15d72cba43a, type: 3}
     weight: 20
   - powerUpName: Bloodied Banner
-    powerUpDescription: Damage grows by 10% for each nearby enemy, up to +100%.
+    powerUpDescription: Damage increases by 10% per nearby enemy. Max +100%.
     powerUpObject: {fileID: 8812001011}
     IsAccessory: 1
     IsWeapon: 0
     powerUpIcon: {fileID: 1274299836955854301, guid: 60f95579b05f10749996070b23ce694d, type: 3}
+    weight: 20
+  - powerUpName: Grave Pact
+    powerUpDescription: Damage increases by 2% per missing 10% health. Max +20%.
+    powerUpObject: {fileID: 8812001021}
+    IsAccessory: 1
+    IsWeapon: 0
+    powerUpIcon: {fileID: 311489795467858359, guid: b2e1d811d6684f7419b7f86f91c311fb, type: 3}
     weight: 20
   - powerUpName: Eye of devastion
     powerUpDescription: '"An ominous orb that orbits its wielder, radiating destructive
@@ -9788,6 +9795,11 @@ GameObject:
 --- !u!1 &8812001011 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8812001010, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
+  m_PrefabInstance: {fileID: 4663750748832903826}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8812001021 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8812001020, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
   m_PrefabInstance: {fileID: 4663750748832903826}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &730127412
@@ -9932,6 +9944,7 @@ MonoBehaviour:
   closeSFX: {fileID: 8300000, guid: e9af9d96cf189c3489a7ade87262f0ab, type: 3}
   defaultIcon: {fileID: 4311277859609562655, guid: be880325b98f2b14685f9452026363d3, type: 3}
   isFirstSelection: 1
+  firstSelectionWeaponsOnly: 0
   firstSelectionCount: 3
 --- !u!114 &730127416
 MonoBehaviour:

@@ -291,7 +291,7 @@ public class Knife : MonoBehaviour
                     // status on hit
                     if (splashStatus != null && applyStatusEffectOnHit && Random.Range(0f, 1f) <= statusApplyChance)
                     {
-                        splashStatus.AddStatus(statusEffectOnHit, statusEffectDuration, 1f);
+                        splashStatus.AddStatus(statusEffectOnHit, statusEffectDuration, 1f, gameObject);
                     }
 
                     // main hit
@@ -299,14 +299,14 @@ public class Knife : MonoBehaviour
 
                     bool cull = cullThreshold > 0f && health.CurrentHealth <= health.MaxHealth * cullThreshold;
                     if (cull)
-                        health.TakeDamage(health.CurrentHealth, damageType, false, false);
+                        health.TakeDamage(health.CurrentHealth, damageType, false, false, gameObject, "Cull");
                     else
-                        health.TakeDamage(dealt, damageType);
+                        health.TakeDamage(dealt, damageType, true, true, gameObject, "Knife");
 
                     if (!cull && echoStrikeChance > 0f && health.IsAlive && Random.value <= Mathf.Clamp01(echoStrikeChance))
                     {
                         int echoDamage = Mathf.Max(1, Mathf.RoundToInt(dealt * Mathf.Clamp01(echoStrikeDamagePercent)));
-                        health.TakeDamage(echoDamage, damageType);
+                        health.TakeDamage(echoDamage, damageType, true, true, gameObject, "Echo Strike");
                         if (slashEffect != null)
                             Instantiate(slashEffect, col.transform.position, Quaternion.identity);
                     }
@@ -336,7 +336,7 @@ public class Knife : MonoBehaviour
                             if (splashHealth != null && splashHealth.IsAlive && !splashHealth.IsInvulnerable)
                             {
                                 int splashDamage = Mathf.RoundToInt(dealt * splashDamagePercent);
-                                splashHealth.TakeDamage(splashDamage, damageType);
+                                splashHealth.TakeDamage(splashDamage, damageType, true, true, gameObject, "Knife Splash");
                             }
                         }
                     }

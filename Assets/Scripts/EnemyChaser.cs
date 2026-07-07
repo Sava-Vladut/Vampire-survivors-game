@@ -68,6 +68,8 @@ public class EnemyChaser : MonoBehaviour
         {
             int maxHp = cachedHealth != null ? cachedHealth.maxHealth : (TryGetComponent(out cachedHealth) ? cachedHealth.maxHealth : 0);
             explosionComp.baseDamage = maxHp / 3;
+            explosionComp.sourceObject = gameObject;
+            explosionComp.sourceDetail = "Chatter Explosion";
             explosionComp.DoExplosion();
         }
     }

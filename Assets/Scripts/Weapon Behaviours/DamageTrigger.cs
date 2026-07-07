@@ -10,6 +10,7 @@ public class BulletDamageTrigger : MonoBehaviour
     [Header("Damage")]
     [SerializeField] public SimpleHealth.DamageType damageType;
     [SerializeField] public int damageAmount = 10;
+    [HideInInspector] public GameObject sourceObject;
     [Tooltip("How many successful damage hits this bullet can apply before it is destroyed.")]
     [SerializeField] public int penetration = 1;
     [Min(0f)] public float knockbackForce = 0f;
@@ -88,9 +89,9 @@ public class BulletDamageTrigger : MonoBehaviour
         // Apply damage
         bool cull = cullThreshold > 0f && health.CurrentHealth <= health.MaxHealth * cullThreshold;
         if (cull)
-            health.TakeDamage(health.CurrentHealth, damageType, false, false);
+            health.TakeDamage(health.CurrentHealth, damageType, false, false, GetDamageSource(), "Cull");
         else
-            health.TakeDamage(damageAmount, damageType);
+            health.TakeDamage(damageAmount, damageType, true, true, GetDamageSource(), "Projectile");
 
         if (knockbackForce > 0f)
             ApplyKnockback(other);
@@ -109,7 +110,7 @@ public class BulletDamageTrigger : MonoBehaviour
             {
                 if (Random.Range(0f, 1f) <= statusApplyChance)
                 {
-                    statusSys.AddStatus(statusEffectOnHit, statusEffectDuration);
+                    statusSys.AddStatus(statusEffectOnHit, statusEffectDuration, 1f, GetDamageSource());
                 }
                 // This will refresh if the same status already exists (per your StatusEffectSystem)
 
@@ -145,7 +146,15 @@ public class BulletDamageTrigger : MonoBehaviour
         {
             // Use current damageAmount (already includes crits if SimpleShooter set it)
             explosionInstance.baseDamage = damageAmount;
+            explosionInstance.damageType = damageType;
+            explosionInstance.sourceObject = GetDamageSource();
+            explosionInstance.sourceDetail = "Projectile Explosion";
         }
+    }
+
+    private GameObject GetDamageSource()
+    {
+        return sourceObject != null ? sourceObject : gameObject;
     }
 
     private static bool IsInLayerMask(GameObject go, LayerMask mask)

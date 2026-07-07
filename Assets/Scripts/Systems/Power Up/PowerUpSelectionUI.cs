@@ -40,6 +40,7 @@ public class PowerUpSelectionUI : MonoBehaviour
     private int refreshesRemaining;
     [Header("Behavior")]
     [SerializeField] private bool isFirstSelection = true; // first selection shows weapons only
+    [SerializeField] private bool firstSelectionWeaponsOnly = false;
 
     // Optional: number of choices for the first selection
     [SerializeField] private int firstSelectionCount = 3;
@@ -128,7 +129,7 @@ public class PowerUpSelectionUI : MonoBehaviour
         for (int i = 0; i < powerUpChooser.powerUps.Count; i++)
         {
             if (!powerUpChooser.CanSelectByIndex(i)) continue;
-            if (isFirstSelection && !powerUpChooser.powerUps[i].IsWeapon) continue;
+            if (isFirstSelection && firstSelectionWeaponsOnly && !powerUpChooser.powerUps[i].IsWeapon) continue;
             candidates.Add(i);
         }
 

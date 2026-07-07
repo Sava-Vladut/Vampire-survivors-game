@@ -6,6 +6,9 @@ public class ExplosionDamage2D : MonoBehaviour
     [Header("Explosion")]
     [SerializeField] public float radius = 2f;
     [SerializeField] public int baseDamage = 20;
+    [SerializeField] public SimpleHealth.DamageType damageType = SimpleHealth.DamageType.Physical;
+    [HideInInspector] public GameObject sourceObject;
+    [HideInInspector] public string sourceDetail = "Explosion";
     [SerializeField] private bool useDistanceFalloff = true;
     [SerializeField, Min(0f)] private float knockbackForce = 0f;
 
@@ -57,7 +60,7 @@ public class ExplosionDamage2D : MonoBehaviour
             int dmg = CalculateDamage(center, col);
             if (dmg > 0)
             {
-                health.TakeDamage(dmg, SimpleHealth.DamageType.Physical);
+                health.TakeDamage(dmg, damageType, true, true, sourceObject != null ? sourceObject : gameObject, sourceDetail);
                 ApplyKnockback(center, col);
                 _hitOnce.Add(health);
             }

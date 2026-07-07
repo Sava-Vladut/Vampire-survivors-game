@@ -6,6 +6,41 @@ using System.Collections.Generic;
 public class SimpleHealth : MonoBehaviour
 {
     public static event System.Action<SimpleHealth> AnyDied;
+    public event System.Action<DamageReportEntry> DamageTaken;
+    public event System.Action<SimpleHealth> Died;
+    public event System.Action<SimpleHealth> HealthReset;
+
+    public readonly struct DamageReportEntry
+    {
+        public readonly SimpleHealth Target;
+        public readonly int Amount;
+        public readonly DamageType Type;
+        public readonly GameObject SourceObject;
+        public readonly string SourceName;
+        public readonly string SourceDetail;
+        public readonly float HealthAfter;
+        public readonly bool WasLethal;
+
+        public DamageReportEntry(
+            SimpleHealth target,
+            int amount,
+            DamageType type,
+            GameObject sourceObject,
+            string sourceName,
+            string sourceDetail,
+            float healthAfter,
+            bool wasLethal)
+        {
+            Target = target;
+            Amount = amount;
+            Type = type;
+            SourceObject = sourceObject;
+            SourceName = sourceName;
+            SourceDetail = sourceDetail;
+            HealthAfter = healthAfter;
+            WasLethal = wasLethal;
+        }
+    }
 
     // NEW: Damage types
     public enum DamageType
@@ -436,7 +471,7 @@ public class SimpleHealth : MonoBehaviour
         lastDamageType = DamageType.Physical;
     }
 
-    private void TryApplyAilments(StatusEffectSystem ses, DamageType type, int dmg)
+    private void TryApplyAilments(StatusEffectSystem ses, DamageType type, int dmg, GameObject source)
     {
         if (ses == null || dmg <= 0) return;
 
@@ -450,14 +485,14 @@ public class SimpleHealth : MonoBehaviour
             case DamageType.Lightning:
                 {
                     if (roll < dmgFrac)
-                        ses.AddStatus(StatusEffectSystem.StatusType.Shock, 5f, 1f);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Shock, 5f, 1f, source);
                     break;
                 }
             case DamageType.Fire:
                 {
                     if (roll < dmgFrac)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Ignite, 5f, 1f);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Ignite, 5f, 1f, source);
                         ses.igniteDamagePerTick = dotDamage;
                     }
                     break;
@@ -466,7 +501,7 @@ public class SimpleHealth : MonoBehaviour
                 {
                     if (roll < dmgFrac)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Frozen, 3f, 1f);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Frozen, 3f, 1f, source);
                     }
                     break;
                 }
@@ -474,7 +509,7 @@ public class SimpleHealth : MonoBehaviour
                 {
                     if (roll < dmgFrac)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Poison, 15f, 0.5f);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Poison, 15f, 0.5f, source);
                         ses.poisonDamagePerTick = dotDamage;
                     }
                     break;
@@ -483,7 +518,7 @@ public class SimpleHealth : MonoBehaviour
                 {
                     if (roll < dmgFrac)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Bleeding, 5f, 1f);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Bleeding, 5f, 1f, source);
                         ses.bleedingDamagePerTick = dotDamage;
                     }
                     break;
@@ -498,7 +533,13 @@ public class SimpleHealth : MonoBehaviour
     }
 
     // NEW: main overload with type
-    public void TakeDamage(int amount, DamageType type = DamageType.Physical, bool mitigatable = true, bool applyAilments = true)
+    public void TakeDamage(
+        int amount,
+        DamageType type = DamageType.Physical,
+        bool mitigatable = true,
+        bool applyAilments = true,
+        GameObject sourceObject = null,
+        string sourceDetail = null)
     {
         if (amount <= 0 || IsProtectedBySafeZone() || isInvulnerable || !IsAlive) return;
 
@@ -579,10 +620,11 @@ public class SimpleHealth : MonoBehaviour
         _dpsChecker?.RegisterDamage(displayedDamage);
 
         if (_statusEffectSystem != null && applyAilments)
-            TryApplyAilments(_statusEffectSystem, type, displayedDamage);
+            TryApplyAilments(_statusEffectSystem, type, displayedDamage, sourceObject);
 
         RegisterRunDamage(displayedDamage, type);
         currentHealth = Mathf.Clamp(currentHealth - dmg, 0, maxHealth);
+        RaiseDamageTaken(displayedDamage, type, sourceObject, sourceDetail);
         ApplyThorns();
         SyncSlider();
         UpdateVolume();
@@ -687,7 +729,43 @@ public class SimpleHealth : MonoBehaviour
         }
 
         if (nearest != null && nearest.TryGetComponent(out SimpleHealth thornTargetHealth))
-            thornTargetHealth.TakeDamage(thornsDamage, DamageType.Physical, false, false);
+            thornTargetHealth.TakeDamage(thornsDamage, DamageType.Physical, false, false, gameObject, "Thorns");
+    }
+
+    private void RaiseDamageTaken(int amount, DamageType type, GameObject sourceObject, string sourceDetail)
+    {
+        DamageTaken?.Invoke(new DamageReportEntry(
+            this,
+            amount,
+            type,
+            sourceObject,
+            ResolveDamageSourceName(sourceObject),
+            string.IsNullOrWhiteSpace(sourceDetail) ? type.ToString() : sourceDetail,
+            currentHealth,
+            !IsAlive));
+    }
+
+    public static string ResolveDamageSourceName(GameObject sourceObject)
+    {
+        if (sourceObject == null)
+            return "Unknown";
+
+        ChatterStats chatterStats = sourceObject.GetComponentInParent<ChatterStats>();
+        if (chatterStats == null && sourceObject.transform.root != null)
+            chatterStats = sourceObject.transform.root.GetComponentInChildren<ChatterStats>();
+
+        if (chatterStats != null)
+        {
+            string chatterName = chatterStats.transform.name;
+            if (!string.IsNullOrWhiteSpace(chatterName))
+                return chatterName;
+        }
+
+        SimpleHealth sourceHealth = sourceObject.GetComponentInParent<SimpleHealth>();
+        if (sourceHealth != null && !string.IsNullOrWhiteSpace(sourceHealth.name))
+            return sourceHealth.name;
+
+        return string.IsNullOrWhiteSpace(sourceObject.name) ? "Unknown" : sourceObject.name;
     }
 
     private bool TryEvade(float rawDamage)
@@ -811,6 +889,7 @@ public class SimpleHealth : MonoBehaviour
         SyncSlider();
         UpdateVolume();
         UpdateStatsText();
+        HealthReset?.Invoke(this);
     }
 
     private void Die()
@@ -818,6 +897,7 @@ public class SimpleHealth : MonoBehaviour
         if (hasDied) return;
         hasDied = true;
         AnyDied?.Invoke(this);
+        Died?.Invoke(this);
 
         if (deathObjects != null && deathObjects.Length > 0)
         {

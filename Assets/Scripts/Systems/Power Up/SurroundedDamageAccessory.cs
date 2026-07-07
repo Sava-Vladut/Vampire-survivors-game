@@ -64,7 +64,7 @@ public class SurroundedDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierP
 
     public string GetAccessoryDescriptionLine()
     {
-        return $"<color=#FFD166>+{CurrentBonusDamage * 100f:F0}% Damage ({surroundingEnemyCount} nearby enemies)</color>";
+        return $"<color=#FFD166>Damage: +{CurrentBonusDamage * 100f:F0}% ({surroundingEnemyCount} nearby)</color>";
     }
 
     private void OnDrawGizmosSelected()

@@ -13,10 +13,14 @@ public static class PlayerDamageMultiplierUtility
             return damage;
 
         float multiplier = 1f;
-        var providers = source.GetComponentsInParent<MonoBehaviour>(true);
+        var providers = source.transform.root.GetComponentsInChildren<MonoBehaviour>(true);
         for (int i = 0; i < providers.Length; i++)
         {
-            if (providers[i] is IPlayerDamageMultiplierProvider provider)
+            var behaviour = providers[i];
+            if (behaviour == null || !behaviour.enabled || !behaviour.gameObject.activeInHierarchy)
+                continue;
+
+            if (behaviour is IPlayerDamageMultiplierProvider provider)
                 multiplier *= Mathf.Max(0f, provider.DamageMultiplier);
         }
 
@@ -72,6 +76,6 @@ public class KillDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierProvide
 
     public string GetAccessoryDescriptionLine()
     {
-        return $"<color=#FFD166>+{CurrentBonusDamage * 100f:F1}% Damage ({enemyKills} kills)</color>";
+        return $"<color=#FFD166>Damage: +{CurrentBonusDamage * 100f:F1}% ({enemyKills} kills)</color>";
     }
 }

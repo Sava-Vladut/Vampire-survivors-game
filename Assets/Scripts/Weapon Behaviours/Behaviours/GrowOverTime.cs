@@ -18,8 +18,11 @@ public class GrowOverTime : MonoBehaviour
     public void InstantiateExplosion(GameObject explosion)
     {
         GameObject exploder = Instantiate(explosion, transform.position, Quaternion.identity);
-        exploder.GetComponent<ExplosionDamage2D>().baseDamage = Mathf.RoundToInt(targetScale * 10f);
-        exploder.GetComponent<ExplosionDamage2D>().DoExplosion();
+        var explosionDamage = exploder.GetComponent<ExplosionDamage2D>();
+        explosionDamage.baseDamage = Mathf.RoundToInt(targetScale * 10f);
+        explosionDamage.sourceObject = gameObject;
+        explosionDamage.sourceDetail = "Growth Explosion";
+        explosionDamage.DoExplosion();
     }
 
     private void Update()

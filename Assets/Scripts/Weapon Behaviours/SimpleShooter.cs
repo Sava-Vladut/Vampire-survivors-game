@@ -299,10 +299,16 @@ public class SimpleShooter : MonoBehaviour
             bulletDamage.applyStatusEffectOnHit = applyStatusEffectOnHit;
             bulletDamage.statusEffectOnHit = statusEffectOnHit;
             bulletDamage.statusEffectDuration = statusEffectDuration;
+            bulletDamage.sourceObject = gameObject;
         }
 
         if (bullet.TryGetComponent<ExplosionDamage2D>(out var explosionDamage))
+        {
             explosionDamage.baseDamage = finalDamage;
+            explosionDamage.damageType = damageType;
+            explosionDamage.sourceObject = gameObject;
+            explosionDamage.sourceDetail = "Projectile Explosion";
+        }
 
         if (bullet.TryGetComponent<Rigidbody2D>(out var rb))
             rb.linearVelocity = shootDir * shootForce;
