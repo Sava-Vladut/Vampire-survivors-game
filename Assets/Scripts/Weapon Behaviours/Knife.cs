@@ -174,7 +174,7 @@ public class Knife : MonoBehaviour
             const string numColor = "#8888FF";
             WeaponUpgrades[] wu = GetComponentsInChildren<WeaponUpgrades>(true);
 
-            sb.AppendLine($"<b>{transform.name} Stats</b>");
+            sb.AppendLine($"<b>{transform.name}</b>");
 
             // ✅ Count enabled upgrades vs total
             int enabledCount = 0;
@@ -183,29 +183,35 @@ public class Knife : MonoBehaviour
                 if (upgrade != null && upgrade.gameObject.activeInHierarchy && upgrade.enabled)
                     enabledCount++;
             }
-            sb.AppendLine($"Upgrades: <color={numColor}>{enabledCount}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
+            if (enabledCount > 0)
+                sb.AppendLine($"Upg: <color={numColor}>{enabledCount}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
 
-            sb.AppendLine($"Damage: <color={numColor}>{GetDamageRangeText()}</color>");
-            string dtColor = GetDamageTypeHex(damageType);
-            sb.AppendLine($"Damage Type: <color={dtColor}>{damageType}</color>");
-            sb.AppendLine($"Radius: <color={numColor}>{radius:F2}</color>");
-            sb.AppendLine($"Splash: <color={numColor}>{splashRadius:F2}</color> (<color={numColor}>{splashDamagePercent * 100f:F0}</color>% dmg)");
+            string damageColor = GetDamageTypeHex(damageType);
+            sb.AppendLine($"DMG: <color={damageColor}>{GetDamageRangeText()}</color>");
+            if (damageType != SimpleHealth.DamageType.Physical)
+                sb.AppendLine($"Type: <color={damageColor}>{damageType}</color>");
+            sb.AppendLine($"Range: <color={numColor}>{radius:F2}</color>");
+            if (splashRadius > 0f && splashDamagePercent > 0f)
+                sb.AppendLine($"AOE: <color={numColor}>{splashRadius:F2}</color> (<color={numColor}>{splashDamagePercent * 100f:F0}</color>% dmg)");
 
             if (wt != null)
-                sb.AppendLine($"Attack Delay: <color={numColor}>{wt.interval:F1}</color>s");
+                sb.AppendLine($"Delay: <color={numColor}>{wt.interval:F1}</color>s");
 
-            sb.AppendLine($"Lifesteal: <color={numColor}>{(lifestealPercent * 100f):F0}</color>%");
-            sb.AppendLine($"Crit: <color={numColor}>{(critChance * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
+            if (lifestealPercent > 0f)
+                sb.AppendLine($"Steal: <color={numColor}>{(lifestealPercent * 100f):F0}</color>%");
+            if (critChance > 0f)
+                sb.AppendLine($"Crit: <color={numColor}>{(critChance * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
             if (echoStrikeChance > 0f)
-                sb.AppendLine($"Echo Strike: <color={numColor}>{echoStrikeChance * 100f:F0}</color>% for <color={numColor}>{echoStrikeDamagePercent * 100f:F0}</color>% dmg");
+                sb.AppendLine($"Echo: <color={numColor}>{echoStrikeChance * 100f:F0}</color>% for <color={numColor}>{echoStrikeDamagePercent * 100f:F0}</color>% dmg");
             if (knockbackForce > 0f)
-                sb.AppendLine($"Knockback: <color={numColor}>{knockbackForce:F1}</color>");
-            sb.AppendLine($"Max Targets: <color={numColor}>{maxTargetsPerTick}</color>");
+                sb.AppendLine($"KB: <color={numColor}>{knockbackForce:F1}</color>");
+            if (maxTargetsPerTick > 0)
+                sb.AppendLine($"Targets: <color={numColor}>{maxTargetsPerTick}</color>");
 
             if (applyStatusEffectOnHit)
             {
-                sb.AppendLine($"Status Effect Chance: <color={numColor}>{statusApplyChance * 100f:F0}</color>%");
-                sb.AppendLine($"On Hit: {statusEffectOnHit} (<color={numColor}>{statusEffectDuration:F1}</color>s)");
+                sb.AppendLine($"Proc: <color={numColor}>{statusApplyChance * 100f:F0}</color>%");
+                sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{statusEffectDuration:F1}</color>s)");
             }
 
 
@@ -402,9 +408,9 @@ public class Knife : MonoBehaviour
     {
         int baseDamage = RollBaseDamage();
         if (Random.value < Mathf.Clamp01(critChance))
-            return Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier));
+            return PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
 
-        return baseDamage;
+        return PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
     }
 
     private string GetDamageRangeText()

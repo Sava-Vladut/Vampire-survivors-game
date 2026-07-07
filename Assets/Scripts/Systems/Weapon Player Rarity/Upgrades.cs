@@ -242,29 +242,20 @@ public sealed class DamagePercentAsFlatUpgrade : IUpgrade
     public Action Apply(WeaponContext c, StringBuilder notes)
     {
         var r = c.tiers.ScaleMultiplierLike(c.ranges.damageMult, c.tiers.damagePercent);
-        float minMult = c.RangeFloat(r.x, r.y);
-        float maxMult = c.RangeFloat(r.x, r.y);
-        if (minMult > maxMult) (minMult, maxMult) = (maxMult, minMult);
+        float mult = c.RangeFloat(r.x, r.y);
 
         int baseMin = c.damage.MinDamage;
         int baseMax = c.damage.MaxDamage;
-        int minDelta = Mathf.RoundToInt(baseMin * (minMult - 1f));
-        int maxDelta = Mathf.RoundToInt(baseMax * (maxMult - 1f));
+        int minDelta = Mathf.RoundToInt(baseMin * (mult - 1f));
+        int maxDelta = Mathf.RoundToInt(baseMax * (mult - 1f));
         c.damage.MinDamage = baseMin + minDelta;
         c.damage.MaxDamage = baseMax + maxDelta;
-        notes.AppendLine($"+{FormatPercentRange(minMult - 1f, maxMult - 1f)} Damage ({c.Roman(c.tiers.damagePercent)})");
+        notes.AppendLine($"+{(mult - 1f) * 100f:F0}% Damage ({c.Roman(c.tiers.damagePercent)})");
         return () =>
         {
             c.damage.MinDamage -= minDelta;
             c.damage.MaxDamage -= maxDelta;
         };
-    }
-
-    private static string FormatPercentRange(float min, float max)
-    {
-        string minText = $"{min * 100f:F0}%";
-        string maxText = $"{max * 100f:F0}%";
-        return minText == maxText ? minText : $"{minText}-{maxText}";
     }
 }
 

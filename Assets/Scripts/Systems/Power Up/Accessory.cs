@@ -7,6 +7,11 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
+public interface IAccessoryDescriptionProvider
+{
+    string GetAccessoryDescriptionLine();
+}
+
 [DisallowMultipleComponent]
 public class Accessory : MonoBehaviour
 {
@@ -92,8 +97,27 @@ public class Accessory : MonoBehaviour
                 sb.AppendLine(acc.AccesoryDescription);
         }
 
+        AppendRuntimeDescriptionLines(sb);
+
         // Merge similar lines like "+5 armor, +10 armor, 20 armor" -> "+35 armor"
-        extraTextField = CombineStatLines(sb.ToString().TrimEnd());
+        extraTextField = CombineStatLinesKeepingRarityBlock(sb.ToString().TrimEnd());
+    }
+
+    private void AppendRuntimeDescriptionLines(StringBuilder sb)
+    {
+        var providers = GetComponentsInChildren<MonoBehaviour>(true);
+        foreach (var provider in providers)
+        {
+            if (provider == null || !provider.gameObject.activeInHierarchy)
+                continue;
+
+            if (provider is IAccessoryDescriptionProvider descriptionProvider)
+            {
+                string line = descriptionProvider.GetAccessoryDescriptionLine();
+                if (!string.IsNullOrWhiteSpace(line))
+                    sb.AppendLine(line);
+            }
+        }
     }
 
     private void RefreshUI()
@@ -240,6 +264,22 @@ public class Accessory : MonoBehaviour
             outLines.Add(line);
 
         return string.Join("\n", outLines);
+    }
+
+    private string CombineStatLinesKeepingRarityBlock(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+
+        string withoutRarity = RarityTextFormatter.RemoveLastRaritySection(raw);
+        string combined = CombineStatLines(withoutRarity.TrimEnd());
+        string rarityBlock = raw.Substring(withoutRarity.Length).Trim();
+
+        if (string.IsNullOrWhiteSpace(rarityBlock))
+            return combined;
+
+        return string.IsNullOrWhiteSpace(combined)
+            ? rarityBlock
+            : combined.TrimEnd() + "\n" + rarityBlock;
     }
 
 

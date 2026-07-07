@@ -35,10 +35,20 @@ public class WeaponRarityController : MonoBehaviour
     [System.Serializable]
     private sealed class AppliedUpgrade
     {
+        public UpgradeType type;
         public IUpgrade upgrade;
         public Action undo;
         public string note;
-        public AppliedUpgrade(IUpgrade u, Action un, string n) { upgrade = u; undo = un; note = n; }
+        public int[] tierSlots;
+
+        public AppliedUpgrade(UpgradeType t, IUpgrade u, Action un, string n, int[] slots)
+        {
+            type = t;
+            upgrade = u;
+            undo = un;
+            note = n;
+            tierSlots = slots ?? Array.Empty<int>();
+        }
     }
 
     [SerializeField] private List<AppliedUpgrade> applied = new();
@@ -92,19 +102,20 @@ public class WeaponRarityController : MonoBehaviour
         if (candidates.Count == 0)
         {
             applied.Clear();
-            WriteUIBlock(new[] { $"<b>Rarity:</b> {WeaponContext.FormatRarity(current)}", "<i>No applicable upgrades.</i>" });
+            var noUpgradeLines = new List<string>
+            {
+                WeaponContext.FormatRarity(current)
+            };
+            noUpgradeLines.Add("<i>No applicable upgrades.</i>");
+            WriteUIBlock(noUpgradeLines);
             return;
         }
 
         int rolls = RarityRollRules.RollCountFor(current, rng);
         var picked = UpgradeSelectionService.Pick(candidates, rolls, upgradeWeights, rng);
 
-        applied.Clear();
-        for (int i = 0; i < picked.Count; i++)
-            ApplyAndRecord(ctx, picked[i]);
-
-        RebuildUIFromApplied();
-        RestartTickIfPlaying();
+        ApplyUpgradeListFromCleanState(picked);
+        FinishAppliedChange();
     }
 
     /// <summary>Rerolls a single stat at <paramref name="index"/>. 
@@ -114,7 +125,13 @@ public class WeaponRarityController : MonoBehaviour
         if (!IsValidIndex(index)) return false;
 
         if (rerollTiers)
+        {
+            var upgrades = CurrentUpgradeInstances();
             tiers.RollAll(rng);
+            ApplyUpgradeListFromCleanState(upgrades);
+            FinishAppliedChange();
+            return true;
+        }
 
         var ctx = BuildContext();
         var prev = applied[index];
@@ -122,8 +139,7 @@ public class WeaponRarityController : MonoBehaviour
 
         applied[index] = ApplyUpgrade(ctx, prev.upgrade);
 
-        RebuildUIFromApplied();
-        RestartTickIfPlaying();
+        FinishAppliedChange();
         return true;
     }
 
@@ -147,8 +163,7 @@ public class WeaponRarityController : MonoBehaviour
         applied[idx].undo?.Invoke();
         applied.RemoveAt(idx);
 
-        RebuildUIFromApplied();
-        RestartTickIfPlaying();
+        FinishAppliedChange();
         return true;
     }
 
@@ -185,8 +200,7 @@ public class WeaponRarityController : MonoBehaviour
 
         applied.Add(ApplyUpgrade(ctx, picked));
 
-        RebuildUIFromApplied();
-        RestartTickIfPlaying();
+        FinishAppliedChange();
         return true;
     }
 
@@ -201,7 +215,6 @@ public class WeaponRarityController : MonoBehaviour
     {
         if (!IsValidIndex(index)) return false;
 
-        tiers.RollAll(rng);
         var ctx = BuildContext();
         var candidates = UpgradeCatalog.BuildCandidates(ctx);
         if (candidates == null || candidates.Count == 0) return false;
@@ -220,8 +233,7 @@ public class WeaponRarityController : MonoBehaviour
         applied[index].undo?.Invoke();
         applied[index] = ApplyUpgrade(ctx, replacement);
 
-        RebuildUIFromApplied();
-        RestartTickIfPlaying();
+        FinishAppliedChange();
         return true;
     }
 
@@ -255,19 +267,9 @@ public class WeaponRarityController : MonoBehaviour
             return true;
         }
 
-        var ctx = BuildContext();
-        var previous = new List<AppliedUpgrade>(applied);
-
-        for (int i = previous.Count - 1; i >= 0; i--)
-            previous[i].undo?.Invoke();
-
-        applied.Clear();
-
-        for (int i = 0; i < previous.Count; i++)
-            applied.Add(ApplyUpgrade(ctx, previous[i].upgrade));
-
-        RebuildUIFromApplied();
-        RestartTickIfPlaying();
+        var upgrades = CurrentUpgradeInstances();
+        ApplyUpgradeListFromCleanState(upgrades);
+        FinishAppliedChange();
         return true;
     }
 
@@ -286,18 +288,15 @@ public class WeaponRarityController : MonoBehaviour
         }
 
         current = next;
-        tiers.RollAll(rng);
 
-        AddRandomUpgrade();
-
-        RebuildUIFromApplied();
-        RestartTickIfPlaying();
+        if (!AddRandomUpgrade())
+            FinishAppliedChange();
         return true;
     }
 
     public string GetRangesSummaryText()
     {
-        return RarityTextFormatter.BuildRangesSummaryText(current, AppliedUpgradeList(), tiers, ranges);
+        return RarityTextFormatter.BuildRangesSummaryText(current, AppliedUpgradeTypeList(), tiers, ranges);
     }
 
     /// <summary>
@@ -306,7 +305,7 @@ public class WeaponRarityController : MonoBehaviour
     /// </summary>
     public string GetStatsTextWithRanges(string normalStatsText)
     {
-        return RarityTextFormatter.BuildStatsTextWithRanges(normalStatsText, current, AppliedUpgradeList(), tiers, ranges);
+        return RarityTextFormatter.BuildStatsTextWithRanges(normalStatsText, current, AppliedUpgradeTypeList(), tiers, ranges);
     }
 
     public void OnDestroy()
@@ -322,7 +321,7 @@ public class WeaponRarityController : MonoBehaviour
 
         var lines = new List<string>(1 + applied.Count)
         {
-            $"<b>Rarity:</b> {WeaponContext.FormatRarity(current)}"
+            WeaponContext.FormatRarity(current)
         };
 
         for (int i = 0; i < applied.Count; i++)
@@ -338,20 +337,45 @@ public class WeaponRarityController : MonoBehaviour
     {
         if (uiSink == null) return;
 
-        string merged = RarityTextFormatter.MergeRarityBlock(uiSink.Text, lines);
+        string merged = RarityTextFormatter.MergeRarityBlock(uiSink.Text, lines, current);
         uiSink.SetText(merged);
     }
 
-    private void ApplyAndRecord(WeaponContext ctx, IUpgrade up)
+    private void FinishAppliedChange()
     {
-        applied.Add(ApplyUpgrade(ctx, up));
+        RebuildUIFromApplied();
+        RestartTickIfPlaying();
     }
 
     private AppliedUpgrade ApplyUpgrade(WeaponContext ctx, IUpgrade up)
     {
+        UpgradeType type = default;
+        int[] tierSlots = Array.Empty<int>();
+        if (UpgradeMetadata.TryGet(up, out var entry))
+        {
+            type = entry.Type;
+            tierSlots = new int[entry.TierSlotCount];
+            for (int i = 0; i < tierSlots.Length; i++)
+                tierSlots[i] = entry.GetTierSlot(i);
+        }
+
         var sb = new StringBuilder();
         var undo = up.Apply(ctx, sb);
-        return new AppliedUpgrade(up, undo, sb.ToString().Trim());
+        return new AppliedUpgrade(type, up, undo, sb.ToString().Trim(), tierSlots);
+    }
+
+    private void ApplyUpgradeListFromCleanState(IReadOnlyList<IUpgrade> upgrades)
+    {
+        UndoAllApplied();
+
+        if (upgrades == null || upgrades.Count == 0) return;
+
+        var ctx = BuildContext();
+        for (int i = 0; i < upgrades.Count; i++)
+        {
+            if (upgrades[i] != null)
+                applied.Add(ApplyUpgrade(ctx, upgrades[i]));
+        }
     }
 
     private void UndoAllApplied()
@@ -382,11 +406,19 @@ public class WeaponRarityController : MonoBehaviour
         };
     }
 
-    private IReadOnlyList<IUpgrade> AppliedUpgradeList()
+    private List<IUpgrade> CurrentUpgradeInstances()
     {
         var list = new List<IUpgrade>(applied.Count);
         for (int i = 0; i < applied.Count; i++)
             list.Add(applied[i].upgrade);
+        return list;
+    }
+
+    private IReadOnlyList<UpgradeType> AppliedUpgradeTypeList()
+    {
+        var list = new List<UpgradeType>(applied.Count);
+        for (int i = 0; i < applied.Count; i++)
+            list.Add(applied[i].type);
         return list;
     }
 

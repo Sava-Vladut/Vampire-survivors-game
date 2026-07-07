@@ -21,7 +21,6 @@ public static class RarityRollRules
 
     public static int RollCountFor(Rarity rarity, System.Random rng)
     {
-        int maxRolls = RollsFor(rarity);
-        return rng.Next(1, maxRolls + 1);
+        return RollsFor(rarity);
     }
 }

@@ -66,22 +66,9 @@ public static class UpgradeCatalog
     {
         if (up == null || into == null) return;
 
-        if (up is DamageFlatUpgrade) into.Add(1);
-        else if (up is DamagePercentAsFlatUpgrade) into.Add(0);
-        else if (up is AttackSpeedUpgrade) into.Add(2);
-        else if (up is CritUpgrade) { into.Add(3); into.Add(4); }
-        else if (up is KnifeRadiusUpgrade) into.Add(5);
-        else if (up is KnifeSplashUpgrade) into.Add(6);
-        else if (up is ShooterRangeUpgrade) { into.Add(9); into.Add(10); }
-        else if (up is ShooterAccuracyUpgrade) into.Add(12);
-        else if (up is HpFlatUpgrade) into.Add(13);
-        else if (up is HpPercentUpgrade) into.Add(14);
-        else if (up is RegenUpgrade) into.Add(15);
-        else if (up is ArmorUpgrade) into.Add(16);
-        else if (up is EvasionUpgrade) into.Add(17);
-        else if (up is FireResistUpgrade || up is ColdResistUpgrade || up is LightningResistUpgrade || up is PoisonResistUpgrade) into.Add(18);
-        else if (up is ArmorPercentUpgrade) into.Add(19);
-        else if (up is EvasionPercentUpgrade) into.Add(20);
+        if (!UpgradeMetadata.TryGet(up, out var entry)) return;
+        for (int i = 0; i < entry.TierSlotCount; i++)
+            into.Add(entry.GetTierSlot(i));
     }
 
     private static bool TryGetTierSlot(TierSystem tiers, int slotIndex, out int value)
@@ -144,5 +131,93 @@ public static class UpgradeCatalog
         int before = tierField;
         tierField = newValue;
         return tierField != before;
+    }
+}
+
+public readonly struct UpgradeMetadataEntry
+{
+    public readonly UpgradeType Type;
+    public readonly string Label;
+    private readonly int slot0;
+    private readonly int slot1;
+    private readonly int slotCount;
+
+    public int TierSlotCount => slotCount;
+
+    public UpgradeMetadataEntry(UpgradeType type, string label, int firstSlot, int secondSlot = -1)
+    {
+        Type = type;
+        Label = label;
+        slot0 = firstSlot;
+        slot1 = secondSlot;
+        slotCount = secondSlot >= 0 ? 2 : firstSlot >= 0 ? 1 : 0;
+    }
+
+    public int GetTierSlot(int index) => index == 0 ? slot0 : slot1;
+}
+
+public static class UpgradeMetadata
+{
+    public static bool TryGet(IUpgrade upgrade, out UpgradeMetadataEntry entry)
+    {
+        entry = default;
+        if (upgrade == null) return false;
+
+        if (upgrade is DamageFlatUpgrade) return Set(out entry, UpgradeType.DamageFlat, "Damage", 1);
+        if (upgrade is DamagePercentAsFlatUpgrade) return Set(out entry, UpgradeType.DamagePercentAsFlat, "Damage", 0);
+        if (upgrade is AttackSpeedUpgrade) return Set(out entry, UpgradeType.AttackSpeed, "Attack Speed", 2);
+        if (upgrade is CritUpgrade) return Set(out entry, UpgradeType.Crit, "Crit", 3, 4);
+        if (upgrade is KnifeRadiusUpgrade) return Set(out entry, UpgradeType.KnifeRadius, "Range", 5);
+        if (upgrade is KnifeSplashUpgrade) return Set(out entry, UpgradeType.KnifeSplash, "AOE", 6);
+        if (upgrade is ShooterRangeUpgrade) return Set(out entry, UpgradeType.ShooterRange, "Projectile Speed", 9, 10);
+        if (upgrade is ShooterAccuracyUpgrade) return Set(out entry, UpgradeType.ShooterAccuracy, "Accuracy", 12);
+        if (upgrade is HpFlatUpgrade) return Set(out entry, UpgradeType.HpFlat, "Max Health", 13);
+        if (upgrade is HpPercentUpgrade) return Set(out entry, UpgradeType.HpPercent, "Max Health", 14);
+        if (upgrade is RegenUpgrade) return Set(out entry, UpgradeType.HpRegen, "Regen", 15);
+        if (upgrade is ArmorUpgrade) return Set(out entry, UpgradeType.Armor, "Armor", 16);
+        if (upgrade is EvasionUpgrade) return Set(out entry, UpgradeType.Evasion, "Evasion", 17);
+        if (upgrade is FireResistUpgrade) return Set(out entry, UpgradeType.FireResist, "Fire Resist", 18);
+        if (upgrade is ColdResistUpgrade) return Set(out entry, UpgradeType.ColdResist, "Cold Resist", 18);
+        if (upgrade is LightningResistUpgrade) return Set(out entry, UpgradeType.LightningResist, "Lightning Resist", 18);
+        if (upgrade is PoisonResistUpgrade) return Set(out entry, UpgradeType.PoisonResist, "Poison Resist", 18);
+        if (upgrade is ArmorPercentUpgrade) return Set(out entry, UpgradeType.ArmorPercent, "Armor", 19);
+        if (upgrade is EvasionPercentUpgrade) return Set(out entry, UpgradeType.EvasionPercent, "Evasion", 20);
+
+        return false;
+    }
+
+    public static bool TryGet(UpgradeType type, out UpgradeMetadataEntry entry)
+    {
+        entry = type switch
+        {
+            UpgradeType.DamageFlat => new UpgradeMetadataEntry(type, "Damage", 1),
+            UpgradeType.DamagePercentAsFlat => new UpgradeMetadataEntry(type, "Damage", 0),
+            UpgradeType.AttackSpeed => new UpgradeMetadataEntry(type, "Attack Speed", 2),
+            UpgradeType.Crit => new UpgradeMetadataEntry(type, "Crit", 3, 4),
+            UpgradeType.KnifeRadius => new UpgradeMetadataEntry(type, "Range", 5),
+            UpgradeType.KnifeSplash => new UpgradeMetadataEntry(type, "AOE", 6),
+            UpgradeType.ShooterRange => new UpgradeMetadataEntry(type, "Projectile Speed", 9, 10),
+            UpgradeType.ShooterAccuracy => new UpgradeMetadataEntry(type, "Accuracy", 12),
+            UpgradeType.HpFlat => new UpgradeMetadataEntry(type, "Max Health", 13),
+            UpgradeType.HpPercent => new UpgradeMetadataEntry(type, "Max Health", 14),
+            UpgradeType.HpRegen => new UpgradeMetadataEntry(type, "Regen", 15),
+            UpgradeType.Armor => new UpgradeMetadataEntry(type, "Armor", 16),
+            UpgradeType.Evasion => new UpgradeMetadataEntry(type, "Evasion", 17),
+            UpgradeType.FireResist => new UpgradeMetadataEntry(type, "Fire Resist", 18),
+            UpgradeType.ColdResist => new UpgradeMetadataEntry(type, "Cold Resist", 18),
+            UpgradeType.LightningResist => new UpgradeMetadataEntry(type, "Lightning Resist", 18),
+            UpgradeType.PoisonResist => new UpgradeMetadataEntry(type, "Poison Resist", 18),
+            UpgradeType.ArmorPercent => new UpgradeMetadataEntry(type, "Armor", 19),
+            UpgradeType.EvasionPercent => new UpgradeMetadataEntry(type, "Evasion", 20),
+            _ => default
+        };
+
+        return entry.TierSlotCount > 0;
+    }
+
+    private static bool Set(out UpgradeMetadataEntry entry, UpgradeType type, string label, int firstSlot, int secondSlot = -1)
+    {
+        entry = new UpgradeMetadataEntry(type, label, firstSlot, secondSlot);
+        return true;
     }
 }

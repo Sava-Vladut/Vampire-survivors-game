@@ -10,14 +10,14 @@ public static class RarityTextFormatter
 
     public static string BuildRangesSummaryText(
         Rarity current,
-        IReadOnlyList<IUpgrade> applied,
+        IReadOnlyList<UpgradeType> applied,
         TierSystem tiers,
         UpgradeRanges ranges)
     {
         var lines = new List<string>
         {
             "<b>Roll Ranges</b>",
-            $"<b>Rarity:</b> {WeaponContext.FormatRarity(current)}"
+            WeaponContext.FormatRarity(current)
         };
 
         if (applied == null || applied.Count == 0)
@@ -35,18 +35,18 @@ public static class RarityTextFormatter
     public static string BuildStatsTextWithRanges(
         string normalStatsText,
         Rarity current,
-        IReadOnlyList<IUpgrade> applied,
+        IReadOnlyList<UpgradeType> applied,
         TierSystem tiers,
         UpgradeRanges ranges)
     {
         string baseStats = RemoveLastRaritySection(normalStatsText ?? string.Empty).TrimEnd();
-        string rangesBlock = TagColorOpen + BuildRangesSummaryText(current, applied, tiers, ranges) + TagColorClose;
+        string rangesBlock = ColorOpenFor(current) + BuildRangesSummaryText(current, applied, tiers, ranges) + TagColorClose;
         return string.IsNullOrWhiteSpace(baseStats)
             ? rangesBlock
             : baseStats + "\n" + rangesBlock;
     }
 
-    public static string MergeRarityBlock(string currentText, IReadOnlyList<string> lines)
+    public static string MergeRarityBlock(string currentText, IReadOnlyList<string> lines, Rarity rarity)
     {
         var sb = new StringBuilder();
         for (int i = 0; i < lines.Count; i++)
@@ -57,8 +57,11 @@ public static class RarityTextFormatter
         }
 
         string inner = sb.ToString().TrimEnd();
-        string block = TagColorOpen + inner + TagColorClose;
         string withoutLast = RemoveLastRaritySection(currentText ?? string.Empty);
+        if (string.IsNullOrWhiteSpace(inner))
+            return NormalizeWhitespace(withoutLast);
+
+        string block = ColorOpenFor(rarity) + inner + TagColorClose;
 
         string merged = string.IsNullOrWhiteSpace(withoutLast)
             ? block
@@ -74,95 +77,104 @@ public static class RarityTextFormatter
         int rarityIdx = s.LastIndexOf("<b>Rarity:</b>", StringComparison.OrdinalIgnoreCase);
         if (rarityIdx < 0)
         {
-            int colorIdx = s.LastIndexOf(TagColorOpen, StringComparison.OrdinalIgnoreCase);
+            int colorIdx = LastRarityColorIndex(s);
             return colorIdx >= 0 ? s[..colorIdx].TrimEnd() : s;
         }
 
-        int colorStart = s.LastIndexOf(TagColorOpen, rarityIdx, StringComparison.OrdinalIgnoreCase);
+        int colorStart = LastRarityColorIndex(s, rarityIdx);
         int startIdx = colorStart >= 0 ? colorStart : rarityIdx;
         return s[..startIdx].TrimEnd();
     }
 
-    private static void AddSelectedRangeLine(List<string> lines, IUpgrade upgrade, TierSystem tiers, UpgradeRanges ranges)
+    public static string ColorOpenFor(Rarity rarity) => rarity switch
     {
-        if (upgrade is DamageFlatUpgrade)
+        Rarity.Common => "<color=#B0B0B0>",
+        Rarity.Uncommon => "<color=#3EC46D>",
+        Rarity.Rare => "<color=#3AA0FF>",
+        Rarity.Legendary => "<color=#FFB347>",
+        _ => "<color=#B0B0B0>"
+    };
+
+    private static void AddSelectedRangeLine(List<string> lines, UpgradeType upgrade, TierSystem tiers, UpgradeRanges ranges)
+    {
+        if (upgrade == UpgradeType.DamageFlat)
         {
             var r = tiers.Scale(ranges.damageFlatAdd, tiers.damageFlat, 0);
             AddRangeLine(lines, "Damage", r.x, r.y, "", tiers.damageFlat);
         }
-        else if (upgrade is DamagePercentAsFlatUpgrade)
+        else if (upgrade == UpgradeType.DamagePercentAsFlat)
         {
             var r = tiers.ScaleMultiplierLike(ranges.damageMult, tiers.damagePercent);
             AddPercentRangeLine(lines, "Damage", r.x - 1f, r.y - 1f, tiers.damagePercent);
         }
-        else if (upgrade is AttackSpeedUpgrade)
+        else if (upgrade == UpgradeType.AttackSpeed)
         {
             var r = tiers.Scale(ranges.atkSpeedFrac, tiers.attackSpeed);
             AddPercentRangeLine(lines, "Attack Speed", r.x, r.y, tiers.attackSpeed);
         }
-        else if (upgrade is CritUpgrade)
+        else if (upgrade == UpgradeType.Crit)
         {
             var chance = tiers.Scale(ranges.critChanceAdd, tiers.critChance);
             var mult = tiers.Scale(ranges.critMultAdd, tiers.critMultiplier);
             AddPercentRangeLine(lines, "Crit Chance", chance.x, chance.y, tiers.critChance);
             AddRangeLine(lines, "Crit Mult", mult.x, mult.y, "", tiers.critMultiplier, "F2");
         }
-        else if (upgrade is HpFlatUpgrade)
+        else if (upgrade == UpgradeType.HpFlat)
         {
             var r = tiers.Scale(ranges.hpFlatAdd, tiers.hpFlat, 0);
             AddRangeLine(lines, "Max Health", r.x, r.y, "", tiers.hpFlat);
         }
-        else if (upgrade is HpPercentUpgrade)
+        else if (upgrade == UpgradeType.HpPercent)
         {
             var r = tiers.ScaleMultiplierLike(ranges.hpMult, tiers.hpPercent);
             AddPercentRangeLine(lines, "Max Health", r.x - 1f, r.y - 1f, tiers.hpPercent);
         }
-        else if (upgrade is RegenUpgrade)
+        else if (upgrade == UpgradeType.HpRegen)
         {
             var r = tiers.Scale(ranges.regenAdd, tiers.regen);
             AddRangeLine(lines, "Regen", r.x, r.y, "/s", tiers.regen, "F2");
         }
-        else if (upgrade is ArmorUpgrade)
+        else if (upgrade == UpgradeType.Armor)
         {
             var r = tiers.Scale(ranges.armorAdd, tiers.armor);
             AddRangeLine(lines, "Armor", r.x, r.y, "", tiers.armor);
         }
-        else if (upgrade is EvasionUpgrade)
+        else if (upgrade == UpgradeType.Evasion)
         {
             var r = tiers.Scale(ranges.evasionAdd, tiers.evasion);
             AddRangeLine(lines, "Evasion", r.x, r.y, "", tiers.evasion);
         }
-        else if (upgrade is ArmorPercentUpgrade)
+        else if (upgrade == UpgradeType.ArmorPercent)
         {
             var r = tiers.ScaleMultiplierLike(ranges.armorMult, tiers.armorPercent);
             AddPercentRangeLine(lines, "Armor", r.x - 1f, r.y - 1f, tiers.armorPercent);
         }
-        else if (upgrade is EvasionPercentUpgrade)
+        else if (upgrade == UpgradeType.EvasionPercent)
         {
             var r = tiers.ScaleMultiplierLike(ranges.evasionMult, tiers.evasionPercent);
             AddPercentRangeLine(lines, "Evasion", r.x - 1f, r.y - 1f, tiers.evasionPercent);
         }
-        else if (upgrade is FireResistUpgrade || upgrade is ColdResistUpgrade || upgrade is LightningResistUpgrade || upgrade is PoisonResistUpgrade)
+        else if (upgrade == UpgradeType.FireResist || upgrade == UpgradeType.ColdResist || upgrade == UpgradeType.LightningResist || upgrade == UpgradeType.PoisonResist)
         {
             var r = tiers.Scale(ranges.resistAdd, tiers.resist);
             AddPercentRangeLine(lines, "Resist", r.x, r.y, tiers.resist);
         }
-        else if (upgrade is KnifeRadiusUpgrade)
+        else if (upgrade == UpgradeType.KnifeRadius)
         {
             var r = tiers.ScaleMultiplierLike(ranges.knifeRadiusMult, tiers.knifeRadius);
             AddPercentRangeLine(lines, "Range", r.x - 1f, r.y - 1f, tiers.knifeRadius);
         }
-        else if (upgrade is KnifeSplashUpgrade)
+        else if (upgrade == UpgradeType.KnifeSplash)
         {
             var r = tiers.ScaleMultiplierLike(ranges.knifeSplashRadiusMult, tiers.knifeSplashRadius);
             AddPercentRangeLine(lines, "AOE", r.x - 1f, r.y - 1f, tiers.knifeSplashRadius);
         }
-        else if (upgrade is ShooterRangeUpgrade)
+        else if (upgrade == UpgradeType.ShooterRange)
         {
             var r = tiers.Scale(ranges.shooterForceAdd, tiers.shooterForce);
             AddRangeLine(lines, "Projectile Speed", r.x, r.y, "", tiers.shooterForce, "F1");
         }
-        else if (upgrade is ShooterAccuracyUpgrade)
+        else if (upgrade == UpgradeType.ShooterAccuracy)
         {
             var r = tiers.Scale(ranges.shooterSpreadReduceFrac, tiers.shooterAccuracy);
             AddPercentRangeLine(lines, "Accuracy", r.x, r.y, tiers.shooterAccuracy);
@@ -196,7 +208,12 @@ public static class RarityTextFormatter
     {
         if (string.IsNullOrEmpty(s)) return s;
         s = s.Replace("<size=80%>", string.Empty).Replace("</size>", string.Empty);
-        s = s.Replace(TagColorOpen, string.Empty).Replace(TagColorClose, string.Empty);
+        string colorOpen = GetWrappingRarityColorOpen(s);
+        if (!string.IsNullOrEmpty(colorOpen) &&
+            s.EndsWith(TagColorClose, StringComparison.OrdinalIgnoreCase))
+        {
+            s = s[colorOpen.Length..^TagColorClose.Length];
+        }
         return s.Trim();
     }
 
@@ -206,6 +223,49 @@ public static class RarityTextFormatter
         s = s.Replace(TagColorOpen + TagColorOpen, TagColorOpen);
         s = s.Replace(TagColorClose + TagColorClose, TagColorClose);
         return s;
+    }
+
+    private static string GetWrappingRarityColorOpen(string s)
+    {
+        string[] colors =
+        {
+            "<color=#B0B0B0>",
+            "<color=#3EC46D>",
+            "<color=#3AA0FF>",
+            "<color=#FFB347>",
+            TagColorOpen
+        };
+
+        for (int i = 0; i < colors.Length; i++)
+        {
+            if (s.StartsWith(colors[i], StringComparison.OrdinalIgnoreCase))
+                return colors[i];
+        }
+
+        return string.Empty;
+    }
+
+    private static int LastRarityColorIndex(string s, int startIndex = -1)
+    {
+        string[] colors =
+        {
+            "<color=#B0B0B0>",
+            "<color=#3EC46D>",
+            "<color=#3AA0FF>",
+            "<color=#FFB347>",
+            TagColorOpen
+        };
+
+        int best = -1;
+        int searchStart = startIndex >= 0 ? startIndex : s.Length - 1;
+        for (int i = 0; i < colors.Length; i++)
+        {
+            int idx = s.LastIndexOf(colors[i], searchStart, StringComparison.OrdinalIgnoreCase);
+            if (idx > best)
+                best = idx;
+        }
+
+        return best;
     }
 
     private static string NormalizeWhitespace(string s)

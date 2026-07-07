@@ -55,6 +55,11 @@ public class RB2DChainToTag : MonoBehaviour
     // and try to find the next target.
     private void OnTriggerEnter2D(Collider2D other)
     {
+        // Chain hits are intentionally disabled. Keep this component's serialized
+        // shape intact so older prefabs do not lose script references.
+        return;
+
+#pragma warning disable CS0162
         if (_chainsDone >= maxChains) return;
 
         // Must match tag (fast filter)
@@ -74,6 +79,7 @@ public class RB2DChainToTag : MonoBehaviour
         // Kick off a retarget (slight delay so BulletDamageTrigger can process)
         if (isActiveAndEnabled)
             Invoke(nameof(DoRetarget), retargetDelay);
+#pragma warning restore CS0162
     }
 
     private void DoRetarget()

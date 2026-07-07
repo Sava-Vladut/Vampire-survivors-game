@@ -5,6 +5,8 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 public class SimpleHealth : MonoBehaviour
 {
+    public static event System.Action<SimpleHealth> AnyDied;
+
     // NEW: Damage types
     public enum DamageType
     {
@@ -815,6 +817,7 @@ public class SimpleHealth : MonoBehaviour
     {
         if (hasDied) return;
         hasDied = true;
+        AnyDied?.Invoke(this);
 
         if (deathObjects != null && deathObjects.Length > 0)
         {

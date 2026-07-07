@@ -160,7 +160,7 @@ public class SimpleShooter : MonoBehaviour
 
         // Build text (Knife.cs style)
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine($"<b>{transform.name} Stats</b>");
+        sb.AppendLine($"<b>{transform.name}</b>");
 
         // ✅ Upgrades: enabled / total (in children)
         var allUpgrades = GetComponentsInChildren<WeaponUpgrades>(true);
@@ -171,34 +171,35 @@ public class SimpleShooter : MonoBehaviour
             if (u != null && u.enabled && u.gameObject.activeInHierarchy)
                 enabledUpgrades++;
         }
-        sb.AppendLine($"Upgrades: <color={numColor}>{enabledUpgrades}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
+        if (enabledUpgrades > 0)
+            sb.AppendLine($"Upg: <color={numColor}>{enabledUpgrades}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
 
-
-        sb.AppendLine($"Damage: <color={numColor}>{GetDamageRangeText()}</color>");
-        string dtColor = GetDamageTypeHex(damageType);
-        sb.AppendLine($"Damage Type: <color={dtColor}>{damageType}</color>");
-        sb.AppendLine($"Attack Delay: {delay}");
-        sb.AppendLine($"Proj Speed: <color={numColor}>{shootForce:F1}</color>");
-        sb.AppendLine($"Lifetime: <color={numColor}>{bulletLifetime:F1}</color>s");
-        sb.AppendLine($"Projectile Count: <color={numColor}>{Mathf.Max(1, projectileCount)}</color>");
-        sb.AppendLine($"Penetration: {penetration}");
-        sb.AppendLine($"Crit: <color={numColor}>{(Mathf.Clamp01(critChance) * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
+        string damageColor = GetDamageTypeHex(damageType);
+        sb.AppendLine($"DMG: <color={damageColor}>{GetDamageRangeText()}</color>");
+        if (damageType != SimpleHealth.DamageType.Physical)
+            sb.AppendLine($"Type: <color={damageColor}>{damageType}</color>");
+        sb.AppendLine($"Delay: {delay}");
+        if (shootForce > 0f)
+            sb.AppendLine($"Speed: <color={numColor}>{shootForce:F1}</color>");
+        if (bulletLifetime > 0f)
+            sb.AppendLine($"Life: <color={numColor}>{bulletLifetime:F1}</color>s");
+        if (projectileCount > 1)
+            sb.AppendLine($"Shots: <color={numColor}>{projectileCount}</color>");
+        if (penetration > 1)
+            sb.AppendLine($"Pierce: <color={numColor}>{penetration}</color>");
+        if (critChance > 0f)
+            sb.AppendLine($"Crit: <color={numColor}>{(Mathf.Clamp01(critChance) * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
         if (forkShotChance > 0f)
-            sb.AppendLine($"Forked Rounds: <color={numColor}>{forkShotChance * 100f:F0}</color>% for <color={numColor}>{forkShotDamagePercent * 100f:F0}</color>% dmg");
+            sb.AppendLine($"Fork: <color={numColor}>{forkShotChance * 100f:F0}</color>% for <color={numColor}>{forkShotDamagePercent * 100f:F0}</color>% dmg");
 
         if (applyStatusEffectOnHit)
         {
-            sb.AppendLine($"Status Effect Chance: <color={numColor}>{statusApplyChance * 100f:F0}</color>%");
-            sb.AppendLine($"On Hit: {statusEffectOnHit} (<color={numColor}>{statusEffectDuration:F1}</color>s)");
+            sb.AppendLine($"Proc: <color={numColor}>{statusApplyChance * 100f:F0}</color>%");
+            sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{statusEffectDuration:F1}</color>s)");
         }
 
-
-
-        // Chain info (guarded)
-        if (bulletPrefab != null && bulletPrefab.TryGetComponent<RB2DChainToTag>(out var RB2D))
-        {
-            sb.AppendLine($"Can Chain <color={numColor}>{RB2D.maxChains}</color> Times");
-        }
+        if (bulletPrefab != null && bulletPrefab.TryGetComponent<RB2DChainToTag>(out var RB2D) && RB2D.maxChains > 0)
+            sb.AppendLine($"Chain: <color={numColor}>{RB2D.maxChains}</color>");
 
         if (!string.IsNullOrWhiteSpace(extraTextField))
             sb.AppendLine(extraTextField);
@@ -300,15 +301,6 @@ public class SimpleShooter : MonoBehaviour
             bulletDamage.statusEffectDuration = statusEffectDuration;
         }
 
-        if (chainHits > 0)
-        {
-            var chain = bullet.GetComponent<RB2DChainToTag>();
-            if (chain == null) chain = bullet.AddComponent<RB2DChainToTag>();
-            chain.maxChains = chainHits;
-            if (bullet.TryGetComponent<BulletDamageTrigger>(out var chainDamage))
-                chainDamage.penetration = Mathf.Max(chainDamage.penetration, chainHits + 1);
-        }
-
         if (bullet.TryGetComponent<ExplosionDamage2D>(out var explosionDamage))
             explosionDamage.baseDamage = finalDamage;
 
@@ -341,9 +333,9 @@ public class SimpleShooter : MonoBehaviour
     {
         int baseDamage = RollBaseDamage();
         if (Random.value < Mathf.Clamp01(critChance))
-            return Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier));
+            return PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
 
-        return baseDamage;
+        return PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
     }
 
     private string GetDamageRangeText()

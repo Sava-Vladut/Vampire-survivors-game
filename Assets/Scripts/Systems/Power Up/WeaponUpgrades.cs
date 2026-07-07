@@ -38,7 +38,7 @@ public class WeaponUpgrades : MonoBehaviour
         KnifeKnockbackFlat,
         KnifeCullThreshold,
 
-        // --- Shooter (ShooterDamageFlat..ShooterChainHits) ---
+        // --- Shooter (ShooterDamageFlat..ShooterCullThreshold), with legacy values kept for serialization ---
         ShooterDamageFlat,
         ShooterDamagePercent,
         ShooterDamageTypeIndex,
@@ -59,7 +59,7 @@ public class WeaponUpgrades : MonoBehaviour
         ShooterStatusEffectIndex,
         ShooterKnockbackFlat,
         ShooterCullThreshold,
-        ShooterChainHits,
+        ShooterChainHits, // Legacy serialized value; generation/application disabled.
 
         // --- WeaponTick (TickRateFlat..BurstSpacingPercent) ---
         TickRateFlat,
@@ -71,7 +71,8 @@ public class WeaponUpgrades : MonoBehaviour
 
         // --- Unique generated effects (appended to preserve serialized enum values) ---
         KnifeEchoStrikeChance,
-        ShooterForkShotChance
+        ShooterForkShotChance,
+        ShooterPenetrationFlat
     }
 
     /// <summary>Maximum number of upgrades a single weapon can receive.</summary>
@@ -124,8 +125,9 @@ public class WeaponUpgrades : MonoBehaviour
         InRange(t, UpgradeType.KnifeDamageFlat, UpgradeType.KnifeCullThreshold) ||
         t == UpgradeType.KnifeEchoStrikeChance;
     private static bool IsShooterType(UpgradeType t) =>
-        InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterChainHits) ||
-        t == UpgradeType.ShooterForkShotChance;
+        InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterCullThreshold) ||
+        t == UpgradeType.ShooterForkShotChance ||
+        t == UpgradeType.ShooterPenetrationFlat;
     private static bool IsTickType(UpgradeType t) => InRange(t, UpgradeType.TickRateFlat, UpgradeType.BurstSpacingPercent);
     private static bool IsStatusType(UpgradeType t) =>
         InRange(t, UpgradeType.KnifeStatusApplyChanceFlat, UpgradeType.KnifeStatusEffectIndex) ||
@@ -135,7 +137,7 @@ public class WeaponUpgrades : MonoBehaviour
         t == UpgradeType.ShooterEnableStatusEffect;
 
     public static bool IsGeneratedType(UpgradeType type) =>
-        type != UpgradeType.None && !IsEnableStatusType(type);
+        type != UpgradeType.None && type != UpgradeType.ShooterChainHits && !IsEnableStatusType(type);
 
     private bool IsTypeAllowedForParent(UpgradeType type)
     {
@@ -237,7 +239,7 @@ public class WeaponUpgrades : MonoBehaviour
         Add("Arcane Velocity +{0}", "Increases projectile speed by {0}.", ValueFormat.Percent, UpgradeType.ShooterProjectileSpeedPercent);
         Add("Extended Flight +{0}", "Projectiles remain active for {0} longer.", ValueFormat.Seconds1, UpgradeType.ShooterLifetimeFlat);
         Add("Unfading Shot +{0}", "Increases projectile lifetime by {0}.", ValueFormat.Percent, UpgradeType.ShooterLifetimePercent);
-        Add("Chain Lightning +{0}", "Projectiles seek and strike {0} additional enemies.", ValueFormat.Int, UpgradeType.ShooterChainHits);
+        Add("Piercing Rounds +{0}", "Projectiles can pass through {0} additional enemies before breaking.", ValueFormat.Int, UpgradeType.ShooterPenetrationFlat);
         Add("Forked Rounds +{0}", "Projectiles gain {0} chance to split into two weaker side shots.", ValueFormat.Percent, UpgradeType.ShooterForkShotChance);
 
         // Tick
@@ -469,8 +471,8 @@ public class WeaponUpgrades : MonoBehaviour
             case UpgradeType.ShooterCullThreshold:
                 shooter.cullThreshold = Mathf.Clamp01(shooter.cullThreshold + value);
                 break;
-            case UpgradeType.ShooterChainHits:
-                shooter.chainHits += Mathf.Max(1, Mathf.RoundToInt(value));
+            case UpgradeType.ShooterPenetrationFlat:
+                shooter.penetration += Mathf.Max(1, Mathf.RoundToInt(value));
                 break;
             case UpgradeType.ShooterForkShotChance:
                 shooter.forkShotChance = Mathf.Clamp01(shooter.forkShotChance + value);
@@ -684,7 +686,7 @@ public class WeaponUpgrades : MonoBehaviour
             case UpgradeType.KnifeCullThreshold:
             case UpgradeType.ShooterCullThreshold:
                 return Random.Range(0.01f, 0.03f);
-            case UpgradeType.ShooterChainHits:
+            case UpgradeType.ShooterPenetrationFlat:
                 return 1f;
             case UpgradeType.KnifeEchoStrikeChance:
             case UpgradeType.ShooterForkShotChance:

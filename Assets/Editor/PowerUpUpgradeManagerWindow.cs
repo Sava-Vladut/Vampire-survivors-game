@@ -408,7 +408,8 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         if (type >= WeaponUpgrades.UpgradeType.ShooterDamageFlat &&
             type <= WeaponUpgrades.UpgradeType.ShooterChainHits) return "Shooter";
         if (type == WeaponUpgrades.UpgradeType.KnifeEchoStrikeChance) return "Knife";
-        if (type == WeaponUpgrades.UpgradeType.ShooterForkShotChance) return "Shooter";
+        if (type == WeaponUpgrades.UpgradeType.ShooterForkShotChance ||
+            type == WeaponUpgrades.UpgradeType.ShooterPenetrationFlat) return "Shooter";
         return "WeaponTick";
     }
 
@@ -428,6 +429,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         if (name.Contains("DamageTypeIndex")) return "Damage type";
         if (name.Contains("Knockback")) return "+0.25 to +1.5";
         if (name.Contains("CullThreshold")) return "+1% to +3%";
+        if (name.Contains("PenetrationFlat")) return "+1";
         if (name.Contains("ChainHits")) return "+1";
         if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat")) return "+1 to +2";
         if (type == WeaponUpgrades.UpgradeType.KnifeRadiusFlat) return "+0.05 to +0.50";

@@ -9686,6 +9686,20 @@ MonoBehaviour:
     IsWeapon: 0
     powerUpIcon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
     weight: 10
+  - powerUpName: Reaper's Ledger
+    powerUpDescription: Damage grows by 0.1% for each enemy killed, up to +150%.
+    powerUpObject: {fileID: 8812001001}
+    IsAccessory: 1
+    IsWeapon: 0
+    powerUpIcon: {fileID: 5540992825214292966, guid: ae3a69ce3f6fc0e42b49c15d72cba43a, type: 3}
+    weight: 20
+  - powerUpName: Bloodied Banner
+    powerUpDescription: Damage grows by 10% for each nearby enemy, up to +100%.
+    powerUpObject: {fileID: 8812001011}
+    IsAccessory: 1
+    IsWeapon: 0
+    powerUpIcon: {fileID: 1274299836955854301, guid: 60f95579b05f10749996070b23ce694d, type: 3}
+    weight: 20
   - powerUpName: Eye of devastion
     powerUpDescription: '"An ominous orb that orbits its wielder, radiating destructive
       energy. Continuously strikes nearby foes, wearing them down with relentless
@@ -9766,6 +9780,16 @@ MonoBehaviour:
   maxAccessories: 2
   maxWeapons: 2
   statsSummaryText: {fileID: 1597260639}
+--- !u!1 &8812001001 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8812001000, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
+  m_PrefabInstance: {fileID: 4663750748832903826}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8812001011 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8812001010, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
+  m_PrefabInstance: {fileID: 4663750748832903826}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &730127412
 Transform:
   m_ObjectHideFlags: 0

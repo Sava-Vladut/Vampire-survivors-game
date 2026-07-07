@@ -84,6 +84,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     [ContextMenu("Refresh Controllers")]
     public void RefreshControllers()
     {
+        var previous = CurrentTarget();
         controllers.Clear();
 
         var found = FindObjectsByType<WeaponRarityController>()
@@ -97,7 +98,10 @@ public class WeaponRerollUIHelper : MonoBehaviour
         }
         else
         {
-            if (index < 0 || index >= controllers.Count)
+            int preserved = previous != null ? controllers.IndexOf(previous) : -1;
+            if (preserved >= 0)
+                index = preserved;
+            else if (index < 0 || index >= controllers.Count)
                 index = 0; // Auto-select first if none
         }
     }
@@ -169,6 +173,12 @@ public class WeaponRerollUIHelper : MonoBehaviour
             if (sprite != null)
             {
                 selectedIcon.sprite = sprite;
+                selectedIcon.enabled = true;
+            }
+            else
+            {
+                selectedIcon.sprite = null;
+                selectedIcon.enabled = false;
             }
         }
 
@@ -179,7 +189,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
         if (actionButtons != null)
         {
             foreach (var b in actionButtons)
-                if (b != null) b.enabled = hasTarget;
+                if (b != null) b.interactable = hasTarget;
         }
     }
 
@@ -188,21 +198,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     {
         if (actionButtons == null || actionButtons.Length == 0) return;
 
-        UnityAction[] actions =
-        {
-            () => RunAnimatedAction(target => target.RerollRarityAndStats()),
-            () => RunAnimatedAction(target => target.RerollStats()),
-            () => RunAnimatedAction(target => target.RerollRandomStat()),
-            () => RunAnimatedAction(target => target.RerollRandomStatIntoAnother()),
-            () => RunAnimatedAction(target => target.RandomizeRandomTier(true)),
-            () => RunAnimatedAction(target => target.UpgradeRarityKeepStats()),
-
-            // NEW 6: Remove a random applied upgrade
-            () => RunAnimatedAction(target => target.RemoveRandomUpgrade()),
-
-            // NEW 7: Add a random applicable upgrade
-            () => RunAnimatedAction(target => target.AddRandomUpgrade()),
-        };
+        UnityAction[] actions = BuildActionMap();
 
         for (int i = 0; i < actionButtons.Length; i++)
         {
@@ -213,6 +209,21 @@ public class WeaponRerollUIHelper : MonoBehaviour
             if (i < actions.Length) btn.onClick.AddListener(actions[i]);
             // No automatic text setting; you control button visuals in the Inspector
         }
+    }
+
+    private UnityAction[] BuildActionMap()
+    {
+        return new UnityAction[]
+        {
+            () => RunAnimatedAction(target => target.RerollRarityAndStats()),
+            () => RunAnimatedAction(target => target.RerollStats()),
+            () => RunAnimatedAction(target => target.RerollRandomStat()),
+            () => RunAnimatedAction(target => target.RerollRandomStatIntoAnother()),
+            () => RunAnimatedAction(target => target.RandomizeRandomTier(true)),
+            () => RunAnimatedAction(target => target.UpgradeRarityKeepStats()),
+            () => RunAnimatedAction(target => target.RemoveRandomUpgrade()),
+            () => RunAnimatedAction(target => target.AddRandomUpgrade()),
+        };
     }
 
     private void RunAnimatedAction(Action<WeaponRarityController> action)
