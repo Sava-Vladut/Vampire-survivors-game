@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AccesoryName: Reaper's Ledger
-  AccesoryDescription:
+  AccesoryDescription: 
   icon: {fileID: 5540992825214292966, guid: ae3a69ce3f6fc0e42b49c15d72cba43a, type: 3}
   onAwake:
     m_PersistentCalls:
@@ -185,7 +185,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   AccesoryName: Bloodied Banner
-  AccesoryDescription:
+  AccesoryDescription: 
   icon: {fileID: 1274299836955854301, guid: 60f95579b05f10749996070b23ce694d, type: 3}
   onAwake:
     m_PersistentCalls:
@@ -325,10 +325,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   AccesoryName: Grave Pact
-  AccesoryDescription:
+  AccesoryDescription: 
   icon: {fileID: 311489795467858359, guid: b2e1d811d6684f7419b7f86f91c311fb, type: 3}
   onAwake:
     m_PersistentCalls:
@@ -346,8 +346,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b54f0b4985b442d4998abf1b6d9f02a4, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   missingHealthStep: 0.1
   bonusPerMissingStep: 0.02
   maxBonusDamage: 0.2
@@ -362,8 +362,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   rollOnAwake: 1
   rngSeed: 0
   upgradeWeights: {fileID: 0}
@@ -3879,6 +3879,10 @@ MonoBehaviour:
   regenerationPerTick: 3
   enableXpBoost: 1
   xpBoostMultiplier: 3
+  speedMoveMultiplier: 2
+  slowMoveMultiplier: 0.5
+  cursedHealingReceivedMultiplier: 0.5
+  cursedStatusDurationMultiplier: 1.5
   defaultDuration: 5
   defaultTickInterval: 1
 --- !u!81 &6608178519213617443
@@ -12770,6 +12774,12 @@ MonoBehaviour:
     sprite: {fileID: -7252421338754634560, guid: 411652de91e329549901bf7e0db02e9b, type: 3}
   - type: 9
     sprite: {fileID: 1781937086033352542, guid: 7ee4e681aa5aa8a44b2221fd0625bba9, type: 3}
+  - type: 10
+    sprite: {fileID: 736825603353018495, guid: bdbe33f3c69697744afc2a8fdf5785f4, type: 3}
+  - type: 11
+    sprite: {fileID: -8901806944868120648, guid: 4b5361714946a8042adfa5fcca1edff8, type: 3}
+  - type: 12
+    sprite: {fileID: -85348311355891410, guid: a4abadd4aba99844986b3c4361263316, type: 3}
 --- !u!1 &6292668212798895234
 GameObject:
   m_ObjectHideFlags: 0

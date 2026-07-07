@@ -198,8 +198,9 @@ public class SimpleShooter : MonoBehaviour
             sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{statusEffectDuration:F1}</color>s)");
         }
 
-        if (bulletPrefab != null && bulletPrefab.TryGetComponent<RB2DChainToTag>(out var RB2D) && RB2D.maxChains > 0)
-            sb.AppendLine($"Chain: <color={numColor}>{RB2D.maxChains}</color>");
+        int configuredChainHits = GetConfiguredChainHits();
+        if (configuredChainHits > 0)
+            sb.AppendLine($"Chain: <color={numColor}>{configuredChainHits}</color>");
 
         if (!string.IsNullOrWhiteSpace(extraTextField))
             sb.AppendLine(extraTextField);
@@ -284,6 +285,7 @@ public class SimpleShooter : MonoBehaviour
     private void SpawnProjectile(Vector3 originPosition, Vector2 shootDir, int finalDamage)
     {
         var bullet = Instantiate(bulletPrefab, originPosition, Quaternion.identity);
+        int configuredChainHits = ConfigureChainHits(bullet);
 
         float rotDeg = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
         bullet.transform.rotation = Quaternion.Euler(0, 0, rotDeg);
@@ -292,7 +294,9 @@ public class SimpleShooter : MonoBehaviour
         {
             bulletDamage.damageAmount = finalDamage;
             bulletDamage.damageType = damageType;
-            bulletDamage.penetration = penetration;
+            bulletDamage.penetration = configuredChainHits > 0
+                ? Mathf.Max(penetration, configuredChainHits + 1)
+                : penetration;
             bulletDamage.knockbackForce = knockbackForce;
             bulletDamage.cullThreshold = cullThreshold;
             bulletDamage.statusApplyChance = statusApplyChance;
@@ -315,6 +319,40 @@ public class SimpleShooter : MonoBehaviour
 
         if (bulletLifetime > 0f)
             Destroy(bullet, bulletLifetime);
+    }
+
+    private int GetConfiguredChainHits()
+    {
+        int prefabChains = 0;
+        if (bulletPrefab != null && bulletPrefab.TryGetComponent<RB2DChainToTag>(out var chain))
+            prefabChains = Mathf.Max(0, chain.maxChains);
+
+        return Mathf.Max(Mathf.Max(0, chainHits), prefabChains);
+    }
+
+    private int ConfigureChainHits(GameObject bullet)
+    {
+        int configuredChainHits = Mathf.Max(0, chainHits);
+
+        if (bullet.TryGetComponent<RB2DChainToTag>(out var existingChain))
+        {
+            configuredChainHits = Mathf.Max(configuredChainHits, Mathf.Max(0, existingChain.maxChains));
+            existingChain.maxChains = configuredChainHits;
+            return configuredChainHits;
+        }
+
+        if (configuredChainHits <= 0)
+            return 0;
+
+        if (bullet.GetComponent<Rigidbody2D>() == null || bullet.GetComponent<Collider2D>() == null)
+        {
+            Debug.LogWarning($"[{nameof(SimpleShooter)}] Cannot add chain hits to '{bullet.name}' because it needs a Rigidbody2D and Collider2D.", bullet);
+            return 0;
+        }
+
+        var chain = bullet.AddComponent<RB2DChainToTag>();
+        chain.maxChains = configuredChainHits;
+        return configuredChainHits;
     }
 
     private static Vector2 Rotate(Vector2 direction, float degrees)

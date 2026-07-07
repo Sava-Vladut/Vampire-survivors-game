@@ -835,6 +835,8 @@ public class SimpleHealth : MonoBehaviour
     public void Heal(int amount)
     {
         if (amount <= 0 || currentHealth <= 0) return;
+        amount = GetModifiedHealingAmount(amount);
+        if (amount <= 0) return;
 
         if (enableTemporaryHealth)
         {
@@ -859,6 +861,18 @@ public class SimpleHealth : MonoBehaviour
         SyncSlider();
         UpdateVolume();
         UpdateStatsText();
+    }
+
+    private int GetModifiedHealingAmount(int amount)
+    {
+        if (_statusEffectSystem == null)
+            return amount;
+
+        float multiplier = _statusEffectSystem.HealingReceivedMultiplier;
+        if (multiplier <= 0f)
+            return 0;
+
+        return Mathf.Max(1, Mathf.RoundToInt(amount * multiplier));
     }
 
     public void Kill()

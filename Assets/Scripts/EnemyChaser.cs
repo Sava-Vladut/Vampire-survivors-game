@@ -89,11 +89,18 @@ public class EnemyChaser : MonoBehaviour
         Vector2 toTarget = targetPos - currentPos;
         float distSqr = toTarget.sqrMagnitude;
         bool frozenBySafeZone = IsFrozenBySafeZone(distSqr);
+        bool feared = HasFear(cachedStatusEffects);
 
         // Decide desired direction (flee/approach with deadband) using squared distances
         Vector2 desiredDir = Vector2.zero;
         bool needsMove = false;
-        if (!frozenBySafeZone && enableFlee)
+        if (!frozenBySafeZone && feared)
+        {
+            needsMove = true;
+            float distance = Mathf.Sqrt(distSqr);
+            if (distance > 1e-6f) desiredDir = (-toTarget) / distance;
+        }
+        else if (!frozenBySafeZone && enableFlee)
         {
             float buffer = Mathf.Max(0f, fleeBuffer);
             float lower = Mathf.Max(0f, stoppingDistance - buffer);
@@ -126,14 +133,14 @@ public class EnemyChaser : MonoBehaviour
         }
 
         // Fire reach event on first entry
-        if (!frozenBySafeZone && distSqr <= stoppingDistance * stoppingDistance && !hasReached)
+        if (!frozenBySafeZone && !feared && distSqr <= stoppingDistance * stoppingDistance && !hasReached)
         {
             hasReached = true;
             onReachDestination?.Invoke();
         }
 
         // Movement multiplier from status effects (cached component)
-        float mult = GetMoveMultiplier(cachedStatusEffects); // 0 if Stun/Frozen, 2 if Speed, else 1
+        float mult = GetMoveMultiplier(cachedStatusEffects);
 
         // Apply velocity (knockback is blended in on top of chase movement)
         float speed = moveSpeed * mult;
@@ -191,12 +198,12 @@ public class EnemyChaser : MonoBehaviour
         if (ses == null)
             return 1f;
 
-        if (ses.HasStatus(StatusEffectSystem.StatusType.Stun) || ses.HasStatus(StatusEffectSystem.StatusType.Frozen))
-            return 0f;
+        return ses.MovementSpeedMultiplier;
+    }
 
-        float m = 1f;
-        if (ses.HasStatus(StatusEffectSystem.StatusType.Speed)) m *= 2f;   // tweak in inspector later
-        return m;
+    private static bool HasFear(StatusEffectSystem ses)
+    {
+        return ses != null && ses.HasStatus(StatusEffectSystem.StatusType.Fear);
     }
 
 }

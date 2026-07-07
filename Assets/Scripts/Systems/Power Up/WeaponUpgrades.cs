@@ -59,7 +59,7 @@ public class WeaponUpgrades : MonoBehaviour
         ShooterStatusEffectIndex,
         ShooterKnockbackFlat,
         ShooterCullThreshold,
-        ShooterChainHits, // Legacy serialized value; generation/application disabled.
+        ShooterChainHits,
 
         // --- WeaponTick (TickRateFlat..BurstSpacingPercent) ---
         TickRateFlat,
@@ -88,6 +88,9 @@ public class WeaponUpgrades : MonoBehaviour
 
     [Tooltip("Acts as integer for flat amounts (rounded), or as a percent when the upgrade type is % based (e.g., 0.25 = 25%).")]
     public float value = 0f;
+
+    [SerializeField, HideInInspector] private bool seedStatusApplyChance;
+    [SerializeField, HideInInspector] private float seededStatusApplyChance;
 
     // ---------------------- Lifecycle ----------------------
 
@@ -125,7 +128,7 @@ public class WeaponUpgrades : MonoBehaviour
         InRange(t, UpgradeType.KnifeDamageFlat, UpgradeType.KnifeCullThreshold) ||
         t == UpgradeType.KnifeEchoStrikeChance;
     private static bool IsShooterType(UpgradeType t) =>
-        InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterCullThreshold) ||
+        InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterChainHits) ||
         t == UpgradeType.ShooterForkShotChance ||
         t == UpgradeType.ShooterPenetrationFlat;
     private static bool IsTickType(UpgradeType t) => InRange(t, UpgradeType.TickRateFlat, UpgradeType.BurstSpacingPercent);
@@ -137,7 +140,7 @@ public class WeaponUpgrades : MonoBehaviour
         t == UpgradeType.ShooterEnableStatusEffect;
 
     public static bool IsGeneratedType(UpgradeType type) =>
-        type != UpgradeType.None && type != UpgradeType.ShooterChainHits && !IsEnableStatusType(type);
+        type != UpgradeType.None && !IsEnableStatusType(type);
 
     private bool IsTypeAllowedForParent(UpgradeType type)
     {
@@ -240,6 +243,7 @@ public class WeaponUpgrades : MonoBehaviour
         Add("Extended Flight +{0}", "Projectiles remain active for {0} longer.", ValueFormat.Seconds1, UpgradeType.ShooterLifetimeFlat);
         Add("Unfading Shot +{0}", "Increases projectile lifetime by {0}.", ValueFormat.Percent, UpgradeType.ShooterLifetimePercent);
         Add("Piercing Rounds +{0}", "Projectiles can pass through {0} additional enemies before breaking.", ValueFormat.Int, UpgradeType.ShooterPenetrationFlat);
+        Add("Chaining Rounds +{0}", "Projectiles can seek {0} additional enemies after hitting a target.", ValueFormat.Int, UpgradeType.ShooterChainHits);
         Add("Forked Rounds +{0}", "Projectiles gain {0} chance to split into two weaker side shots.", ValueFormat.Percent, UpgradeType.ShooterForkShotChance);
 
         // Tick
@@ -389,6 +393,7 @@ public class WeaponUpgrades : MonoBehaviour
                 break;
             case UpgradeType.KnifeStatusEffectIndex:
                 knife.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
+                ApplyStatusChanceSeed(knife);
                 break;
             case UpgradeType.KnifeDamageTypeIndex:
                 knife.damageType = ResolveDifferentDamageType(knife.damageType, value);
@@ -461,6 +466,7 @@ public class WeaponUpgrades : MonoBehaviour
                 break;
             case UpgradeType.ShooterStatusEffectIndex:
                 shooter.EnableOnHitEffectByIndex(Mathf.RoundToInt(value));
+                ApplyStatusChanceSeed(shooter);
                 break;
             case UpgradeType.ShooterDamageTypeIndex:
                 shooter.damageType = ResolveDifferentDamageType(shooter.damageType, value);
@@ -470,6 +476,9 @@ public class WeaponUpgrades : MonoBehaviour
                 break;
             case UpgradeType.ShooterCullThreshold:
                 shooter.cullThreshold = Mathf.Clamp01(shooter.cullThreshold + value);
+                break;
+            case UpgradeType.ShooterChainHits:
+                shooter.chainHits += Mathf.Max(1, Mathf.RoundToInt(value));
                 break;
             case UpgradeType.ShooterPenetrationFlat:
                 shooter.penetration += Mathf.Max(1, Mathf.RoundToInt(value));
@@ -522,7 +531,122 @@ public class WeaponUpgrades : MonoBehaviour
         return (SimpleHealth.DamageType)(((int)current + 1) % count);
     }
 
+    private void ApplyStatusChanceSeed(Knife knife)
+    {
+        if (!seedStatusApplyChance || knife == null)
+            return;
+
+        knife.statusApplyChance = Mathf.Max(knife.statusApplyChance, Mathf.Clamp01(seededStatusApplyChance));
+    }
+
+    private void ApplyStatusChanceSeed(SimpleShooter shooter)
+    {
+        if (!seedStatusApplyChance || shooter == null)
+            return;
+
+        shooter.statusApplyChance = Mathf.Max(shooter.statusApplyChance, Mathf.Clamp01(seededStatusApplyChance));
+    }
+
     // ---------------------- Runtime generation ----------------------
+
+    public static void RefreshFirstOnHitStatusOffers(
+        PowerUpChooser powerUpChooser,
+        List<PowerUp> activeStatusOffers,
+        float baseChance)
+    {
+        ClearFirstOnHitStatusOffers(powerUpChooser, activeStatusOffers);
+
+        if (powerUpChooser == null || activeStatusOffers == null)
+            return;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player == null)
+            return;
+
+        AddFirstOnHitOffers<Knife>(
+            powerUpChooser,
+            activeStatusOffers,
+            player.transform,
+            weapon => !weapon.applyStatusEffectOnHit,
+            UpgradeType.KnifeStatusEffectIndex,
+            baseChance);
+
+        AddFirstOnHitOffers<SimpleShooter>(
+            powerUpChooser,
+            activeStatusOffers,
+            player.transform,
+            weapon => !weapon.applyStatusEffectOnHit,
+            UpgradeType.ShooterStatusEffectIndex,
+            baseChance);
+    }
+
+    public static void ClearFirstOnHitStatusOffers(PowerUpChooser powerUpChooser, List<PowerUp> activeStatusOffers)
+    {
+        if (activeStatusOffers == null)
+            return;
+
+        if (powerUpChooser != null)
+        {
+            for (int i = activeStatusOffers.Count - 1; i >= 0; i--)
+            {
+                PowerUp offer = activeStatusOffers[i];
+                if (offer == null)
+                    continue;
+
+                if (powerUpChooser.powerUps.Remove(offer) && offer.powerUpObject != null)
+                    Destroy(offer.powerUpObject);
+            }
+        }
+
+        activeStatusOffers.Clear();
+    }
+
+    private static void AddFirstOnHitOffers<T>(
+        PowerUpChooser powerUpChooser,
+        List<PowerUp> activeStatusOffers,
+        Transform player,
+        System.Predicate<T> canOffer,
+        UpgradeType upgradeType,
+        float baseChance)
+        where T : Component
+    {
+        T[] weapons = player.GetComponentsInChildren<T>(true);
+        for (int i = 0; i < weapons.Length; i++)
+        {
+            T weapon = weapons[i];
+            if (weapon == null || !weapon.gameObject.activeInHierarchy || !canOffer(weapon))
+                continue;
+
+            var eligibility = weapon.GetComponent<GeneratedUpgradeEligibility>();
+            if (eligibility != null && !eligibility.allowGeneratedUpgrades)
+                continue;
+
+            GameObject offerObject = new GameObject("Generated On-Hit Status Offer");
+            offerObject.transform.SetParent(weapon.transform, false);
+            offerObject.SetActive(false);
+
+            var upgrade = offerObject.AddComponent<WeaponUpgrades>();
+            upgrade.upgradeType = upgradeType;
+            upgrade.value = RandomNegativeStatusEffectIndex();
+            upgrade.seedStatusApplyChance = true;
+            upgrade.seededStatusApplyChance = baseChance;
+
+            var status = (StatusEffectSystem.StatusType)Mathf.RoundToInt(upgrade.value);
+            upgrade.Upgrade = new PowerUp
+            {
+                powerUpName = $"{weapon.name} - {status} Affliction",
+                powerUpDescription = $"Enables this weapon to inflict {status} on hit ({FormatChance(baseChance)} chance).",
+                powerUpObject = offerObject,
+                IsWeapon = true,
+                IsUpgrade = true,
+                powerUpIcon = GetWeaponIcon(weapon),
+                rarity = PowerUp.RollRandomRarity()
+            };
+
+            powerUpChooser.powerUps.Add(upgrade.Upgrade);
+            activeStatusOffers.Add(upgrade.Upgrade);
+        }
+    }
 
     private List<UpgradeType> GetAllowedTypes()
     {
@@ -636,8 +760,39 @@ public class WeaponUpgrades : MonoBehaviour
                type != UpgradeType.ShooterStatusEffectIndex;
     }
 
-    private static float RandomStatusEffectIndex() =>
-        Mathf.Round(Random.Range(0f, (float)System.Enum.GetValues(typeof(StatusEffectSystem.StatusType)).Length - 1f));
+    private static float RandomStatusEffectIndex() => RandomNegativeStatusEffectIndex();
+
+    private static int RandomNegativeStatusEffectIndex()
+    {
+        StatusEffectSystem.StatusType[] negative =
+        {
+            StatusEffectSystem.StatusType.Bleeding,
+            StatusEffectSystem.StatusType.Stun,
+            StatusEffectSystem.StatusType.Ignite,
+            StatusEffectSystem.StatusType.Shock,
+            StatusEffectSystem.StatusType.Poison,
+            StatusEffectSystem.StatusType.Frozen,
+            StatusEffectSystem.StatusType.Slow,
+            StatusEffectSystem.StatusType.Fear,
+            StatusEffectSystem.StatusType.Cursed
+        };
+
+        return (int)negative[Random.Range(0, negative.Length)];
+    }
+
+    private static Sprite GetWeaponIcon(Component weapon)
+    {
+        if (weapon is Knife knife)
+            return knife.weaponSprite;
+
+        if (weapon is SimpleShooter shooter)
+            return shooter.weaponSprite;
+
+        return null;
+    }
+
+    private static string FormatChance(float chance) =>
+        $"{Mathf.RoundToInt(Mathf.Clamp01(chance) * 100f)}%";
 
     private float GetRandomValueForType(UpgradeType t)
     {
@@ -686,6 +841,7 @@ public class WeaponUpgrades : MonoBehaviour
             case UpgradeType.KnifeCullThreshold:
             case UpgradeType.ShooterCullThreshold:
                 return Random.Range(0.01f, 0.03f);
+            case UpgradeType.ShooterChainHits:
             case UpgradeType.ShooterPenetrationFlat:
                 return 1f;
             case UpgradeType.KnifeEchoStrikeChance:

@@ -240,19 +240,7 @@ public class Snappy2DController : MonoBehaviour
 
         // Now, apply status effects to the intended velocity
         if (TryGetComponent<StatusEffectSystem>(out StatusEffectSystem ses))
-        {
-            // If stunned OR frozen, force velocity to zero
-            if (ses.HasStatus(StatusEffectSystem.StatusType.Stun) ||
-                ses.HasStatus(StatusEffectSystem.StatusType.Frozen))
-            {
-                intendedVelocity = Vector2.zero;
-            }
-            // If hasted, multiply velocity
-            else if (ses.HasStatus(StatusEffectSystem.StatusType.Speed))
-            {
-                intendedVelocity *= 2;
-            }
-        }
+            intendedVelocity *= ses.MovementSpeedMultiplier;
 
         // Finally, apply the calculated velocity to the rigidbody
         rb.linearVelocity = intendedVelocity + knockbackVelocity;

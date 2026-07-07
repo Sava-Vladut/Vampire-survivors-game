@@ -56,6 +56,13 @@ public class Trigger2DEvent : MonoBehaviour
         player.GetComponent<StatusEffectSystem>().ApplyStatusEffect_Int(2, 10);
     }
 
+    public void Slow()
+    {
+        var player = GameObject.FindGameObjectWithTag("Player").GetComponent<SimpleHealth>();
+        if (player == null) return;
+        player.GetComponent<StatusEffectSystem>().AddStatus(StatusEffectSystem.StatusType.Slow, 10);
+    }
+
 
     public void Magnet(float value)
     {

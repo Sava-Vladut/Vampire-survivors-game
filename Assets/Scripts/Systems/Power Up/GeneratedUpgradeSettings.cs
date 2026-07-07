@@ -208,6 +208,7 @@ public class GeneratedUpgradeSettings : ScriptableObject
         if (name.Contains("StatusDurationPercent")) { min = 0.05f; max = 0.25f; return true; }
         if (name.Contains("Knockback")) { min = 0.25f; max = 1.5f; return true; }
         if (name.Contains("CullThreshold")) { min = 0.01f; max = 0.03f; return true; }
+        if (name.Contains("ChainHits")) { min = max = 1f; whole = true; return true; }
         if (name.Contains("PenetrationFlat")) { min = max = 1f; whole = true; return true; }
         if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat"))
         { min = 1f; max = 2f; whole = true; return true; }

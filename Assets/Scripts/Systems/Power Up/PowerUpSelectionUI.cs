@@ -35,9 +35,14 @@ public class PowerUpSelectionUI : MonoBehaviour
     [Tooltip("Default icon to use when a power-up has no icon.")]
     [SerializeField] public Sprite defaultIcon;
 
+    [Header("Generated On-Hit Status")]
+    [Tooltip("Starting chance granted when the selector first enables a weapon's on-hit status effect.")]
+    [Range(0f, 1f)][SerializeField] private float firstOnHitBaseChance = 0.15f;
+
     private int[] shownIndices;
     private bool warnedNoDefault;
     private int refreshesRemaining;
+    private readonly List<PowerUp> activeStatusOffers = new();
     [Header("Behavior")]
     [SerializeField] private bool isFirstSelection = true; // first selection shows weapons only
     [SerializeField] private bool firstSelectionWeaponsOnly = false;
@@ -114,8 +119,10 @@ public class PowerUpSelectionUI : MonoBehaviour
 
         // Roll fresh random upgrade offers for owned weapons/accessories
         // (also discards offers from a previous open/reroll)
+        GeneratedUpgradeSettings.Load()?.EnsureAllRanges();
         if (upgradeGenerator != null)
             upgradeGenerator.RefreshOffers();
+        WeaponUpgrades.RefreshFirstOnHitStatusOffers(powerUpChooser, activeStatusOffers, firstOnHitBaseChance);
 
         if (powerUpChooser.powerUps.Count == 0)
         {
@@ -287,6 +294,7 @@ public class PowerUpSelectionUI : MonoBehaviour
         // Discard whatever offers were not picked
         if (upgradeGenerator != null)
             upgradeGenerator.ClearOffers();
+        WeaponUpgrades.ClearFirstOnHitStatusOffers(powerUpChooser, activeStatusOffers);
 
         shownIndices = null;
 
@@ -336,4 +344,5 @@ public class PowerUpSelectionUI : MonoBehaviour
 
         return result.ToArray();
     }
+
 }

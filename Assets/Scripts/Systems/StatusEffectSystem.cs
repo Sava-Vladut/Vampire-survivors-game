@@ -23,6 +23,9 @@ public class StatusEffectSystem : MonoBehaviour
         Frozen = 7,
         Regeneration = 8,
         XpBoost = 9,
+        Slow = 10,
+        Fear = 11,
+        Cursed = 12,
         // Add more: Poison, Stunned, Shielded, etc.
     }
 
@@ -72,6 +75,18 @@ public class StatusEffectSystem : MonoBehaviour
     [Tooltip("Multiplier applied to XP gain while XpBoost is active.")]
     [SerializeField, Min(0f)] private float xpBoostMultiplier = 2f;
 
+    [Header("Movement Modifiers")]
+    [Tooltip("Movement multiplier while Speed is active.")]
+    [SerializeField, Min(0f)] private float speedMoveMultiplier = 2f;
+    [Tooltip("Movement multiplier while Slow is active.")]
+    [SerializeField, Min(0f)] private float slowMoveMultiplier = 0.5f;
+
+    [Header("Curse")]
+    [Tooltip("Healing received multiplier while Cursed is active.")]
+    [SerializeField, Min(0f)] private float cursedHealingReceivedMultiplier = 0.5f;
+    [Tooltip("Incoming status duration multiplier while Cursed is active.")]
+    [SerializeField, Min(0f)] private float cursedStatusDurationMultiplier = 1.5f;
+
     [Header("UnityEvent Defaults")]
     [SerializeField, Min(0.01f)] private float defaultDuration = 5f;
     [SerializeField, Min(0f)] private float defaultTickInterval = 1f;
@@ -94,6 +109,25 @@ public class StatusEffectSystem : MonoBehaviour
     private enum BuiltInEvent { Started, Refreshed, Tick, Ended }
 
     public float CurrentXpMultiplier => enableXpBoost ? currentXpMultiplier : 1f;
+    public float HealingReceivedMultiplier => HasStatus(StatusType.Cursed) ? cursedHealingReceivedMultiplier : 1f;
+    public float StatusDurationReceivedMultiplier => HasStatus(StatusType.Cursed) ? cursedStatusDurationMultiplier : 1f;
+
+    public float MovementSpeedMultiplier
+    {
+        get
+        {
+            if (HasStatus(StatusType.Stun) || HasStatus(StatusType.Frozen))
+                return 0f;
+
+            float multiplier = 1f;
+            if (HasStatus(StatusType.Speed))
+                multiplier *= speedMoveMultiplier;
+            if (HasStatus(StatusType.Slow))
+                multiplier *= slowMoveMultiplier;
+
+            return multiplier;
+        }
+    }
 
     private void Awake()
     {
@@ -161,7 +195,7 @@ public class StatusEffectSystem : MonoBehaviour
 
     public void AddStatus(StatusType type, float duration, float tickInterval = 1f, GameObject sourceObject = null)
     {
-        duration = Mathf.Max(0f, duration);
+        duration = Mathf.Max(0f, duration * GetIncomingDurationMultiplier(type));
         if (duration <= 0f) return;
 
         if (_active.TryGetValue(type, out var e))
@@ -357,6 +391,14 @@ public class StatusEffectSystem : MonoBehaviour
     private GameObject GetSource(StatusType type)
     {
         return _sources.TryGetValue(type, out GameObject source) ? source : null;
+    }
+
+    private float GetIncomingDurationMultiplier(StatusType type)
+    {
+        if (type == StatusType.Cursed)
+            return 1f;
+
+        return StatusDurationReceivedMultiplier;
     }
 
 #if UNITY_EDITOR

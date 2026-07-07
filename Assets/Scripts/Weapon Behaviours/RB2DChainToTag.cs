@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// After damaging a target, re-aim this Rigidbody2D toward the next object with a given tag.
+/// After damaging a target, re-aim this Rigidbody2D toward the next damageable target.
 /// Works alongside BulletDamageTrigger (keep penetration high enough to allow chaining).
 /// </summary>
 [DisallowMultipleComponent]
@@ -11,6 +11,7 @@ using UnityEngine;
 public class RB2DChainToTag : MonoBehaviour
 {
     [Header("Targeting")]
+    [Tooltip("Preferred target tag. Used to break ties, but layer + SimpleHealth decide eligibility.")]
     [SerializeField] private string targetTag = "Enemy";
     [Tooltip("Max number of retargets after the first hit.")]
     [SerializeField] public int maxChains = 3;
@@ -20,12 +21,12 @@ public class RB2DChainToTag : MonoBehaviour
     [Header("Motion")]
     [Tooltip("If <= 0, reuse current speed. Otherwise, force this travel speed.")]
     [SerializeField] private float travelSpeed = 0f;
-    [Tooltip("Optional turn smoothing (0 = instant snap).")]
-    [Range(0f, 30f)][SerializeField] private float turnLerp = 12f;
+    [Tooltip("Optional turn smoothing (0 = instant snap). Retargets happen once per hit, so instant is the reliable default.")]
+    [Range(0f, 30f)][SerializeField] private float turnLerp = 0f;
 
     [Header("Filters")]
-    [Tooltip("Optional layer mask the next target must be on. (~0 = any)")]
-    [SerializeField] private LayerMask targetLayers = ~0;
+    [Tooltip("Layers considered valid chain targets.")]
+    [SerializeField] private LayerMask targetLayers = 1 << 7;
     [Tooltip("Ignore the same target twice.")]
     [SerializeField] private bool avoidRepeatTargets = true;
 
@@ -55,22 +56,13 @@ public class RB2DChainToTag : MonoBehaviour
     // and try to find the next target.
     private void OnTriggerEnter2D(Collider2D other)
     {
-        // Chain hits are intentionally disabled. Keep this component's serialized
-        // shape intact so older prefabs do not lose script references.
-        return;
-
-#pragma warning disable CS0162
         if (_chainsDone >= maxChains) return;
-
-        // Must match tag (fast filter)
-        if (!other.CompareTag(targetTag)) return;
-
-        // Must be on allowed layers
-        if ((targetLayers.value & (1 << other.gameObject.layer)) == 0) return;
 
         // Is it a valid damageable root (has SimpleHealth and is alive)?
         var health = other.GetComponentInParent<SimpleHealth>();
         if (health == null || !health.IsAlive) return;
+
+        if (!IsAllowedTarget(health, other)) return;
 
         // Record this hit target to avoid selecting it as "next"
         if (avoidRepeatTargets)
@@ -79,7 +71,6 @@ public class RB2DChainToTag : MonoBehaviour
         // Kick off a retarget (slight delay so BulletDamageTrigger can process)
         if (isActiveAndEnabled)
             Invoke(nameof(DoRetarget), retargetDelay);
-#pragma warning restore CS0162
     }
 
     private void DoRetarget()
@@ -104,9 +95,9 @@ public class RB2DChainToTag : MonoBehaviour
         }
         else
         {
-            // Smoothly steer current velocity toward target direction (frame-rate independent)
+            // Smoothly steer current velocity toward target direction.
             Vector2 desired = dir * speed;
-            _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, desired, 1f - Mathf.Exp(-turnLerp * Time.deltaTime));
+            _rb.linearVelocity = Vector2.Lerp(_rb.linearVelocity, desired, Mathf.Clamp01(turnLerp));
         }
 
         _chainsDone++;
@@ -114,22 +105,18 @@ public class RB2DChainToTag : MonoBehaviour
 
     private Transform FindNextTarget()
     {
-        // Using Unity tagging system for fast lookup
-        GameObject[] candidates = GameObject.FindGameObjectsWithTag(targetTag);
+        SimpleHealth[] candidates = FindObjectsByType<SimpleHealth>();
         Transform best = null;
+        bool bestMatchesPreferredTag = false;
         float bestSqr = float.PositiveInfinity;
 
         Vector2 p = _rb.position;
         float maxSqr = (searchRadius <= 0f) ? float.PositiveInfinity : searchRadius * searchRadius;
 
-        foreach (var go in candidates)
+        foreach (var h in candidates)
         {
-            if (go == null) continue;
-            if ((targetLayers.value & (1 << go.layer)) == 0) continue;
-
-            // Must have a living SimpleHealth on the root or parent
-            var h = go.GetComponentInParent<SimpleHealth>();
             if (h == null || !h.IsAlive) continue;
+            if (!IsAllowedTarget(h, null)) continue;
 
             // Skip already visited (hit) targets
             if (avoidRepeatTargets && _visited.Contains(h.transform)) continue;
@@ -137,14 +124,57 @@ public class RB2DChainToTag : MonoBehaviour
             float sqr = ((Vector2)h.transform.position - p).sqrMagnitude;
             if (sqr > maxSqr) continue;
 
-            if (sqr < bestSqr)
+            bool matchesPreferredTag = MatchesPreferredTag(h);
+            if ((matchesPreferredTag && !bestMatchesPreferredTag) ||
+                (matchesPreferredTag == bestMatchesPreferredTag && sqr < bestSqr))
             {
                 bestSqr = sqr;
+                bestMatchesPreferredTag = matchesPreferredTag;
                 best = h.transform;
             }
         }
 
         return best;
+    }
+
+    private bool IsAllowedTarget(SimpleHealth health, Collider2D hitCollider)
+    {
+        if (health == null || targetLayers.value == 0) return false;
+
+        if (hitCollider != null && IsInTargetLayers(hitCollider.gameObject))
+            return true;
+
+        if (IsInTargetLayers(health.gameObject))
+            return true;
+
+        var colliders = health.GetComponentsInChildren<Collider2D>();
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            if (colliders[i] != null && IsInTargetLayers(colliders[i].gameObject))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsInTargetLayers(GameObject candidate)
+    {
+        return candidate != null && (targetLayers.value & (1 << candidate.layer)) != 0;
+    }
+
+    private bool MatchesPreferredTag(SimpleHealth health)
+    {
+        if (health == null || string.IsNullOrWhiteSpace(targetTag)) return false;
+        if (health.CompareTag(targetTag)) return true;
+
+        var transforms = health.GetComponentsInChildren<Transform>();
+        for (int i = 0; i < transforms.Length; i++)
+        {
+            if (transforms[i] != null && transforms[i].CompareTag(targetTag))
+                return true;
+        }
+
+        return false;
     }
 
 #if UNITY_EDITOR
