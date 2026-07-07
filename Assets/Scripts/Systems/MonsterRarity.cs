@@ -21,6 +21,17 @@ public class MonsterRarity : MonoBehaviour
     [SerializeField] public float weightRare = 12f;
     [SerializeField] public float weightLegendary = 3f;
 
+    [Header("Rarity Visuals")]
+    [SerializeField] private bool applyRarityOutlines = true;
+    [SerializeField, Tooltip("Leave empty to use every SpriteRenderer under this monster except generated outline renderers.")]
+    private SpriteRenderer[] rarityVisualRenderers;
+    [SerializeField, Min(0f)] private float outlineThickness = 0.045f;
+    [SerializeField] private int outlineSortingOrderOffset = -1;
+    [SerializeField] private Color commonOutline = Color.clear;
+    [SerializeField] private Color uncommonOutline = new Color(0.24f, 0.95f, 0.38f, 0.9f);
+    [SerializeField] private Color rareOutline = new Color(0.18f, 0.63f, 1f, 0.95f);
+    [SerializeField] private Color legendaryOutline = new Color(1f, 0.67f, 0.18f, 1f);
+
     // === Enemy (SimpleHealth) roll ranges ===
     [Header("Enemy Health & Defense Rolls")]
     [SerializeField] public Vector2Int hpFlatAdd = new Vector2Int(15, 60);
@@ -90,6 +101,10 @@ public class MonsterRarity : MonoBehaviour
         {
             RerollRarity();
         }
+        else
+        {
+            ApplyRarityVisuals();
+        }
     }
 
     private void OnTransformChildrenChanged() => RefreshCachedRefs();
@@ -154,6 +169,7 @@ public class MonsterRarity : MonoBehaviour
                 t.ResetAndStart();
 
         // === Write EVERYTHING to parent entity’s UI ===
+        ApplyRarityVisuals();
         WriteIntoParentUI();
     }
 
@@ -380,6 +396,77 @@ public class MonsterRarity : MonoBehaviour
         return Rarity.Legendary;
     }
 
+    private void ApplyRarityVisuals()
+    {
+        if (!applyRarityOutlines)
+        {
+            DisableRarityOutlines();
+            return;
+        }
+
+        SpriteRenderer[] renderers = GetRarityVisualRenderers();
+        Color outlineColor = GetOutlineColor(rarity);
+
+        foreach (var renderer in renderers)
+        {
+            if (!renderer)
+                continue;
+
+            var outline = renderer.GetComponent<RaritySpriteOutline2D>();
+            if (!outline)
+                outline = renderer.gameObject.AddComponent<RaritySpriteOutline2D>();
+
+            outline.Configure(renderer, outlineColor, outlineThickness, outlineSortingOrderOffset);
+        }
+    }
+
+    private void DisableRarityOutlines()
+    {
+        var outlines = GetComponentsInChildren<RaritySpriteOutline2D>(true);
+        foreach (var outline in outlines)
+        {
+            if (!outline)
+                continue;
+
+            var renderer = outline.GetComponent<SpriteRenderer>();
+            outline.Configure(renderer, Color.clear, 0f, outlineSortingOrderOffset);
+        }
+    }
+
+    private SpriteRenderer[] GetRarityVisualRenderers()
+    {
+        if (rarityVisualRenderers != null && rarityVisualRenderers.Length > 0)
+            return rarityVisualRenderers;
+
+        var found = GetComponentsInChildren<SpriteRenderer>(true);
+        var filtered = new List<SpriteRenderer>(found.Length);
+
+        foreach (var renderer in found)
+        {
+            if (!renderer || IsGeneratedOutlineRenderer(renderer))
+                continue;
+
+            filtered.Add(renderer);
+        }
+
+        return filtered.ToArray();
+    }
+
+    private static bool IsGeneratedOutlineRenderer(SpriteRenderer renderer)
+    {
+        return renderer.transform.parent != null
+            && renderer.name.StartsWith(RaritySpriteOutline2D.OutlineChildName, StringComparison.Ordinal);
+    }
+
+    private Color GetOutlineColor(Rarity r) => r switch
+    {
+        Rarity.Common => commonOutline,
+        Rarity.Uncommon => uncommonOutline,
+        Rarity.Rare => rareOutline,
+        Rarity.Legendary => legendaryOutline,
+        _ => commonOutline
+    };
+
     private void WriteIntoParentUI()
     {
         if (!health) return;
@@ -444,6 +531,144 @@ public class MonsterRarity : MonoBehaviour
         {
             int j = UnityEngine.Random.Range(i, list.Count);
             (list[i], list[j]) = (list[j], list[i]);
+        }
+    }
+}
+
+[DisallowMultipleComponent]
+public sealed class RaritySpriteOutline2D : MonoBehaviour
+{
+    public const string OutlineChildName = "Rarity Outline";
+
+    private static readonly Vector3[] OutlineOffsets =
+    {
+        Vector3.up,
+        Vector3.down,
+        Vector3.left,
+        Vector3.right,
+        new Vector3(1f, 1f, 0f).normalized,
+        new Vector3(1f, -1f, 0f).normalized,
+        new Vector3(-1f, 1f, 0f).normalized,
+        new Vector3(-1f, -1f, 0f).normalized
+    };
+
+    [SerializeField] private SpriteRenderer source;
+    [SerializeField] private Color outlineColor = Color.clear;
+    [SerializeField, Min(0f)] private float thickness = 0.04f;
+    [SerializeField] private int sortingOrderOffset = -1;
+
+    private readonly List<SpriteRenderer> outlineRenderers = new();
+
+    public void Configure(SpriteRenderer sourceRenderer, Color color, float outlineThickness, int orderOffset)
+    {
+        source = sourceRenderer;
+        outlineColor = color;
+        thickness = Mathf.Max(0f, outlineThickness);
+        sortingOrderOffset = orderOffset;
+
+        EnsureOutlineRenderers();
+        SyncNow();
+    }
+
+    private void Awake()
+    {
+        if (source == null)
+            source = GetComponent<SpriteRenderer>();
+
+        EnsureOutlineRenderers();
+        SyncNow();
+    }
+
+    private void LateUpdate()
+    {
+        SyncNow();
+    }
+
+    private void OnDisable()
+    {
+        SetOutlineEnabled(false);
+    }
+
+    private void OnDestroy()
+    {
+        for (int i = outlineRenderers.Count - 1; i >= 0; i--)
+        {
+            if (outlineRenderers[i] != null)
+                Destroy(outlineRenderers[i].gameObject);
+        }
+
+        outlineRenderers.Clear();
+    }
+
+    private void EnsureOutlineRenderers()
+    {
+        if (source == null)
+            return;
+
+        for (int i = outlineRenderers.Count - 1; i >= 0; i--)
+        {
+            if (outlineRenderers[i] == null)
+                outlineRenderers.RemoveAt(i);
+        }
+
+        for (int i = outlineRenderers.Count; i < OutlineOffsets.Length; i++)
+        {
+            var go = new GameObject($"{OutlineChildName} {i + 1}");
+            go.transform.SetParent(source.transform, false);
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+
+            var outlineRenderer = go.AddComponent<SpriteRenderer>();
+            outlineRenderers.Add(outlineRenderer);
+        }
+    }
+
+    private void SyncNow()
+    {
+        if (source == null)
+        {
+            SetOutlineEnabled(false);
+            return;
+        }
+
+        EnsureOutlineRenderers();
+
+        bool visible = isActiveAndEnabled && source.enabled && source.gameObject.activeInHierarchy && outlineColor.a > 0f && thickness > 0f;
+        for (int i = 0; i < outlineRenderers.Count; i++)
+        {
+            SpriteRenderer outlineRenderer = outlineRenderers[i];
+            if (outlineRenderer == null)
+                continue;
+
+            outlineRenderer.enabled = visible;
+            if (!visible)
+                continue;
+
+            outlineRenderer.sprite = source.sprite;
+            outlineRenderer.color = outlineColor;
+            outlineRenderer.flipX = source.flipX;
+            outlineRenderer.flipY = source.flipY;
+            outlineRenderer.drawMode = source.drawMode;
+            outlineRenderer.size = source.size;
+            outlineRenderer.tileMode = source.tileMode;
+            outlineRenderer.maskInteraction = source.maskInteraction;
+            outlineRenderer.spriteSortPoint = source.spriteSortPoint;
+            outlineRenderer.sortingLayerID = source.sortingLayerID;
+            outlineRenderer.sortingOrder = source.sortingOrder + sortingOrderOffset;
+            outlineRenderer.sharedMaterial = source.sharedMaterial;
+
+            outlineRenderer.transform.localPosition = OutlineOffsets[i] * thickness;
+            outlineRenderer.transform.localRotation = Quaternion.identity;
+            outlineRenderer.transform.localScale = Vector3.one;
+        }
+    }
+
+    private void SetOutlineEnabled(bool enabled)
+    {
+        for (int i = 0; i < outlineRenderers.Count; i++)
+        {
+            if (outlineRenderers[i] != null)
+                outlineRenderers[i].enabled = enabled;
         }
     }
 }
