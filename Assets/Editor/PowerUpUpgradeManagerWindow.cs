@@ -431,7 +431,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         if (name.Contains("CullThreshold")) return "+1% to +3%";
         if (name.Contains("PenetrationFlat")) return "+1";
         if (name.Contains("ChainHits")) return "+1";
-        if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat")) return "+1 to +2";
+        if (name.Contains("MaxTargets") || name.Contains("ProjectileCount")) return "+1 to +2";
         if (type == WeaponUpgrades.UpgradeType.KnifeRadiusFlat) return "+0.05 to +0.50";
         if (type == WeaponUpgrades.UpgradeType.KnifeRadiusPercent) return "+3% to +15%";
         if (type == WeaponUpgrades.UpgradeType.KnifeLifestealFlat) return "+1% to +8%";
@@ -448,9 +448,6 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         if (type == WeaponUpgrades.UpgradeType.ShooterLifetimePercent) return "+5% to +25%";
         if (type == WeaponUpgrades.UpgradeType.TickRateFlat) return "0.03s to 0.25s";
         if (type == WeaponUpgrades.UpgradeType.TickRatePercent) return "3% to 15%";
-        if (type == WeaponUpgrades.UpgradeType.BurstCountPercent) return "+5% to +25%";
-        if (type == WeaponUpgrades.UpgradeType.BurstSpacingFlat) return "0.01s to 0.15s";
-        if (type == WeaponUpgrades.UpgradeType.BurstSpacingPercent) return "5% to 25%";
         if (type == WeaponUpgrades.UpgradeType.KnifeEchoStrikeChance) return "+8% to +20%";
         if (type == WeaponUpgrades.UpgradeType.ShooterForkShotChance) return "+8% to +20%";
         return "—";

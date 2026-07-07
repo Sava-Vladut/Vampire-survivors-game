@@ -61,13 +61,13 @@ public class WeaponUpgrades : MonoBehaviour
         ShooterCullThreshold,
         ShooterChainHits,
 
-        // --- WeaponTick (TickRateFlat..BurstSpacingPercent) ---
+        // --- WeaponTick ---
         TickRateFlat,
         TickRatePercent,
-        BurstCountFlat,
-        BurstCountPercent,
-        BurstSpacingFlat,
-        BurstSpacingPercent,
+        UnusedTickUpgrade2,
+        UnusedTickUpgrade3,
+        UnusedTickUpgrade4,
+        UnusedTickUpgrade5,
 
         // --- Unique generated effects (appended to preserve serialized enum values) ---
         KnifeEchoStrikeChance,
@@ -131,7 +131,9 @@ public class WeaponUpgrades : MonoBehaviour
         InRange(t, UpgradeType.ShooterDamageFlat, UpgradeType.ShooterChainHits) ||
         t == UpgradeType.ShooterForkShotChance ||
         t == UpgradeType.ShooterPenetrationFlat;
-    private static bool IsTickType(UpgradeType t) => InRange(t, UpgradeType.TickRateFlat, UpgradeType.BurstSpacingPercent);
+    private static bool IsTickType(UpgradeType t) =>
+        t == UpgradeType.TickRateFlat ||
+        t == UpgradeType.TickRatePercent;
     private static bool IsStatusType(UpgradeType t) =>
         InRange(t, UpgradeType.KnifeStatusApplyChanceFlat, UpgradeType.KnifeStatusEffectIndex) ||
         InRange(t, UpgradeType.ShooterStatusApplyChanceFlat, UpgradeType.ShooterStatusEffectIndex);
@@ -249,10 +251,6 @@ public class WeaponUpgrades : MonoBehaviour
         // Tick
         Add("Quickened Strikes -{0}", "Attacks trigger {0} sooner each cycle.", ValueFormat.Seconds2, UpgradeType.TickRateFlat);
         Add("Battle Rhythm +{0}", "Reduces the delay between attacks by {0}.", ValueFormat.Percent, UpgradeType.TickRatePercent);
-        Add("Larger Volley +{0}", "Adds {0} attacks to every burst.", ValueFormat.Int, UpgradeType.BurstCountFlat);
-        Add("Relentless Volley +{0}", "Increases attacks per burst by {0}.", ValueFormat.Percent, UpgradeType.BurstCountPercent);
-        Add("Rapid Burst -{0}", "Each attack within a burst fires {0} sooner.", ValueFormat.Seconds2, UpgradeType.BurstSpacingFlat);
-        Add("Flurry +{0}", "Reduces the delay between burst attacks by {0}.", ValueFormat.Percent, UpgradeType.BurstSpacingPercent);
 
         return table;
     }
@@ -499,18 +497,6 @@ public class WeaponUpgrades : MonoBehaviour
             case UpgradeType.TickRatePercent:
                 tick.interval = Mathf.Max(0.05f, tick.interval * (1f - value));
                 break;
-            case UpgradeType.BurstCountFlat:
-                tick.burstCount += Mathf.RoundToInt(value);
-                break;
-            case UpgradeType.BurstCountPercent:
-                tick.burstCount = Mathf.RoundToInt(tick.burstCount * (1f + value));
-                break;
-            case UpgradeType.BurstSpacingFlat:
-                tick.burstSpacing = Mathf.Max(0.01f, tick.burstSpacing - value);
-                break;
-            case UpgradeType.BurstSpacingPercent:
-                tick.burstSpacing = Mathf.Max(0.01f, tick.burstSpacing * (1f - value));
-                break;
         }
     }
 
@@ -705,10 +691,6 @@ public class WeaponUpgrades : MonoBehaviour
                 return parent.TryGetComponent(out SimpleShooter shooterStatusDuration) && shooterStatusDuration.statusEffectDuration <= epsilon;
             case UpgradeType.TickRatePercent:
                 return parent.TryGetComponent(out WeaponTick tickRate) && tickRate.interval <= epsilon;
-            case UpgradeType.BurstCountPercent:
-                return parent.TryGetComponent(out WeaponTick burstCount) && burstCount.burstCount <= 0;
-            case UpgradeType.BurstSpacingPercent:
-                return parent.TryGetComponent(out WeaponTick burstSpacing) && burstSpacing.burstSpacing <= epsilon;
             default:
                 return false;
         }
@@ -851,7 +833,6 @@ public class WeaponUpgrades : MonoBehaviour
             // Small integer counts (1..2)
             case UpgradeType.KnifeMaxTargetsFlat:
             case UpgradeType.ShooterProjectileCount:
-            case UpgradeType.BurstCountFlat:
                 return Mathf.Round(Random.Range(1f, 2.99f));
 
             // Knife
@@ -875,9 +856,6 @@ public class WeaponUpgrades : MonoBehaviour
             // Tick
             case UpgradeType.TickRateFlat: return Random.Range(0.03f, 0.25f);
             case UpgradeType.TickRatePercent: return Random.Range(0.03f, 0.15f);
-            case UpgradeType.BurstCountPercent: return Random.Range(0.05f, 0.25f);
-            case UpgradeType.BurstSpacingFlat: return Random.Range(0.01f, 0.15f);
-            case UpgradeType.BurstSpacingPercent: return Random.Range(0.05f, 0.25f);
         }
         return 0f;
     }

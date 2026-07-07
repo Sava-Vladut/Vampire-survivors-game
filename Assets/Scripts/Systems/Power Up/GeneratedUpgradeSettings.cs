@@ -210,7 +210,7 @@ public class GeneratedUpgradeSettings : ScriptableObject
         if (name.Contains("CullThreshold")) { min = 0.01f; max = 0.03f; return true; }
         if (name.Contains("ChainHits")) { min = max = 1f; whole = true; return true; }
         if (name.Contains("PenetrationFlat")) { min = max = 1f; whole = true; return true; }
-        if (name.Contains("MaxTargets") || name.Contains("ProjectileCount") || name.Contains("BurstCountFlat"))
+        if (name.Contains("MaxTargets") || name.Contains("ProjectileCount"))
         { min = 1f; max = 2f; whole = true; return true; }
 
         switch (type)
@@ -231,9 +231,6 @@ public class GeneratedUpgradeSettings : ScriptableObject
             case WeaponUpgrades.UpgradeType.ShooterLifetimePercent: min = 0.05f; max = 0.25f; return true;
             case WeaponUpgrades.UpgradeType.TickRateFlat: min = 0.03f; max = 0.25f; return true;
             case WeaponUpgrades.UpgradeType.TickRatePercent: min = 0.03f; max = 0.15f; return true;
-            case WeaponUpgrades.UpgradeType.BurstCountPercent: min = 0.05f; max = 0.25f; return true;
-            case WeaponUpgrades.UpgradeType.BurstSpacingFlat: min = 0.01f; max = 0.15f; return true;
-            case WeaponUpgrades.UpgradeType.BurstSpacingPercent: min = 0.05f; max = 0.25f; return true;
             case WeaponUpgrades.UpgradeType.KnifeEchoStrikeChance: min = 0.08f; max = 0.20f; return true;
             case WeaponUpgrades.UpgradeType.ShooterForkShotChance: min = 0.08f; max = 0.20f; return true;
             default: return false;

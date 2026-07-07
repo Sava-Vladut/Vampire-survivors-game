@@ -5,6 +5,19 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class TwitchSpawnMiniDisplay : MonoBehaviour
 {
+    [System.Serializable]
+    public class ChatCommandEntry
+    {
+        [Tooltip("The exact text chatters can type.")]
+        public string command = "";
+
+        [Tooltip("Short text shown after the command. Leave empty to show only the command.")]
+        public string description = "";
+
+        [Tooltip("If false, this command stays configured but hidden from the mini display.")]
+        public bool visible = true;
+    }
+
     [Header("Sources")]
     [Tooltip("Drag your TwitchListener here.")]
     public TwitchListener listener;
@@ -19,6 +32,18 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
     public string headingHex = "FFD166"; // yellow
     public string valueHex = "00AEEF"; // cyan
     public string noteHex = "9E9E9E"; // gray
+
+    [Header("Chat Commands")]
+    [SerializeField] private bool showChatCommands = true;
+    [SerializeField] private ChatCommandEntry[] chatCommands =
+    {
+        new ChatCommandEntry
+        {
+            command = "LOLW",
+            description = "trigger your chatter action",
+            visible = true
+        }
+    };
 
     private float nextRefresh;
 
@@ -64,7 +89,41 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
         else
             sb.AppendLine($"{n}Power growth:</color> {v}disabled</color>");
 
+        AppendChatCommands(sb, h, v, n);
+
         return sb.ToString();
+    }
+
+    private void AppendChatCommands(StringBuilder sb, string h, string v, string n)
+    {
+        if (!showChatCommands)
+            return;
+
+        sb.AppendLine();
+        sb.AppendLine($"{h}<b>Chat Commands:</b></color>");
+
+        bool anyVisible = false;
+        if (chatCommands != null)
+        {
+            for (int i = 0; i < chatCommands.Length; i++)
+            {
+                ChatCommandEntry entry = chatCommands[i];
+                if (entry == null || !entry.visible || string.IsNullOrWhiteSpace(entry.command))
+                    continue;
+
+                anyVisible = true;
+                string command = entry.command.Trim();
+                string description = entry.description?.Trim();
+
+                if (string.IsNullOrEmpty(description))
+                    sb.AppendLine($"{v}{command}</color>");
+                else
+                    sb.AppendLine($"{v}{command}</color> {n}- {description}</color>");
+            }
+        }
+
+        if (!anyVisible)
+            sb.AppendLine($"{n}No commands configured</color>");
     }
 
     private int GetTotalEnemyPower()
