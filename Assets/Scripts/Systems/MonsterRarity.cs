@@ -133,6 +133,13 @@ public class MonsterRarity : MonoBehaviour
         RerollStats();
     }
 
+    public void ForceRarity(Rarity forcedRarity)
+    {
+        RefreshCachedRefs();
+        rarity = forcedRarity;
+        RerollStats();
+    }
+
     [ContextMenu("Monster Rarity / Reroll Stats Only")]
     public void RerollStats()
     {

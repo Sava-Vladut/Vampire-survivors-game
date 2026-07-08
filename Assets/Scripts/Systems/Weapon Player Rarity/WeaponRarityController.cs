@@ -273,6 +273,34 @@ public class WeaponRarityController : MonoBehaviour
         return true;
     }
 
+    [ContextMenu("Rarity/Tier Upgrade All Modifiers")]
+    public bool UpgradeAppliedModifierTiers()
+    {
+        if (applied.Count == 0) return false;
+
+        var upgrades = CurrentUpgradeInstances();
+        var upgradedSlots = new HashSet<int>();
+        bool changed = false;
+
+        for (int i = 0; i < applied.Count; i++)
+        {
+            int[] slots = applied[i].tierSlots;
+            for (int slotIndex = 0; slotIndex < slots.Length; slotIndex++)
+            {
+                int slot = slots[slotIndex];
+                if (!upgradedSlots.Add(slot)) continue;
+
+                changed |= UpgradeCatalog.ImproveTierSlot(tiers, slot, 1);
+            }
+        }
+
+        if (!changed) return false;
+
+        ApplyUpgradeListFromCleanState(upgrades);
+        FinishAppliedChange();
+        return true;
+    }
+
     /// <summary>
     /// Upgrades rarity by one step, keeps current stats, and tries to add one unique upgrade.
     /// If already at max rarity, rerolls all modifiers at the current rarity instead.

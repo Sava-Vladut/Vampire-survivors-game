@@ -15,7 +15,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     public Button nextButton;
 
     [Header("Action Buttons (Optional, in order)")]
-    [Tooltip("0=Reroll Rarity+Stats, 1=Reroll Stats, 2=Reroll Random Stat, 3=Reroll Into Another, 4=Reroll All Tiers, 5=Upgrade Rarity (keep stats, add unique), 6=Remove Random Upgrade, 7=Add Random Upgrade")]
+    [Tooltip("0=Reroll Rarity+Stats, 1=Reroll Stats, 2=Reroll Random Stat, 3=Reroll Into Another, 4=Reroll All Tiers, 5=Upgrade Rarity (keep stats, add unique), 6=Remove Random Upgrade, 7=Add Random Upgrade, 8=Tier Upgrade")]
     public Button[] actionButtons;
 
     [Header("Labels & Icon (Optional)")]
@@ -223,6 +223,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
             () => RunAnimatedAction(target => target.UpgradeRarityKeepStats()),
             () => RunAnimatedAction(target => target.RemoveRandomUpgrade()),
             () => RunAnimatedAction(target => target.AddRandomUpgrade()),
+            () => RunAnimatedAction(target => target.UpgradeAppliedModifierTiers()),
         };
     }
 

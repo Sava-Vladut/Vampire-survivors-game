@@ -52586,43 +52586,55 @@ MonoBehaviour:
   - prefab: {fileID: 1684754638328981509, guid: 1d85ce27048d219438f8e55222ed1e2e, type: 3}
     weight: 120
     power: 1
-    timeSpawn: {x: 30, y: 600}
+    unlockTime: 30
+    bossable: 1
   - prefab: {fileID: 8071935086045184854, guid: 20b1b856d0ed1084baa5005a40595a85, type: 3}
     weight: 999
     power: 1
-    timeSpawn: {x: 0, y: 30}
+    unlockTime: 0
+    bossable: 1
   - prefab: {fileID: 512284455129393393, guid: 792522d32787ee54ea4cedb2f855adbb, type: 3}
     weight: 20
     power: 2
-    timeSpawn: {x: 30, y: 600}
+    unlockTime: 30
+    bossable: 1
   - prefab: {fileID: 7481324337888534286, guid: 7479a5b97c70a9e428bcdb94fd75aaae, type: 3}
     weight: 10
     power: 5
-    timeSpawn: {x: 60, y: 600}
+    unlockTime: 60
+    bossable: 1
   - prefab: {fileID: 6928968098359842176, guid: 4da359aa95a0a814b8e4946b28240efe, type: 3}
     weight: 3
     power: 12
-    timeSpawn: {x: 120, y: 600}
+    unlockTime: 120
+    bossable: 1
   - prefab: {fileID: 5502326021679982849, guid: 92e9d03cd019e4f4f8bf08d27d1abc27, type: 3}
     weight: 2
     power: 15
-    timeSpawn: {x: 30, y: 600}
+    unlockTime: 30
+    bossable: 1
   - prefab: {fileID: 1298908663581189408, guid: 8e765a3880f43734d9f61b75e02dbb2b, type: 3}
     weight: 5
     power: 7
-    timeSpawn: {x: 0, y: 600}
+    unlockTime: 0
+    bossable: 1
   - prefab: {fileID: 5712685066173663965, guid: fd52a9d9c5752fe4a896301847aa64b8, type: 3}
     weight: 5
     power: 20
-    timeSpawn: {x: 120, y: 600}
+    unlockTime: 120
+    bossable: 1
   - prefab: {fileID: 7968736021941188912, guid: ed418fa15caf0be47af65c6d1fc04c3e, type: 3}
     weight: 2
     power: 25
-    timeSpawn: {x: 200, y: 600}
+    unlockTime: 200
+    bossable: 1
   player: {fileID: 2084376117}
   minSpawnDistance: 10
   maxSpawnDistance: 12
   spawnIncreaseInterval: 20
+  activeTypeRotationInterval: 60
+  minActiveTypes: 2
+  maxActiveTypes: 3
   minPower: 1
   maxSpawnPerPowerRatio: 2
   chanceToUpgradeMinPower: 0.55
@@ -52636,6 +52648,17 @@ MonoBehaviour:
     m_Bits: 1
   maxDistanceFromPlayer: 20
   stopwatchText: {fileID: 1054814950}
+  bossSpawnInterval: 300
+  bossScaleMultiplier: 1.5
+  bossHealthMultiplier: 10
+  bossRewardMultiplier: 10
+  bossOutlineColor: {r: 0.95, g: 0.1, b: 1, a: 1}
+  bossOutlineThickness: 0.08
+  bossOutlineSortingOrderOffset: -2
+  bossHealthSlider: {fileID: 0}
+  bossHealthText: {fileID: 0}
+  bossHealthBarRoot: {fileID: 0}
+  bossVisibilityCamera: {fileID: 0}
   spawnedChatters: []
   chatters: []
 --- !u!4 &1853716956

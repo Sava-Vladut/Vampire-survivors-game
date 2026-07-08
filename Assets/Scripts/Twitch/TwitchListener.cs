@@ -1,9 +1,9 @@
 ﻿using Lexone.UnityTwitchChat;
 using NaughtyAttributes;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class TwitchListener : MonoBehaviour
 {
@@ -18,9 +18,13 @@ public class TwitchListener : MonoBehaviour
         [Tooltip("How much of the chatter's power budget this prefab consumes per spawn.")]
         [Min(1)] public int power = 1;
 
-        [Header("Spawn Gate")]
-        [Tooltip("Seconds since start before this prefab can be selected to spawn.")]
-        [MinMaxSlider(0, 600f)] public Vector2 timeSpawn = new Vector2(0, 600); // eligibility time
+        [Header("Unlock Gate")]
+        [Tooltip("Seconds since start before this prefab can join the rotating active type pool.")]
+        [Min(0f)] public float unlockTime = 0f;
+
+        [Header("Boss")]
+        [Tooltip("If true, this chatter prefab can be selected for timed boss spawns.")]
+        public bool bossable = true;
     }
 
     [Header("Spawn Setup")]
@@ -32,6 +36,14 @@ public class TwitchListener : MonoBehaviour
     [Header("Power Progression")]
     [Tooltip("How often to attempt increasing global min power (seconds)")]
     [SerializeField, Min(0f)] public float spawnIncreaseInterval = 60f;
+
+    [Header("Active Chatter Types")]
+    [Tooltip("How often the active chatter prefab types rotate.")]
+    [SerializeField, Min(0f)] private float activeTypeRotationInterval = 60f;
+    [Tooltip("Minimum number of active chatter prefab types per rotation.")]
+    [SerializeField, Min(1)] private int minActiveTypes = 2;
+    [Tooltip("Maximum number of active chatter prefab types per rotation.")]
+    [SerializeField, Min(1)] private int maxActiveTypes = 3;
 
     public int minPower = 0; // Minimum power level (also drives global cap)
     [Tooltip("Global max active spawns = minPower * ratio")]
@@ -60,13 +72,41 @@ public class TwitchListener : MonoBehaviour
     [Tooltip("Optional: displays stopwatch time (MM:SS)")]
     [SerializeField] private TextMeshProUGUI stopwatchText;
 
+    [Header("Boss Spawns")]
+    [Tooltip("How often a boss spawn is queued. If a previous boss is alive, the spawn waits until it dies.")]
+    [SerializeField, Min(0f)] private float bossSpawnInterval = 300f;
+    [Tooltip("Multiplier applied to the boss prefab's local scale.")]
+    [SerializeField, Min(0.01f)] private float bossScaleMultiplier = 1.5f;
+    [Tooltip("Multiplier applied to final rolled boss max health.")]
+    [SerializeField, Min(1f)] private float bossHealthMultiplier = 10f;
+    [Tooltip("Multiplier applied to the boss loot table's final rolled amount.")]
+    [SerializeField, Min(1)] private int bossRewardMultiplier = 10;
+    [Tooltip("Boss-only outline color applied after MonsterRarity finishes its legendary visual pass.")]
+    [SerializeField] private Color bossOutlineColor = new Color(0.95f, 0.1f, 1f, 1f);
+    [SerializeField, Min(0f)] private float bossOutlineThickness = 0.08f;
+    [SerializeField] private int bossOutlineSortingOrderOffset = -2;
+
+    [Header("Boss UI")]
+    [SerializeField] private Slider bossHealthSlider;
+    [SerializeField] private TextMeshProUGUI bossHealthText;
+    [Tooltip("Optional root to hide/show for the boss health UI. If empty, the slider object is used.")]
+    [SerializeField] private GameObject bossHealthBarRoot;
+    [Tooltip("Optional camera used to decide whether a boss is visible on screen. If empty, Camera.main is used.")]
+    [SerializeField] private Camera bossVisibilityCamera;
+
     // Stopwatch time
     private float elapsedSeconds = 0f;
+    private float nextActiveTypeRotationTime;
+    private float nextBossSpawnTime;
+    private bool bossSpawnPending;
     private PlayerSafeZoneStatus playerSafeZoneStatus;
     private Transform cachedSafeZonePlayer;
     // Track spawned chatters
     [SerializeField] public List<GameObject> spawnedChatters = new();
     [SerializeField] public List<Chatter> chatters = new();
+    private readonly List<ChatterBoss> spawnedBosses = new();
+    private readonly List<int> activeChatterEntryIndices = new();
+    private readonly List<int> eligibleChatterEntryIndices = new();
     private void Start()
     {
         if (player == null) player = transform;
@@ -76,9 +116,20 @@ public class TwitchListener : MonoBehaviour
             minSpawnDistance = maxSpawnDistance;
             maxSpawnDistance = t;
         }
+        if (minActiveTypes > maxActiveTypes)
+        {
+            int t = minActiveTypes;
+            minActiveTypes = maxActiveTypes;
+            maxActiveTypes = t;
+        }
 
         if (IRC.Instance != null)
             IRC.Instance.OnChatMessage += OnChatMessage;
+
+        RefreshActiveChatterTypes();
+        nextActiveTypeRotationTime = activeTypeRotationInterval > 0f ? activeTypeRotationInterval : float.PositiveInfinity;
+        nextBossSpawnTime = bossSpawnInterval > 0f ? bossSpawnInterval : float.PositiveInfinity;
+        SetBossHealthBarVisible(false);
     }
 
     private void Update()
@@ -88,7 +139,14 @@ public class TwitchListener : MonoBehaviour
             if (spawnedChatters[i] == null)
                 spawnedChatters.RemoveAt(i);
 
-        if (player == null) return; // ✅ Prevents MissingReferenceException
+        CleanBossList();
+
+        if (player == null)
+        {
+            SetBossHealthBarVisible(false);
+            return; // ✅ Prevents MissingReferenceException
+        }
+
         bool gameRunning = Time.timeScale > 0f;
         bool timerPausedBySafeZone = IsTimerPausedBySafeZone();
 
@@ -112,6 +170,9 @@ public class TwitchListener : MonoBehaviour
 
             if (alwaysSpawnMaxEnemies)
                 EnsureMaxSpawns();
+
+            HandleActiveChatterTypeRotation();
+            HandleBossSpawning();
         }
 
         if (gameRunning)
@@ -120,6 +181,8 @@ public class TwitchListener : MonoBehaviour
         // Update stopwatch UI
         if (stopwatchText != null)
             stopwatchText.text = FormatTime(elapsedSeconds);
+
+        UpdateBossHealthUI();
     }
 
     private bool IsTimerPausedBySafeZone()
@@ -258,20 +321,20 @@ public class TwitchListener : MonoBehaviour
         return Mathf.Max(0, budget);
     }
 
-    private bool TrySpawnChatter(Chatter chatter, GameObject prefab, string displayNameOverride = null)
+    private GameObject TrySpawnChatter(Chatter chatter, GameObject prefab, string displayNameOverride = null, bool forceNameVisible = false)
     {
-        if (player == null) return false;
-        if (prefab == null) return false;
+        if (player == null) return null;
+        if (prefab == null) return null;
         // Use displayName as the base name
         string baseName = chatter?.tags?.displayName ?? string.Empty;
 
         // Find a valid spawn position
         Vector3? spawnPosNullable = FindValidSpawnPosition();
-        if (!spawnPosNullable.HasValue) return false;
+        if (!spawnPosNullable.HasValue) return null;
         Vector3 spawnPos = spawnPosNullable.Value;
 
         string finalName = string.IsNullOrEmpty(displayNameOverride) ? baseName : displayNameOverride;
-        if (string.IsNullOrEmpty(finalName)) return false;
+        if (string.IsNullOrEmpty(finalName)) return null;
 
         GameObject instantiatedChatter = Instantiate(prefab, spawnPos, Quaternion.identity);
         instantiatedChatter.transform.name = finalName;
@@ -285,7 +348,7 @@ public class TwitchListener : MonoBehaviour
                 stats.nameGUI.text = finalName;
                 stats.nameGUI.color = chatter != null ? chatter.GetNameColor() : Color.white;
                 // Only hide the tag for generic filler spawns that have no real chatter behind them.
-                stats.nameGUI.enabled = chatter != null;
+                stats.nameGUI.enabled = chatter != null || forceNameVisible;
             }
             if (chatter != null)
             {
@@ -305,7 +368,7 @@ public class TwitchListener : MonoBehaviour
         //    chatterMessage.ShowMessage(chatter.message);
 
         Debug.Log($"<color=#fef83e><b>[MESSAGE]</b></color> Spawned ({prefab.name}) for {finalName} at {spawnPos}");
-        return true;
+        return instantiatedChatter;
     }
 
     private void EnsureMaxSpawns()
@@ -329,44 +392,461 @@ public class TwitchListener : MonoBehaviour
 
     private ChatterSpawnEntry PickWeightedEntry()
     {
-        float now = elapsedSeconds; // stopwatch time
+        EnsureActiveChatterTypesAvailable();
 
-        // 1) Sum weights only for entries eligible in [min..max] window
         float total = 0f;
-        foreach (var e in chatterPrefabs)
+        foreach (int entryIndex in activeChatterEntryIndices)
         {
-            if (e != null && e.prefab != null && e.weight > 0f && IsEligibleByTime(now, e.timeSpawn))
+            var e = GetSpawnEntry(entryIndex);
+            if (IsEntryEligible(e))
                 total += e.weight;
         }
-        if (total <= 0f) return null; // nothing eligible at this time
+        if (total <= 0f) return null;
 
-        // 2) Weighted roll among only eligible entries
         float roll = UnityEngine.Random.value * total;
         float acc = 0f;
 
-        foreach (var e in chatterPrefabs)
+        foreach (int entryIndex in activeChatterEntryIndices)
         {
-            if (e == null || e.prefab == null || e.weight <= 0f) continue;
-            if (!IsEligibleByTime(now, e.timeSpawn)) continue;
+            var e = GetSpawnEntry(entryIndex);
+            if (!IsEntryEligible(e)) continue;
 
             acc += e.weight;
             if (roll <= acc)
                 return e;
         }
 
-        // 3) Fallback (shouldn't happen if total>0, but safe)
-        foreach (var e in chatterPrefabs)
+        foreach (int entryIndex in activeChatterEntryIndices)
         {
-            if (e?.prefab != null && IsEligibleByTime(now, e.timeSpawn))
+            var e = GetSpawnEntry(entryIndex);
+            if (IsEntryEligible(e))
                 return e;
         }
+
         return null;
     }
 
-    private static bool IsEligibleByTime(float now, Vector2 window)
+    private void HandleActiveChatterTypeRotation()
     {
-        // window.x = earliest allowed time, window.y = latest allowed time
-        return now >= window.x && now <= window.y;
+        if (activeTypeRotationInterval <= 0f)
+            return;
+
+        while (elapsedSeconds >= nextActiveTypeRotationTime)
+        {
+            RefreshActiveChatterTypes();
+            nextActiveTypeRotationTime += activeTypeRotationInterval;
+        }
+    }
+
+    private void EnsureActiveChatterTypesAvailable()
+    {
+        if (activeChatterEntryIndices.Count <= 0)
+            RefreshActiveChatterTypes();
+    }
+
+    private void RefreshActiveChatterTypes()
+    {
+        activeChatterEntryIndices.Clear();
+        eligibleChatterEntryIndices.Clear();
+
+        if (chatterPrefabs == null || chatterPrefabs.Count == 0)
+            return;
+
+        for (int i = 0; i < chatterPrefabs.Count; i++)
+        {
+            if (IsEntryEligible(chatterPrefabs[i]))
+                eligibleChatterEntryIndices.Add(i);
+        }
+
+        if (eligibleChatterEntryIndices.Count == 0)
+            return;
+
+        int targetCount = UnityEngine.Random.Range(minActiveTypes, maxActiveTypes + 1);
+        if (eligibleChatterEntryIndices.Count < minActiveTypes)
+            targetCount = eligibleChatterEntryIndices.Count;
+        else
+            targetCount = Mathf.Min(targetCount, eligibleChatterEntryIndices.Count);
+
+        for (int i = 0; i < targetCount; i++)
+        {
+            int candidateListIndex = PickWeightedCandidateIndex(eligibleChatterEntryIndices);
+            if (candidateListIndex < 0)
+                break;
+
+            activeChatterEntryIndices.Add(eligibleChatterEntryIndices[candidateListIndex]);
+            eligibleChatterEntryIndices.RemoveAt(candidateListIndex);
+        }
+    }
+
+    private int PickWeightedCandidateIndex(List<int> candidateIndices)
+    {
+        if (candidateIndices == null || candidateIndices.Count == 0)
+            return -1;
+
+        float total = 0f;
+        foreach (int entryIndex in candidateIndices)
+        {
+            var entry = GetSpawnEntry(entryIndex);
+            if (IsEntryEligible(entry))
+                total += entry.weight;
+        }
+
+        if (total <= 0f)
+            return -1;
+
+        float roll = UnityEngine.Random.value * total;
+        float acc = 0f;
+
+        for (int i = 0; i < candidateIndices.Count; i++)
+        {
+            var entry = GetSpawnEntry(candidateIndices[i]);
+            if (!IsEntryEligible(entry))
+                continue;
+
+            acc += entry.weight;
+            if (roll <= acc)
+                return i;
+        }
+
+        for (int i = candidateIndices.Count - 1; i >= 0; i--)
+        {
+            if (IsEntryEligible(GetSpawnEntry(candidateIndices[i])))
+                return i;
+        }
+
+        return -1;
+    }
+
+    private void HandleBossSpawning()
+    {
+        if (bossSpawnInterval <= 0f)
+            return;
+
+        while (elapsedSeconds >= nextBossSpawnTime)
+        {
+            bossSpawnPending = true;
+            nextBossSpawnTime += bossSpawnInterval;
+        }
+
+        if (!bossSpawnPending || HasLivingBoss())
+            return;
+
+        var entry = PickWeightedBossEntry();
+        if (entry == null || entry.prefab == null)
+            return;
+
+        Chatter chatter = chatters.Count > 0 ? chatters[UnityEngine.Random.Range(0, chatters.Count)] : null;
+        string bossDisplayName = chatter != null && chatter.tags != null && !string.IsNullOrWhiteSpace(chatter.tags.displayName)
+            ? chatter.tags.displayName
+            : "Boss";
+        string displayName = bossDisplayName == "Boss" ? "Boss" : $"{bossDisplayName} (Boss)";
+
+        GameObject bossObject = TrySpawnChatter(chatter, entry.prefab, displayName, true);
+        if (bossObject == null)
+            return;
+
+        ConfigureBoss(bossObject, bossDisplayName);
+        bossSpawnPending = false;
+    }
+
+    private ChatterSpawnEntry PickWeightedBossEntry()
+    {
+        EnsureActiveChatterTypesAvailable();
+
+        float total = 0f;
+        foreach (int entryIndex in activeChatterEntryIndices)
+        {
+            var e = GetSpawnEntry(entryIndex);
+            if (IsBossEntryEligible(e))
+                total += e.weight;
+        }
+
+        if (total <= 0f)
+            return null;
+
+        float roll = UnityEngine.Random.value * total;
+        float acc = 0f;
+
+        foreach (int entryIndex in activeChatterEntryIndices)
+        {
+            var e = GetSpawnEntry(entryIndex);
+            if (!IsBossEntryEligible(e))
+                continue;
+
+            acc += e.weight;
+            if (roll <= acc)
+                return e;
+        }
+
+        foreach (int entryIndex in activeChatterEntryIndices)
+        {
+            var e = GetSpawnEntry(entryIndex);
+            if (IsBossEntryEligible(e))
+                return e;
+        }
+
+        return null;
+    }
+
+    private bool IsBossEntryEligible(ChatterSpawnEntry entry)
+    {
+        return IsEntryEligible(entry)
+            && entry.bossable
+            && IsEntryActive(entry);
+    }
+
+    private bool IsEntryEligible(ChatterSpawnEntry entry)
+    {
+        return entry != null
+            && entry.prefab != null
+            && entry.weight > 0f
+            && elapsedSeconds >= entry.unlockTime;
+    }
+
+    private bool IsEntryActive(ChatterSpawnEntry entry)
+    {
+        if (entry == null || chatterPrefabs == null)
+            return false;
+
+        for (int i = 0; i < activeChatterEntryIndices.Count; i++)
+        {
+            if (GetSpawnEntry(activeChatterEntryIndices[i]) == entry)
+                return true;
+        }
+
+        return false;
+    }
+
+    private ChatterSpawnEntry GetSpawnEntry(int index)
+    {
+        if (chatterPrefabs == null || index < 0 || index >= chatterPrefabs.Count)
+            return null;
+
+        return chatterPrefabs[index];
+    }
+
+    private void ConfigureBoss(GameObject bossObject, string bossDisplayName)
+    {
+        if (bossObject == null)
+            return;
+
+        SimpleHealth health = bossObject.GetComponentInChildren<SimpleHealth>();
+        ChatterBoss boss = bossObject.GetComponent<ChatterBoss>();
+        if (boss == null)
+            boss = bossObject.AddComponent<ChatterBoss>();
+
+        boss.Initialize(health, bossDisplayName);
+        spawnedBosses.Add(boss);
+
+        LootTable2D loot = bossObject.GetComponentInChildren<LootTable2D>();
+        if (loot != null)
+            loot.SetDropMultiplier(bossRewardMultiplier);
+
+        if (health != null)
+            StartCoroutine(ApplyBossSetupAfterRarity(health, boss));
+    }
+
+    private System.Collections.IEnumerator ApplyBossSetupAfterRarity(SimpleHealth health, ChatterBoss boss)
+    {
+        yield return null;
+
+        if (health == null)
+            yield break;
+
+        GameObject bossObject = boss != null ? boss.gameObject : health.gameObject;
+        MonsterRarity rarity = bossObject.GetComponentInChildren<MonsterRarity>();
+        if (rarity != null && (boss == null || !boss.LegendaryApplied))
+        {
+            rarity.ForceRarity(MonsterRarity.Rarity.Legendary);
+            boss?.MarkLegendaryApplied();
+        }
+
+        ApplyBossScale(bossObject);
+        ApplyBossOutline(bossObject);
+
+        int bossMaxHealth = Mathf.Max(1, Mathf.RoundToInt(health.maxHealth * bossHealthMultiplier));
+        health.maxHealth = bossMaxHealth;
+        health.currentHealth = bossMaxHealth;
+        health.SyncSlider();
+        health.UpdateStatsText();
+
+        if (boss != null)
+            boss.Initialize(health, boss.DisplayName);
+
+        UpdateBossHealthUI();
+    }
+
+    private void ApplyBossScale(GameObject bossObject)
+    {
+        if (bossObject == null || bossScaleMultiplier <= 0f)
+            return;
+
+        bossObject.transform.localScale *= bossScaleMultiplier;
+    }
+
+    private void ApplyBossOutline(GameObject bossObject)
+    {
+        if (bossObject == null || bossOutlineThickness <= 0f || bossOutlineColor.a <= 0f)
+            return;
+
+        SpriteRenderer[] renderers = bossObject.GetComponentsInChildren<SpriteRenderer>(true);
+        foreach (SpriteRenderer renderer in renderers)
+        {
+            if (renderer == null || IsGeneratedRarityOutline(renderer))
+                continue;
+
+            RaritySpriteOutline2D outline = renderer.GetComponent<RaritySpriteOutline2D>();
+            if (outline == null)
+                outline = renderer.gameObject.AddComponent<RaritySpriteOutline2D>();
+
+            outline.Configure(renderer, bossOutlineColor, bossOutlineThickness, bossOutlineSortingOrderOffset);
+        }
+    }
+
+    private static bool IsGeneratedRarityOutline(SpriteRenderer renderer)
+    {
+        return renderer.transform.parent != null
+            && renderer.name.StartsWith(RaritySpriteOutline2D.OutlineChildName, System.StringComparison.Ordinal);
+    }
+
+    private bool HasLivingBoss()
+    {
+        CleanBossList();
+
+        foreach (var boss in spawnedBosses)
+        {
+            if (IsLivingBoss(boss))
+                return true;
+        }
+
+        return false;
+    }
+
+    private void CleanBossList()
+    {
+        for (int i = spawnedBosses.Count - 1; i >= 0; i--)
+        {
+            if (spawnedBosses[i] == null || !IsLivingBoss(spawnedBosses[i]))
+                spawnedBosses.RemoveAt(i);
+        }
+    }
+
+    private static bool IsLivingBoss(ChatterBoss boss)
+    {
+        return boss != null
+            && boss.gameObject != null
+            && boss.gameObject.activeInHierarchy
+            && boss.Health != null
+            && boss.Health.IsAlive;
+    }
+
+    private void UpdateBossHealthUI()
+    {
+        ChatterBoss visibleBoss = GetVisibleBoss();
+        if (visibleBoss == null || visibleBoss.Health == null)
+        {
+            SetBossHealthBarVisible(false);
+            return;
+        }
+
+        SimpleHealth visibleBossHealth = visibleBoss.Health;
+        if (bossHealthSlider != null)
+        {
+            bossHealthSlider.minValue = 0f;
+            bossHealthSlider.maxValue = visibleBossHealth.maxHealth;
+            bossHealthSlider.value = Mathf.Clamp(visibleBossHealth.currentHealth, 0f, bossHealthSlider.maxValue);
+        }
+
+        if (bossHealthText != null)
+            bossHealthText.text = $"{EscapeRichText(visibleBoss.DisplayName)} {Mathf.RoundToInt(visibleBossHealth.currentHealth)}/{visibleBossHealth.maxHealth}";
+
+        SetBossHealthBarVisible(true);
+    }
+
+    private ChatterBoss GetVisibleBoss()
+    {
+        Camera cam = bossVisibilityCamera != null ? bossVisibilityCamera : Camera.main;
+        if (cam == null)
+            return null;
+
+        foreach (var boss in spawnedBosses)
+        {
+            if (!IsLivingBoss(boss))
+                continue;
+
+            if (IsBossVisibleOnCamera(boss.gameObject, cam))
+                return boss;
+        }
+
+        return null;
+    }
+
+    private static string EscapeRichText(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        return value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+    }
+
+    private static bool IsBossVisibleOnCamera(GameObject bossObject, Camera cam)
+    {
+        if (bossObject == null || cam == null)
+            return false;
+
+        Renderer[] renderers = bossObject.GetComponentsInChildren<Renderer>();
+        if (renderers == null || renderers.Length == 0)
+            return IsWorldPointVisibleOnCamera(bossObject.transform.position, cam);
+
+        foreach (Renderer renderer in renderers)
+        {
+            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
+                continue;
+
+            if (IsBoundsVisibleOnCamera(renderer.bounds, cam))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsBoundsVisibleOnCamera(Bounds bounds, Camera cam)
+    {
+        Vector3 min = bounds.min;
+        Vector3 max = bounds.max;
+
+        return IsWorldPointVisibleOnCamera(bounds.center, cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(min.x, min.y, min.z), cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(min.x, min.y, max.z), cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(min.x, max.y, min.z), cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(min.x, max.y, max.z), cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(max.x, min.y, min.z), cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(max.x, min.y, max.z), cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(max.x, max.y, min.z), cam)
+            || IsWorldPointVisibleOnCamera(new Vector3(max.x, max.y, max.z), cam);
+    }
+
+    private static bool IsWorldPointVisibleOnCamera(Vector3 worldPoint, Camera cam)
+    {
+        Vector3 viewportPoint = cam.WorldToViewportPoint(worldPoint);
+        return viewportPoint.z >= cam.nearClipPlane
+            && viewportPoint.z <= cam.farClipPlane
+            && viewportPoint.x >= 0f
+            && viewportPoint.x <= 1f
+            && viewportPoint.y >= 0f
+            && viewportPoint.y <= 1f;
+    }
+
+    private void SetBossHealthBarVisible(bool visible)
+    {
+        GameObject target = bossHealthBarRoot;
+        if (target == null && bossHealthSlider != null)
+            target = bossHealthSlider.gameObject;
+        if (target == null && bossHealthText != null)
+            target = bossHealthText.gameObject;
+
+        if (target != null && target.activeSelf != visible)
+            target.SetActive(visible);
     }
 
     private static string FormatTime(float seconds)

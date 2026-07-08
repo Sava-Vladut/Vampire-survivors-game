@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 public class SimpleHealth : MonoBehaviour
 {
+    public static event System.Action<DamageReportEntry> AnyDamageTaken;
     public static event System.Action<SimpleHealth> AnyDied;
     public event System.Action<DamageReportEntry> DamageTaken;
     public event System.Action<SimpleHealth> Died;
@@ -734,7 +735,7 @@ public class SimpleHealth : MonoBehaviour
 
     private void RaiseDamageTaken(int amount, DamageType type, GameObject sourceObject, string sourceDetail)
     {
-        DamageTaken?.Invoke(new DamageReportEntry(
+        DamageReportEntry entry = new DamageReportEntry(
             this,
             amount,
             type,
@@ -742,7 +743,10 @@ public class SimpleHealth : MonoBehaviour
             ResolveDamageSourceName(sourceObject),
             string.IsNullOrWhiteSpace(sourceDetail) ? type.ToString() : sourceDetail,
             currentHealth,
-            !IsAlive));
+            !IsAlive);
+
+        DamageTaken?.Invoke(entry);
+        AnyDamageTaken?.Invoke(entry);
     }
 
     public static string ResolveDamageSourceName(GameObject sourceObject)

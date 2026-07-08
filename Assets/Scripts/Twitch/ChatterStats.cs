@@ -32,7 +32,16 @@ public class ChatterStats : MonoBehaviour
         if (mr != null)
         {
             ApplyPowerScaling(mr);
-            mr.RerollRarity(); // Reroll after scaling has been applied.
+            ChatterBoss boss = GetComponent<ChatterBoss>();
+            if (boss != null)
+            {
+                mr.ForceRarity(MonsterRarity.Rarity.Legendary);
+                boss.MarkLegendaryApplied();
+            }
+            else
+            {
+                mr.RerollRarity(); // Reroll after scaling has been applied.
+            }
         }
     }
 

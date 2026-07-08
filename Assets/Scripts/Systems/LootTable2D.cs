@@ -41,6 +41,8 @@ public class LootTable2D : MonoBehaviour
     {
         new AmountOption(){ amount = 1, weight = 1f }
     };
+    [Tooltip("Multiplier applied after the weighted amount is picked. Bosses can raise this at runtime.")]
+    [SerializeField, Min(1)] private int dropMultiplier = 1;
 
     [Header("Roll Settings")]
     [SerializeField] private bool rollOnAwake = true;
@@ -85,7 +87,7 @@ public class LootTable2D : MonoBehaviour
     /// </summary>
     public GameObject RollAndSpawn()
     {
-        int count = PickAmount();
+        int count = PickAmount() * Mathf.Max(1, dropMultiplier);
         if (count <= 0)
         {
             Debug.LogWarning($"[LootTable2D] Picked non-positive amount ({count}) on {name}. Nothing spawned.");
@@ -120,6 +122,11 @@ public class LootTable2D : MonoBehaviour
 
         lastSpawned = last;
         return lastSpawned;
+    }
+
+    public void SetDropMultiplier(int multiplier)
+    {
+        dropMultiplier = Mathf.Max(1, multiplier);
     }
 
     /// <summary>
