@@ -69,15 +69,6 @@ public class TooltipTarget : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
             full += "<sprite name=\"heart_0\"> " + (int)health.currentHealth + "/" + health.maxHealth;
 
-            ChatterStats cs = GetComponent<ChatterStats>();
-
-            if (cs != null)
-            {
-                full += "\n<color=#1212FC><sprite name=\"power\"> " + cs.power + "</color>";
-
-            }
-
-
             if (!string.IsNullOrWhiteSpace(extra))
             {
                 if (!string.IsNullOrWhiteSpace(full)) full += "\n";

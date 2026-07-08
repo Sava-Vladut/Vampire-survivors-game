@@ -187,6 +187,12 @@ public class GeneratedUpgradeSettings : ScriptableObject
         };
     }
 
+    public static bool TryGetDefaultWeaponRange(WeaponUpgrades.UpgradeType type, out float min, out float max, out bool wholeNumbers) =>
+        TryGetWeaponDefaults(type, out min, out max, out wholeNumbers);
+
+    public static bool TryGetDefaultAccessoryRange(AccessoriesUpgrades.StatUpgradeType type, out float min, out float max, out bool wholeNumbers) =>
+        TryGetAccessoryDefaults(type, out min, out max, out wholeNumbers);
+
     private static PowerUpRarity RollDefaultRarity()
     {
         return (PowerUpRarity)UnityEngine.Random.Range(0, 3);

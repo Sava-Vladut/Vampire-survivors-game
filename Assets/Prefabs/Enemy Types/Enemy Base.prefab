@@ -283,6 +283,8 @@ MonoBehaviour:
   hitFlashDuration: 0.5
   damagePopupPrefab: {fileID: 2924289727893196464, guid: a8aea507684d95a4c8b9545db21cf2cd, type: 3}
   popupOffset: {x: 0, y: 1, z: 0}
+  showStatusAfflictionPopups: 1
+  afflictionPopupExtraOffset: {x: 0, y: 0.35, z: 0}
   currentHealth: 0
   currentTemporaryHealth: 0
   healthStatsText: {fileID: 0}
@@ -446,7 +448,7 @@ MonoBehaviour:
   nameGUI: {fileID: 4184141167979861600}
   power: 0
   rarityBiasPerPower: 0.02
-  statRangeMultPerPower: 0.01
+  statRangeMultPerPower: 0.02
   cadenceBoostPerPower: 0.01
   maxRangeMultiplier: 10
   maxRarityBiasFactor: 1
@@ -642,6 +644,7 @@ MonoBehaviour:
   autoUpdate: 1
   appendExtraFromHealth: 1
   appendFromInventoryActivator: 0
+  appendFromTooltipProviders: 1
   textColor: {r: 0.9150943, g: 0.09927912, b: 0.09927912, a: 1}
   uiAnchorOverride: {fileID: 0}
 --- !u!114 &6779586150045975674
