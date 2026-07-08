@@ -276,6 +276,7 @@ public class AppliedUpgradeTooltipProvider : MonoBehaviour, ITooltipTextProvider
         {
             PowerUpRarity.Uncommon => "U",
             PowerUpRarity.Rare => "R",
+            PowerUpRarity.Curse => "CUR",
             _ => "C",
         };
     }

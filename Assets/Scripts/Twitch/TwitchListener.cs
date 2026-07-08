@@ -51,6 +51,10 @@ public class TwitchListener : MonoBehaviour
     public float chanceToUpgradeMinPower = 0.6f; // Chance to upgrade chatter power on spawn
     [SerializeField] private bool alwaysSpawnMaxEnemies = false;
 
+    [Header("Curse Power Ups")]
+    [Tooltip("How much global chatter min power increases when the player chooses a cursed power-up.")]
+    [SerializeField, Min(0)] private int cursePowerIncrease = 5;
+
     // Track time for next power increase attempt
     private float nextSpawnIncreaseTime = 0f;
 
@@ -235,6 +239,21 @@ public class TwitchListener : MonoBehaviour
     {
         if (IRC.Instance != null)
             IRC.Instance.OnChatMessage -= OnChatMessage;
+    }
+
+    public void ApplyCursePowerUpPenalty()
+    {
+        IncreaseOverallChatterPower(cursePowerIncrease);
+    }
+
+    public void IncreaseOverallChatterPower(int amount)
+    {
+        int delta = Mathf.Max(0, amount);
+        if (delta <= 0)
+            return;
+
+        minPower += delta;
+        Debug.Log($"[TwitchListener] Curse increased global chatter min power by {delta}. Min power is now {minPower}.");
     }
 
 

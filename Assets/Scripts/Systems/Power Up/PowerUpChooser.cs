@@ -7,7 +7,8 @@ public enum PowerUpRarity
 {
     Common,
     Uncommon,
-    Rare
+    Rare,
+    Curse
 }
 
 [System.Serializable]
@@ -58,6 +59,7 @@ public class PowerUp
         {
             PowerUpRarity.Uncommon => "Uncommon",
             PowerUpRarity.Rare => "Rare",
+            PowerUpRarity.Curse => "Curse",
             _ => "Common",
         };
     }
@@ -68,6 +70,7 @@ public class PowerUp
         {
             PowerUpRarity.Uncommon => "#33CC66",
             PowerUpRarity.Rare => "#4D8DFF",
+            PowerUpRarity.Curse => "#B84DFF",
             _ => "#D9D9D9",
         };
     }
@@ -86,6 +89,10 @@ public class PowerUpChooser : MonoBehaviour
     [Header("Stats UI")]
     [Tooltip("Optional: TextMeshProUGUI that will show 'Accessories: cur/max' and 'Weapons: cur/max'.")]
     [SerializeField] private TextMeshProUGUI statsSummaryText;
+
+    [Header("Curse")]
+    [Tooltip("Optional Twitch listener to punish cursed upgrade picks. Auto-found if left empty.")]
+    [SerializeField] private TwitchListener twitchListener;
 
     // Track the actual active instance for each PowerUp (either in-scene object or instantiated prefab)
     private readonly Dictionary<PowerUp, GameObject> spawnedInstances = new();
@@ -154,8 +161,21 @@ public class PowerUpChooser : MonoBehaviour
         selectedPowerUps.Add(selected);
         powerUps.RemoveAt(index);
 
+        ApplyCursePenalty(selected);
         RefreshStatsText();
         return true;
+    }
+
+    private void ApplyCursePenalty(PowerUp selected)
+    {
+        if (selected == null || selected.rarity != PowerUpRarity.Curse)
+            return;
+
+        TwitchListener listener = twitchListener;
+        if (listener == null)
+            listener = Object.FindAnyObjectByType<TwitchListener>();
+
+        listener?.ApplyCursePowerUpPenalty();
     }
 
     /// <summary>

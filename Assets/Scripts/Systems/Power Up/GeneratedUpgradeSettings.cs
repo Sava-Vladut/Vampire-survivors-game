@@ -173,6 +173,7 @@ public class GeneratedUpgradeSettings : ScriptableObject
         {
             PowerUpRarity.Uncommon => 1f,
             PowerUpRarity.Rare => 1f,
+            PowerUpRarity.Curse => 0.05f,
             _ => 1f,
         };
     }
@@ -183,6 +184,7 @@ public class GeneratedUpgradeSettings : ScriptableObject
         {
             PowerUpRarity.Uncommon => 1.5f,
             PowerUpRarity.Rare => 2f,
+            PowerUpRarity.Curse => 3f,
             _ => 1f,
         };
     }
@@ -195,7 +197,8 @@ public class GeneratedUpgradeSettings : ScriptableObject
 
     private static PowerUpRarity RollDefaultRarity()
     {
-        return (PowerUpRarity)UnityEngine.Random.Range(0, 3);
+        var rarities = (PowerUpRarity[])Enum.GetValues(typeof(PowerUpRarity));
+        return rarities[UnityEngine.Random.Range(0, rarities.Length)];
     }
 
     private static bool TryGetWeaponDefaults(WeaponUpgrades.UpgradeType type, out float min, out float max, out bool whole)

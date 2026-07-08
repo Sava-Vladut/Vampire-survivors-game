@@ -287,19 +287,27 @@ public class SimpleShooter : MonoBehaviour
                 int finalDamage = RollHitDamage();
 
                 SpawnProjectile(origin.position, shootDir, finalDamage);
-
-                if (forkShotChance > 0f && Random.value <= Mathf.Clamp01(forkShotChance))
-                {
-                    int forkDamage = Mathf.Max(1, Mathf.RoundToInt(finalDamage * Mathf.Clamp01(forkShotDamagePercent)));
-                    float forkAngle = Mathf.Max(0f, forkShotAngle);
-                    SpawnProjectile(origin.position, Rotate(shootDir, -forkAngle), forkDamage);
-                    SpawnProjectile(origin.position, Rotate(shootDir, forkAngle), forkDamage);
-                }
             }
         }
     }
 
-    private void SpawnProjectile(Vector3 originPosition, Vector2 shootDir, int finalDamage)
+    public void TrySpawnForkOnHit(Vector3 hitPosition, Vector2 incomingDirection, int hitDamage)
+    {
+        if (bulletPrefab == null || forkShotChance <= 0f || Random.value > Mathf.Clamp01(forkShotChance))
+            return;
+
+        if (incomingDirection.sqrMagnitude < 0.0001f)
+            incomingDirection = transform.right;
+
+        incomingDirection.Normalize();
+
+        int forkDamage = Mathf.Max(1, Mathf.RoundToInt(hitDamage * Mathf.Clamp01(forkShotDamagePercent)));
+        float forkAngle = Mathf.Max(0f, forkShotAngle);
+        SpawnProjectile(hitPosition, Rotate(incomingDirection, -forkAngle), forkDamage, false);
+        SpawnProjectile(hitPosition, Rotate(incomingDirection, forkAngle), forkDamage, false);
+    }
+
+    private void SpawnProjectile(Vector3 originPosition, Vector2 shootDir, int finalDamage, bool canTriggerForkShot = true)
     {
         var bullet = Instantiate(bulletPrefab, originPosition, Quaternion.identity);
         int configuredChainHits = ConfigureChainHits(bullet);
@@ -321,6 +329,7 @@ public class SimpleShooter : MonoBehaviour
             bulletDamage.statusEffectOnHit = statusEffectOnHit;
             bulletDamage.statusEffectDuration = statusEffectDuration;
             bulletDamage.sourceObject = gameObject;
+            bulletDamage.canTriggerForkShot = canTriggerForkShot;
         }
 
         if (bullet.TryGetComponent<ExplosionDamage2D>(out var explosionDamage))

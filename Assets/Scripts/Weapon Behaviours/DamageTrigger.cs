@@ -31,6 +31,7 @@ public class BulletDamageTrigger : MonoBehaviour
     public StatusEffectSystem.StatusType statusEffectOnHit = StatusEffectSystem.StatusType.Bleeding;
     [Tooltip("Duration in seconds for the applied status effect.")]
     public float statusEffectDuration = 3f;
+    [HideInInspector] public bool canTriggerForkShot = true;
 
 
     [Header("Impact VFX")]
@@ -96,6 +97,8 @@ public class BulletDamageTrigger : MonoBehaviour
         if (knockbackForce > 0f)
             ApplyKnockback(other);
 
+        TryTriggerForkShot(other);
+
         if (!allowMultipleHits)
         {
             _alreadyHit.Add(health);
@@ -132,13 +135,7 @@ public class BulletDamageTrigger : MonoBehaviour
         if (impactPrefab == null) return;
 
         // Best-effort contact point for triggers
-        Vector3 hitPos = fallback;
-        try
-        {
-            Vector2 cp = other.ClosestPoint(transform.position);
-            hitPos = new Vector3(cp.x, cp.y, fallback.z);
-        }
-        catch { /* ignore */ }
+        Vector3 hitPos = GetImpactPosition(other, fallback);
 
         // Instantiate the impact and copy the *current* bullet damage to it (if it has ExplosionDamage2D)
         var impactInstance = Instantiate(impactPrefab, hitPos, Quaternion.identity);
@@ -150,6 +147,40 @@ public class BulletDamageTrigger : MonoBehaviour
             explosionInstance.sourceObject = GetDamageSource();
             explosionInstance.sourceDetail = "Projectile Explosion";
         }
+    }
+
+    private void TryTriggerForkShot(Collider2D other)
+    {
+        if (!canTriggerForkShot)
+            return;
+
+        GameObject damageSource = GetDamageSource();
+        SimpleShooter shooter = damageSource != null ? damageSource.GetComponentInParent<SimpleShooter>() : null;
+        if (shooter == null)
+            return;
+
+        shooter.TrySpawnForkOnHit(GetImpactPosition(other, transform.position), GetTravelDirection(), damageAmount);
+    }
+
+    private Vector3 GetImpactPosition(Collider2D other, Vector3 fallback)
+    {
+        try
+        {
+            Vector2 cp = other.ClosestPoint(transform.position);
+            return new Vector3(cp.x, cp.y, fallback.z);
+        }
+        catch
+        {
+            return fallback;
+        }
+    }
+
+    private Vector2 GetTravelDirection()
+    {
+        if (TryGetComponent(out Rigidbody2D rb) && rb.linearVelocity.sqrMagnitude > 0.0001f)
+            return rb.linearVelocity.normalized;
+
+        return transform.right;
     }
 
     private GameObject GetDamageSource()

@@ -21,6 +21,8 @@ public class SimpleHealth : MonoBehaviour
         public readonly string SourceDetail;
         public readonly float HealthAfter;
         public readonly bool WasLethal;
+        public readonly int ArmorMitigatedAmount;
+        public readonly int EvasionDodgedAmount;
 
         public DamageReportEntry(
             SimpleHealth target,
@@ -30,7 +32,9 @@ public class SimpleHealth : MonoBehaviour
             string sourceName,
             string sourceDetail,
             float healthAfter,
-            bool wasLethal)
+            bool wasLethal,
+            int armorMitigatedAmount = 0,
+            int evasionDodgedAmount = 0)
         {
             Target = target;
             Amount = amount;
@@ -40,6 +44,8 @@ public class SimpleHealth : MonoBehaviour
             SourceDetail = sourceDetail;
             HealthAfter = healthAfter;
             WasLethal = wasLethal;
+            ArmorMitigatedAmount = Mathf.Max(0, armorMitigatedAmount);
+            EvasionDodgedAmount = Mathf.Max(0, evasionDodgedAmount);
         }
     }
 
@@ -587,6 +593,7 @@ public class SimpleHealth : MonoBehaviour
         }
 
         float dmg = incomingDamage;
+        int armorMitigatedAmount = 0;
 
         if (mitigatable)
         {
@@ -609,13 +616,16 @@ public class SimpleHealth : MonoBehaviour
                         tmpUI.text = "Dodged";
                     }
                 }
+                RaiseDamageTaken(0, type, sourceObject, sourceDetail, 0, Mathf.RoundToInt(incomingDamage));
                 return;
             }
 
             if (type == DamageType.Physical)
             {
                 // Armor (small-hit mitigation) first
+                float damageBeforeArmor = dmg;
                 dmg = ApplyArmor(dmg);
+                armorMitigatedAmount = Mathf.Max(0, Mathf.RoundToInt(damageBeforeArmor - dmg));
             }
 
             // Then elemental/type resistance
@@ -641,7 +651,7 @@ public class SimpleHealth : MonoBehaviour
 
         RegisterRunDamage(displayedDamage, type);
         currentHealth = Mathf.Clamp(currentHealth - dmg, 0, maxHealth);
-        RaiseDamageTaken(displayedDamage, type, sourceObject, sourceDetail);
+        RaiseDamageTaken(displayedDamage, type, sourceObject, sourceDetail, armorMitigatedAmount, 0);
         ApplyThorns();
         SyncSlider();
         UpdateVolume();
@@ -795,7 +805,13 @@ public class SimpleHealth : MonoBehaviour
             thornTargetHealth.TakeDamage(thornsDamage, DamageType.Physical, false, false, gameObject, "Thorns");
     }
 
-    private void RaiseDamageTaken(int amount, DamageType type, GameObject sourceObject, string sourceDetail)
+    private void RaiseDamageTaken(
+        int amount,
+        DamageType type,
+        GameObject sourceObject,
+        string sourceDetail,
+        int armorMitigatedAmount = 0,
+        int evasionDodgedAmount = 0)
     {
         DamageReportEntry entry = new DamageReportEntry(
             this,
@@ -805,7 +821,9 @@ public class SimpleHealth : MonoBehaviour
             ResolveDamageSourceName(sourceObject),
             string.IsNullOrWhiteSpace(sourceDetail) ? type.ToString() : sourceDetail,
             currentHealth,
-            !IsAlive);
+            !IsAlive,
+            armorMitigatedAmount,
+            evasionDodgedAmount);
 
         DamageTaken?.Invoke(entry);
         AnyDamageTaken?.Invoke(entry);

@@ -34,6 +34,8 @@ public class StatsReportLog : MonoBehaviour
     private int enemiesKilled;
     private int damageReceivedTotal;
     private int damageDealtTotal;
+    private int damageMitigatedByArmour;
+    private int damageDodgedByEvasion;
     private bool isBound;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -117,7 +119,7 @@ public class StatsReportLog : MonoBehaviour
 
     private void OnAnyDamageTaken(SimpleHealth.DamageReportEntry entry)
     {
-        if (entry.Target == null || entry.Amount <= 0)
+        if (entry.Target == null)
             return;
 
         int typeIndex = GetTypeIndex(entry.Type);
@@ -126,10 +128,19 @@ public class StatsReportLog : MonoBehaviour
 
         if (IsTargetPlayer(entry.Target))
         {
+            damageMitigatedByArmour += entry.ArmorMitigatedAmount;
+            damageDodgedByEvasion += entry.EvasionDodgedAmount;
+
+            if (entry.Amount <= 0)
+                return;
+
             damageReceivedTotal += entry.Amount;
             damageReceivedByType[typeIndex] += entry.Amount;
             return;
         }
+
+        if (entry.Amount <= 0)
+            return;
 
         if (IsPlayerOwnedSource(entry.SourceObject))
         {
@@ -213,6 +224,8 @@ public class StatsReportLog : MonoBehaviour
         builder.AppendLine("<b>Run Stats</b>");
         builder.AppendLine($"Enemies Killed: <color=#FFD166>{enemiesKilled}</color>");
         builder.AppendLine($"Damage Received: <color=#FF6666>{damageReceivedTotal}</color>");
+        builder.AppendLine($"Damage Mitigated by Armour: <color=#66D9EF>{damageMitigatedByArmour}</color>");
+        builder.AppendLine($"Damage Dodged by Evasion: <color=#66D9EF>{damageDodgedByEvasion}</color>");
         builder.AppendLine($"Damage Dealt: <color=#80FF80>{damageDealtTotal}</color>");
 
         builder.AppendLine();
@@ -305,6 +318,8 @@ public class StatsReportLog : MonoBehaviour
         enemiesKilled = 0;
         damageReceivedTotal = 0;
         damageDealtTotal = 0;
+        damageMitigatedByArmour = 0;
+        damageDodgedByEvasion = 0;
         weaponDamage.Clear();
 
         if (reportText != null)

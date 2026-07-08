@@ -264,3 +264,6 @@ MonoBehaviour:
   - rarity: 2
     frequency: 0.2
     strengthMultiplier: 2
+  - rarity: 3
+    frequency: 0.05
+    strengthMultiplier: 3
