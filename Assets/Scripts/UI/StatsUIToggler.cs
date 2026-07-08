@@ -3,16 +3,16 @@ using UnityEngine.Rendering;
 
 public class StatsUIToggler : MonoBehaviour
 {
-    [Tooltip("UI object to show when holding the key.")]
+    [Tooltip("UI object to show when toggled on.")]
     [SerializeField] private GameObject statsUI;
 
     [Tooltip("Another UI element to hide when stats UI is shown.")]
     [SerializeField] private GameObject otherUI;
 
-    [Tooltip("Key to hold to show stats.")]
+    [Tooltip("Key to press to toggle stats.")]
     [SerializeField] private KeyCode toggleKey = KeyCode.Tab;
 
-    [Tooltip("Time scale when holding the key (1 = normal, 0.5 = half speed, 0 = paused).")]
+    [Tooltip("Time scale while stats are shown (1 = normal, 0.5 = half speed, 0 = paused).")]
     [Range(0f, 1f)]
     [SerializeField] private float slowTimeScale = 0.5f;
 
@@ -21,6 +21,7 @@ public class StatsUIToggler : MonoBehaviour
     private float timeScaleBeforeSlowMo = 1f;
     private bool ownsSlowMo;
     private bool wasOtherUIActive;
+    private bool isStatsVisible;
 
     private void Start()
     {
@@ -35,32 +36,23 @@ public class StatsUIToggler : MonoBehaviour
     {
         bool externallyPaused = Mathf.Approximately(Time.timeScale, 0f);
 
-        if (Input.GetKey(toggleKey))
+        if (Input.GetKeyDown(toggleKey))
         {
-            if (statsUI && !statsUI.activeSelf)
+            if (isStatsVisible)
             {
-                statsUI.SetActive(true);
-
-                // Only hide otherUI if it is currently active.
-                if (otherUI && otherUI.activeSelf)
-                {
-                    wasOtherUIActive = true;
-                    otherUI.SetActive(false);
-                }
-                else
-                {
-                    wasOtherUIActive = false;
-                }
+                HideStatsUI();
+                ReleaseSlowMo();
             }
+            else
+            {
+                ShowStatsUI();
+            }
+        }
 
-            // Only apply slow-mo if not externally paused.
+        if (isStatsVisible)
+        {
             if (!externallyPaused)
                 ApplySlowMo();
-        }
-        else
-        {
-            HideStatsUI();
-            ReleaseSlowMo();
         }
     }
 
@@ -95,13 +87,34 @@ public class StatsUIToggler : MonoBehaviour
 
         ownsSlowMo = false;
 
-        // If another system paused the game while Tab was held, let that pause win.
+        // If another system paused the game while stats were open, let that pause win.
         if (!Mathf.Approximately(Time.timeScale, 0f))
             Time.timeScale = Mathf.Approximately(timeScaleBeforeSlowMo, slowTimeScale) ? 1f : timeScaleBeforeSlowMo;
     }
 
+    private void ShowStatsUI()
+    {
+        isStatsVisible = true;
+
+        if (statsUI && !statsUI.activeSelf)
+            statsUI.SetActive(true);
+
+        // Only hide otherUI if it is currently active.
+        if (otherUI && otherUI.activeSelf)
+        {
+            wasOtherUIActive = true;
+            otherUI.SetActive(false);
+        }
+        else
+        {
+            wasOtherUIActive = false;
+        }
+    }
+
     private void HideStatsUI()
     {
+        isStatsVisible = false;
+
         if (statsUI && statsUI.activeSelf)
             statsUI.SetActive(false);
 

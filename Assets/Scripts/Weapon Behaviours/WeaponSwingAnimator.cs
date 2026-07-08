@@ -16,11 +16,18 @@ public class WeaponSwingAnimator : MonoBehaviour
     [Tooltip("The sorting order of the swinging sprite.")]
     public int sortingOrder = 1;
 
+    [Header("Arc Targeting")]
+    [Tooltip("If true, directed swings rotate the arc toward the selected target.")]
+    [SerializeField] private bool aimSwingAtTarget = true;
+    [Tooltip("If true, swings without a target still mirror with the player's facing.")]
+    [SerializeField] private bool mirrorFallbackWithPlayerFacing = true;
+
     private GameObject _spriteObject;
     private GameObject _spriteHolder;
     private SpriteRenderer _weaponRenderer;
     private Coroutine _swingCoroutine;
     private Knife _knife;
+    private bool _swingingTowardTarget;
     [Header("Flip Settings")]
     [Tooltip("Optional: Source SpriteRenderer to mirror flipX from (e.g., player sprite). If not set, will search in parents.")]
     [SerializeField] private SpriteRenderer playerSpriteRenderer;
@@ -63,21 +70,37 @@ public class WeaponSwingAnimator : MonoBehaviour
 
     void LateUpdate()
     {
-        // Mirror the swing with the player's facing (flipX)
-        if (playerSpriteRenderer != null && _spriteObject != null)
+        if (_spriteObject == null) return;
+
+        if (_swingingTowardTarget)
+        {
+            SetPivotScaleX(1f);
+        }
+        // Mirror fallback swings with the player's facing (flipX).
+        else if (mirrorFallbackWithPlayerFacing && playerSpriteRenderer != null)
         {
             bool flip = !playerSpriteRenderer.flipX;
-            Vector3 ls = _spriteObject.transform.localScale;
-            ls.x = flip ? -1f : 1f;
-            _spriteObject.transform.localScale = ls;
-
-            // Ensure the weapon sprite itself isn't double-flipped
-            if (_weaponRenderer != null)
-                _weaponRenderer.flipX = false;
+            SetPivotScaleX(flip ? -1f : 1f);
         }
     }
 
     public void Swing()
+    {
+        StartSwing(Vector2.right, false);
+    }
+
+    public void SwingTowards(Vector3 targetWorldPosition, Vector3 originWorldPosition)
+    {
+        Vector2 direction = targetWorldPosition - originWorldPosition;
+        StartSwing(direction, true);
+    }
+
+    public void SwingTowards(Vector2 worldDirection)
+    {
+        StartSwing(worldDirection, true);
+    }
+
+    private void StartSwing(Vector2 worldDirection, bool hasTargetDirection)
     {
         if (gameObject.activeInHierarchy)
         {
@@ -85,18 +108,27 @@ public class WeaponSwingAnimator : MonoBehaviour
             {
                 StopCoroutine(_swingCoroutine);
             }
-            _swingCoroutine = StartCoroutine(SwingCoroutine());
+
+            bool useTargetDirection = aimSwingAtTarget && hasTargetDirection && worldDirection.sqrMagnitude > 0.0001f;
+            _swingCoroutine = StartCoroutine(SwingCoroutine(worldDirection, useTargetDirection));
         }
     }
 
-    private IEnumerator SwingCoroutine()
+    private IEnumerator SwingCoroutine(Vector2 worldDirection, bool useTargetDirection)
     {
+        _swingingTowardTarget = useTargetDirection;
+        if (_swingingTowardTarget)
+        {
+            SetPivotScaleX(1f);
+        }
+
         _spriteObject.SetActive(true);
 
         float halfDuration = swingDuration / 2f;
+        float baseAngle = useTargetDirection ? GetLocalAimAngle(worldDirection) : 0f;
 
-        Quaternion swingStartOffset = Quaternion.Euler(0, 0, swingAngle / 2f);
-        Quaternion swingEndOffset = Quaternion.Euler(0, 0, -swingAngle / 2f);
+        Quaternion swingStartOffset = Quaternion.Euler(0, 0, baseAngle + swingAngle / 2f);
+        Quaternion swingEndOffset = Quaternion.Euler(0, 0, baseAngle - swingAngle / 2f);
 
         float timer = 0f;
         while (timer < halfDuration)
@@ -116,6 +148,23 @@ public class WeaponSwingAnimator : MonoBehaviour
         }
 
         _spriteObject.SetActive(false);
+        _swingingTowardTarget = false;
         _swingCoroutine = null;
+    }
+
+    private float GetLocalAimAngle(Vector2 worldDirection)
+    {
+        Vector3 localDirection = transform.InverseTransformDirection(worldDirection.normalized);
+        return Mathf.Atan2(localDirection.y, localDirection.x) * Mathf.Rad2Deg;
+    }
+
+    private void SetPivotScaleX(float x)
+    {
+        Vector3 ls = _spriteObject.transform.localScale;
+        ls.x = x;
+        _spriteObject.transform.localScale = ls;
+
+        if (_weaponRenderer != null)
+            _weaponRenderer.flipX = false;
     }
 }

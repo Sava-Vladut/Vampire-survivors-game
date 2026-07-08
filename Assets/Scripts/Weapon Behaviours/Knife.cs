@@ -255,12 +255,6 @@ public class Knife : MonoBehaviour
     }
     public void OnKnifeTick()
     {
-        if (swingAnimator != null)
-        {
-            swingAnimator.Swing();
-        }
-
-
         if (selfSfxObject != null)
             Instantiate(selfSfxObject, transform.position, Quaternion.identity);
 
@@ -270,6 +264,7 @@ public class Knife : MonoBehaviour
         if (shootClip != null) shootSource?.PlayOneShot(shootClip);
 
         bool anyHit = false;
+        bool swingStarted = false;
         int targetsHit = 0;
         int targetCap = (maxTargetsPerTick > 0) ? maxTargetsPerTick : int.MaxValue;
         HashSet<Collider2D> processed = new HashSet<Collider2D>();
@@ -294,6 +289,12 @@ public class Knife : MonoBehaviour
             {
                 var col = selected[hi];
                 if (col == null) continue;
+
+                if (!swingStarted && swingAnimator != null)
+                {
+                    swingAnimator.SwingTowards(col.transform.position, origin.position);
+                    swingStarted = true;
+                }
 
                 processed.Add(col);
 
@@ -363,6 +364,11 @@ public class Knife : MonoBehaviour
                         return; // stop after cap reached
                 }
             }
+        }
+
+        if (!swingStarted && swingAnimator != null)
+        {
+            swingAnimator.Swing();
         }
 
         // no targets anywhere → fling a slash VFX near first origin (or self)
