@@ -24,6 +24,7 @@ public class UpgradeRanges
     [Header("Knife-only")]
     public Vector2 knifeRadiusMult = new Vector2(1.10f, 1.30f);
     public Vector2 knifeSplashRadiusMult = new Vector2(1.10f, 1.30f);
+    public Vector2 knifeOnslaughtOnKillChance = new Vector2(0.15f, 0.35f);
     // lifesteal and multi-target removed
 
     [Header("Shooter-only")]

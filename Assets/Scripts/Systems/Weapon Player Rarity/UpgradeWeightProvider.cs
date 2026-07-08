@@ -27,7 +27,8 @@ public enum UpgradeType
     KnifeSplash,
     
     ShooterRange,
-    ShooterAccuracy
+    ShooterAccuracy,
+    KnifeOnslaughtOnKill
 }
 
 /// <summary>
@@ -59,6 +60,7 @@ public class UpgradeWeightTable
     [Header("Knife")]
     [Min(0f)] public float knifeRadius = 1f;
     [Min(0f)] public float knifeSplash = 1f;
+    [Min(0f)] public float knifeOnslaughtOnKill = 1f;
     
 
     [Header("Shooter")]
@@ -84,6 +86,7 @@ public class UpgradeWeightTable
         UpgradeType.PoisonResist => poisonResist,
         UpgradeType.KnifeRadius => knifeRadius,
         UpgradeType.KnifeSplash => knifeSplash,
+        UpgradeType.KnifeOnslaughtOnKill => knifeOnslaughtOnKill,
         
         UpgradeType.ShooterRange => shooterRange,
         UpgradeType.ShooterAccuracy => shooterAccuracy,

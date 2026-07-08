@@ -24,6 +24,7 @@ public class TierSystem
     [Header("Knife")]
     [Range(1, 5)] public int knifeRadius = 5;
     [Range(1, 5)] public int knifeSplashRadius = 5;
+    [Range(1, 5)] public int knifeOnslaughtOnKill = 5;
 
     [Header("Shooter")]
     [Range(1, 5)] public int shooterLifetime = 5;
@@ -54,6 +55,7 @@ public class TierSystem
 
         knifeRadius = Roll(rng);
         knifeSplashRadius = Roll(rng);
+        knifeOnslaughtOnKill = Roll(rng);
 
         shooterLifetime = Roll(rng);
         shooterForce = Roll(rng);

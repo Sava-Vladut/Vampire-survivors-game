@@ -15,6 +15,8 @@ public sealed class WeaponContext
     public Rarity rarity;
     public TierSystem tiers;
     public UpgradeRanges ranges;
+    public GameObject sourceObject;
+    public StatusEffectSystem ownerStatusEffects;
 
     // adapters present = supported
     public IDamageModule damage;
@@ -335,6 +337,37 @@ public sealed class KnifeSplashUpgrade : IUpgrade
         c.knife.SplashRadius = before + delta;
         notes.AppendLine($"+{(mult - 1f) * 100f:F0}% AOE ({c.Roman(c.tiers.knifeSplashRadius)})");
         return () => c.knife.SplashRadius -= delta;
+    }
+}
+
+public sealed class KnifeOnslaughtOnKillUpgrade : IUpgrade
+{
+    private const float OnslaughtDuration = 3f;
+
+    public bool IsApplicable(WeaponContext c) => c.knife != null && c.ownerStatusEffects != null && c.rarity >= Rarity.Rare;
+
+    public Action Apply(WeaponContext c, StringBuilder notes)
+    {
+        var r = c.tiers.Scale(c.ranges.knifeOnslaughtOnKillChance, c.tiers.knifeOnslaughtOnKill);
+        float chance = Mathf.Clamp01(c.RangeFloat(r.x, r.y));
+        GameObject source = c.sourceObject;
+        StatusEffectSystem statusEffects = c.ownerStatusEffects;
+
+        void HandleDamageTaken(SimpleHealth.DamageReportEntry entry)
+        {
+            if (!entry.WasLethal || entry.SourceObject != source)
+                return;
+
+            if (UnityEngine.Random.value > chance)
+                return;
+
+            statusEffects?.AddStatus(StatusEffectSystem.StatusType.Onslaught, OnslaughtDuration, 1f, source);
+        }
+
+        SimpleHealth.AnyDamageTaken += HandleDamageTaken;
+        notes.AppendLine($"{chance * 100f:F0}% Onslaught on kill ({c.Roman(c.tiers.knifeOnslaughtOnKill)})");
+
+        return () => SimpleHealth.AnyDamageTaken -= HandleDamageTaken;
     }
 }
 

@@ -39,6 +39,7 @@ public static class UpgradeCatalog
         {
             Add(true, new KnifeSplashUpgrade(), UpgradeType.KnifeSplash);
             Add(true, new KnifeRadiusUpgrade(), UpgradeType.KnifeRadius);
+            Add(c.rarity >= Rarity.Rare && c.ownerStatusEffects != null, new KnifeOnslaughtOnKillUpgrade(), UpgradeType.KnifeOnslaughtOnKill);
         }
 
         if (c.shooter != null)
@@ -82,6 +83,7 @@ public static class UpgradeCatalog
             4 => tiers.critMultiplier,
             5 => tiers.knifeRadius,
             6 => tiers.knifeSplashRadius,
+            7 => tiers.knifeOnslaughtOnKill,
             9 => tiers.shooterLifetime,
             10 => tiers.shooterForce,
             12 => tiers.shooterAccuracy,
@@ -96,7 +98,7 @@ public static class UpgradeCatalog
             _ => 0
         };
 
-        return slotIndex is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 9 or 10 or 12 or 13 or 14 or 15 or 16 or 17 or 18 or 19 or 20;
+        return slotIndex is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 9 or 10 or 12 or 13 or 14 or 15 or 16 or 17 or 18 or 19 or 20;
     }
 
     private static bool SetTierSlot(TierSystem tiers, int slotIndex, int newValue)
@@ -111,6 +113,7 @@ public static class UpgradeCatalog
             case 4: return SetTier(ref tiers.critMultiplier, newValue);
             case 5: return SetTier(ref tiers.knifeRadius, newValue);
             case 6: return SetTier(ref tiers.knifeSplashRadius, newValue);
+            case 7: return SetTier(ref tiers.knifeOnslaughtOnKill, newValue);
             case 9: return SetTier(ref tiers.shooterLifetime, newValue);
             case 10: return SetTier(ref tiers.shooterForce, newValue);
             case 12: return SetTier(ref tiers.shooterAccuracy, newValue);
@@ -169,6 +172,7 @@ public static class UpgradeMetadata
         if (upgrade is CritUpgrade) return Set(out entry, UpgradeType.Crit, "Crit", 3, 4);
         if (upgrade is KnifeRadiusUpgrade) return Set(out entry, UpgradeType.KnifeRadius, "Range", 5);
         if (upgrade is KnifeSplashUpgrade) return Set(out entry, UpgradeType.KnifeSplash, "AOE", 6);
+        if (upgrade is KnifeOnslaughtOnKillUpgrade) return Set(out entry, UpgradeType.KnifeOnslaughtOnKill, "Onslaught On Kill", 7);
         if (upgrade is ShooterRangeUpgrade) return Set(out entry, UpgradeType.ShooterRange, "Projectile Speed", 9, 10);
         if (upgrade is ShooterAccuracyUpgrade) return Set(out entry, UpgradeType.ShooterAccuracy, "Accuracy", 12);
         if (upgrade is HpFlatUpgrade) return Set(out entry, UpgradeType.HpFlat, "Max Health", 13);
@@ -196,6 +200,7 @@ public static class UpgradeMetadata
             UpgradeType.Crit => new UpgradeMetadataEntry(type, "Crit", 3, 4),
             UpgradeType.KnifeRadius => new UpgradeMetadataEntry(type, "Range", 5),
             UpgradeType.KnifeSplash => new UpgradeMetadataEntry(type, "AOE", 6),
+            UpgradeType.KnifeOnslaughtOnKill => new UpgradeMetadataEntry(type, "Onslaught On Kill", 7),
             UpgradeType.ShooterRange => new UpgradeMetadataEntry(type, "Projectile Speed", 9, 10),
             UpgradeType.ShooterAccuracy => new UpgradeMetadataEntry(type, "Accuracy", 12),
             UpgradeType.HpFlat => new UpgradeMetadataEntry(type, "Max Health", 13),

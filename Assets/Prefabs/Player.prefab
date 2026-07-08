@@ -13813,6 +13813,8 @@ MonoBehaviour:
     sprite: {fileID: -8901806944868120648, guid: 4b5361714946a8042adfa5fcca1edff8, type: 3}
   - type: 12
     sprite: {fileID: -85348311355891410, guid: a4abadd4aba99844986b3c4361263316, type: 3}
+  - type: 13
+    sprite: {fileID: -6699378961173639370, guid: 160bfe671e910074db97fbc63da1c8e9, type: 3}
 --- !u!1 &6292668212798895234
 GameObject:
   m_ObjectHideFlags: 0

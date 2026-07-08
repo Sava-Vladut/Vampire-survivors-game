@@ -28,6 +28,7 @@ public class WeaponTick : MonoBehaviour
 
     private Coroutine tickCoroutine;
     private PlayerSafeZoneStatus safeZoneStatus;
+    private StatusEffectSystem statusEffects;
 
     private void Awake()
     {
@@ -81,7 +82,7 @@ public class WeaponTick : MonoBehaviour
         {
             // Read the current Inspector values every cycle so Play Mode changes
             // take effect without restarting the coroutine.
-            float currentInterval = Mathf.Max(0f, interval);
+            float currentInterval = Mathf.Max(0f, interval) / GetAttackSpeedMultiplier();
 
             // Wait until the next cycle/burst start
             if (useUnscaledTime)
@@ -100,7 +101,7 @@ public class WeaponTick : MonoBehaviour
                     // Spacing between ticks inside the burst (skip after the last one)
                     if (i < currentBurstCount - 1)
                     {
-                        float currentBurstSpacing = Mathf.Max(0f, burstSpacing);
+                        float currentBurstSpacing = Mathf.Max(0f, burstSpacing) / GetAttackSpeedMultiplier();
                         if (useUnscaledTime)
                             yield return new WaitForSecondsRealtime(currentBurstSpacing);
                         else
@@ -122,7 +123,7 @@ public class WeaponTick : MonoBehaviour
 
     private IEnumerator DoBurstOnce()
     {
-        float safeBurstSpacing = Mathf.Max(0f, burstSpacing);
+        float safeBurstSpacing = Mathf.Max(0f, burstSpacing) / GetAttackSpeedMultiplier();
         int safeBurstCount = Mathf.Max(1, burstCount);
 
         if (!burstEnabled || safeBurstCount <= 1)
@@ -158,6 +159,14 @@ public class WeaponTick : MonoBehaviour
             safeZoneStatus = GetComponentInParent<PlayerSafeZoneStatus>();
 
         return safeZoneStatus != null && safeZoneStatus.IsSafeZoneActive;
+    }
+
+    private float GetAttackSpeedMultiplier()
+    {
+        if (statusEffects == null)
+            statusEffects = GetComponentInParent<StatusEffectSystem>();
+
+        return statusEffects != null ? Mathf.Max(0.01f, statusEffects.AttackSpeedMultiplier) : 1f;
     }
 
     private void OnDisable()

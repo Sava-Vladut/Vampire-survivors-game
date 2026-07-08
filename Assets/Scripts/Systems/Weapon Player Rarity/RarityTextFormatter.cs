@@ -169,6 +169,11 @@ public static class RarityTextFormatter
             var r = tiers.ScaleMultiplierLike(ranges.knifeSplashRadiusMult, tiers.knifeSplashRadius);
             AddPercentRangeLine(lines, "AOE", r.x - 1f, r.y - 1f, tiers.knifeSplashRadius);
         }
+        else if (upgrade == UpgradeType.KnifeOnslaughtOnKill)
+        {
+            var r = tiers.Scale(ranges.knifeOnslaughtOnKillChance, tiers.knifeOnslaughtOnKill);
+            lines.Add($"{r.x * 100f:F0}-{r.y * 100f:F0}% Onslaught on kill ({RomanStatic(tiers.knifeOnslaughtOnKill)})");
+        }
         else if (upgrade == UpgradeType.ShooterRange)
         {
             var r = tiers.Scale(ranges.shooterForceAdd, tiers.shooterForce);

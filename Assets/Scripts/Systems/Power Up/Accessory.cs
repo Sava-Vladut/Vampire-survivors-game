@@ -45,6 +45,8 @@ public class Accessory : MonoBehaviour
             var iconObj = go.transform.Find("Icon");
             if (iconObj != null) iconImage = iconObj.GetComponent<Image>();
             if (iconImage != null) iconImage.sprite = icon;
+
+            ConfigureAppliedUpgradeTooltip(go);
         }
 
         onAwake?.Invoke();
@@ -52,6 +54,21 @@ public class Accessory : MonoBehaviour
         // Initial content from active children only
         RebuildDescriptionsFromActiveChildren();
         RefreshUI();
+    }
+
+    private void ConfigureAppliedUpgradeTooltip(GameObject statsObject)
+    {
+        if (statsObject == null) return;
+
+        if (!statsObject.TryGetComponent(out TooltipTarget _))
+            statsObject.AddComponent<TooltipTarget>();
+
+        var provider = statsObject.GetComponent<AppliedUpgradeTooltipProvider>();
+        if (provider == null)
+            provider = statsObject.AddComponent<AppliedUpgradeTooltipProvider>();
+
+        string title = string.IsNullOrWhiteSpace(AccesoryName) ? name : AccesoryName;
+        provider.Configure(transform, title);
     }
 
     private void OnEnable() { NotifyRootToRefresh(); }

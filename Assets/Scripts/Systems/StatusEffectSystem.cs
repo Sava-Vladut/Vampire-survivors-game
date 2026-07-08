@@ -26,6 +26,7 @@ public class StatusEffectSystem : MonoBehaviour
         Slow = 10,
         Fear = 11,
         Cursed = 12,
+        Onslaught = 13,
         // Add more: Poison, Stunned, Shielded, etc.
     }
 
@@ -81,6 +82,12 @@ public class StatusEffectSystem : MonoBehaviour
     [Tooltip("Movement multiplier while Slow is active.")]
     [SerializeField, Min(0f)] private float slowMoveMultiplier = 0.5f;
 
+    [Header("Onslaught")]
+    [Tooltip("Attack speed multiplier while Onslaught is active.")]
+    [SerializeField, Min(0f)] private float onslaughtAttackSpeedMultiplier = 1.50f;
+    [Tooltip("Movement multiplier while Onslaught is active.")]
+    [SerializeField, Min(0f)] private float onslaughtMoveMultiplier = 1.10f;
+
     [Header("Curse")]
     [Tooltip("Healing received multiplier while Cursed is active.")]
     [SerializeField, Min(0f)] private float cursedHealingReceivedMultiplier = 0.5f;
@@ -111,6 +118,7 @@ public class StatusEffectSystem : MonoBehaviour
     public float CurrentXpMultiplier => enableXpBoost ? currentXpMultiplier : 1f;
     public float HealingReceivedMultiplier => HasStatus(StatusType.Cursed) ? cursedHealingReceivedMultiplier : 1f;
     public float StatusDurationReceivedMultiplier => HasStatus(StatusType.Cursed) ? cursedStatusDurationMultiplier : 1f;
+    public float AttackSpeedMultiplier => HasStatus(StatusType.Onslaught) ? onslaughtAttackSpeedMultiplier : 1f;
 
     public float MovementSpeedMultiplier
     {
@@ -124,6 +132,8 @@ public class StatusEffectSystem : MonoBehaviour
                 multiplier *= speedMoveMultiplier;
             if (HasStatus(StatusType.Slow))
                 multiplier *= slowMoveMultiplier;
+            if (HasStatus(StatusType.Onslaught))
+                multiplier *= onslaughtMoveMultiplier;
 
             return multiplier;
         }
@@ -413,5 +423,8 @@ public class StatusEffectSystem : MonoBehaviour
 
     [ContextMenu("Test: Add Regeneration (5s, 1s tick)")]
     private void _TestAddRegen() => AddStatus(StatusType.Regeneration, 5f, 1f);
+
+    [ContextMenu("Test: Add Onslaught (5s)")]
+    private void _TestAddOnslaught() => AddStatus(StatusType.Onslaught, 5f, 1f);
 #endif
 }

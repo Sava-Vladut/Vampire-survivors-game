@@ -423,6 +423,8 @@ public class WeaponRarityController : MonoBehaviour
             rarity = current,
             tiers = tiers,
             ranges = ranges,
+            sourceObject = gameObject,
+            ownerStatusEffects = GetComponentInParent<StatusEffectSystem>(),
             damage = damage,
             crit = crit,
             attack = tick,

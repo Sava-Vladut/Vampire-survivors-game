@@ -140,6 +140,10 @@ public class SimpleHealth : MonoBehaviour
     [SerializeField] private GameObject damagePopupPrefab;
     [Tooltip("Offset from entity position when spawning damage popup.")]
     [SerializeField] private Vector3 popupOffset = new Vector3(0f, 1f, 0f);
+    [Tooltip("If true, starting a negative status effect shows text like Shocked! or Ignited!.")]
+    [SerializeField] private bool showStatusAfflictionPopups = true;
+    [Tooltip("Extra offset added to the normal damage popup offset for affliction text.")]
+    [SerializeField] private Vector3 afflictionPopupExtraOffset = new Vector3(0f, 0.35f, 0f);
 
     private AudioSource soundSource;
     [HideInInspector] public float currentHealth;
@@ -161,6 +165,7 @@ public class SimpleHealth : MonoBehaviour
     // Cached components for performance
     private DPSChecker _dpsChecker;
     private StatusEffectSystem _statusEffectSystem;
+    private bool _subscribedToStatusPopups;
 
     // Stats UI (matches Knife.cs pattern)
     [HideInInspector] public TextMeshProUGUI healthStatsText;
@@ -180,6 +185,10 @@ public class SimpleHealth : MonoBehaviour
     private float lastDashSpeed;
     private float lastDashDuration;
     private float lastDashCooldown;
+    private bool healthSliderInitialActive;
+    private bool healthTextInitialActive;
+    private bool capturedHealthBarInitialState;
+    private static bool healthBarsVisible = true;
     private static EnemyChaser[] cachedThornsTargets = System.Array.Empty<EnemyChaser>();
     private static float nextThornsTargetRefreshTime;
     private const float ThornsTargetRefreshInterval = 0.2f;
@@ -191,6 +200,8 @@ public class SimpleHealth : MonoBehaviour
 
     private void Awake()
     {
+        CaptureHealthBarInitialState();
+
         if (startingHealth <= 0) startingHealth = maxHealth;
         currentHealth = Mathf.Clamp(startingHealth, 0, maxHealth);
         SyncSlider();
@@ -201,6 +212,7 @@ public class SimpleHealth : MonoBehaviour
         soundSource = GetComponent<AudioSource>();
         _dpsChecker = GetComponent<DPSChecker>();
         _statusEffectSystem = GetComponent<StatusEffectSystem>();
+        SubscribeToStatusPopups();
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -239,6 +251,7 @@ public class SimpleHealth : MonoBehaviour
                 iconImage.sprite = iconSprite;
         }
 
+        SetHealthBarVisible(healthBarsVisible);
         UpdateVolume();
         UpdateStatsText();
     }
@@ -264,6 +277,8 @@ public class SimpleHealth : MonoBehaviour
     {
         if (_hasOriginalColor && spriteRenderer != null)
             spriteRenderer.color = _originalColor;
+
+        SubscribeToStatusPopups();
     }
 
     private void OnDisable()
@@ -273,6 +288,7 @@ public class SimpleHealth : MonoBehaviour
         _flashRoutine = null;
         _invulnerabilityRoutine = null;
         isInvulnerable = false;
+        UnsubscribeFromStatusPopups();
     }
 
     private void Update()
@@ -703,6 +719,52 @@ public class SimpleHealth : MonoBehaviour
         return safeZoneStatus != null && safeZoneStatus.IsSafeZoneActive;
     }
 
+    private void SubscribeToStatusPopups()
+    {
+        if (_subscribedToStatusPopups)
+            return;
+
+        if (_statusEffectSystem == null)
+            _statusEffectSystem = GetComponent<StatusEffectSystem>();
+
+        if (_statusEffectSystem == null)
+            return;
+
+        _statusEffectSystem.OnStart += HandleStatusEffectStarted;
+        _subscribedToStatusPopups = true;
+    }
+
+    private void UnsubscribeFromStatusPopups()
+    {
+        if (!_subscribedToStatusPopups || _statusEffectSystem == null)
+            return;
+
+        _statusEffectSystem.OnStart -= HandleStatusEffectStarted;
+        _subscribedToStatusPopups = false;
+    }
+
+    private void HandleStatusEffectStarted(StatusEffectSystem.StatusType statusType)
+    {
+        if (!showStatusAfflictionPopups || damagePopupPrefab == null)
+            return;
+
+        if (!DamagePopup2D.TryGetAfflictionPopup(statusType, out _, out _))
+            return;
+
+        GameObject popup = Instantiate(damagePopupPrefab, transform);
+        popup.transform.localPosition = popupOffset + afflictionPopupExtraOffset;
+
+        if (popup.TryGetComponent(out DamagePopup2D damagePopup))
+        {
+            damagePopup.SetStatusAffliction(statusType);
+            return;
+        }
+
+        DamagePopup2D childPopup = popup.GetComponentInChildren<DamagePopup2D>();
+        if (childPopup != null)
+            childPopup.SetStatusAffliction(statusType);
+    }
+
     private void ApplyThorns()
     {
         if (thornsDamage <= 0 || !CompareTag("Player")) return;
@@ -974,6 +1036,41 @@ public class SimpleHealth : MonoBehaviour
                 healthText.text = $"{Mathf.RoundToInt(currentHealth)}/{maxHealth}";
             }
         }
+    }
+
+    public void SetHealthBarVisible(bool visible)
+    {
+        CaptureHealthBarInitialState();
+
+        if (healthSlider != null)
+            healthSlider.gameObject.SetActive(visible && healthSliderInitialActive);
+
+        if (healthText != null)
+            healthText.gameObject.SetActive(visible && healthTextInitialActive);
+    }
+
+    private void CaptureHealthBarInitialState()
+    {
+        if (capturedHealthBarInitialState)
+            return;
+
+        healthSliderInitialActive = healthSlider != null && healthSlider.gameObject.activeSelf;
+        healthTextInitialActive = healthText != null && healthText.gameObject.activeSelf;
+        capturedHealthBarInitialState = true;
+    }
+
+    public static int SetAllHealthBarsVisible(bool visible)
+    {
+        healthBarsVisible = visible;
+        SimpleHealth[] healthSystems = FindObjectsByType<SimpleHealth>();
+
+        foreach (SimpleHealth health in healthSystems)
+        {
+            if (health != null)
+                health.SetHealthBarVisible(visible);
+        }
+
+        return healthSystems.Length;
     }
 
     public void IncreaseMaxHealth(int amount)

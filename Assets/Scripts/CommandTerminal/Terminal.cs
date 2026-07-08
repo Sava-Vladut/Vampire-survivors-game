@@ -85,6 +85,41 @@ namespace CommandTerminal
             Buffer.HandleLog(string.Format(format, message), type);
         }
 
+        [RegisterCommand(Name = "healthbars", Help = "Enables or disables HealthSystem health bars. Usage: healthbars <on|off>", MinArgCount = 1, MaxArgCount = 1)]
+        static void CommandHealthBars(CommandArg[] args) {
+            if (!TryParseHealthBarVisibility(args[0].String, out bool visible)) {
+                Shell.IssueErrorMessage("Expected on/off, true/false, enable/disable, or 1/0.");
+                return;
+            }
+
+            int updatedCount = SimpleHealth.SetAllHealthBarsVisible(visible);
+            Log("Health bars {0} on {1} HealthSystem instance(s).", visible ? "enabled" : "disabled", updatedCount);
+        }
+
+        static bool TryParseHealthBarVisibility(string value, out bool visible) {
+            switch (value.Trim().ToLowerInvariant()) {
+                case "1":
+                case "on":
+                case "yes":
+                case "true":
+                case "enable":
+                case "enabled":
+                    visible = true;
+                    return true;
+                case "0":
+                case "off":
+                case "no":
+                case "false":
+                case "disable":
+                case "disabled":
+                    visible = false;
+                    return true;
+                default:
+                    visible = false;
+                    return false;
+            }
+        }
+
         public void SetState(TerminalState new_state) {
             input_fix = true;
             cached_command_text = command_text;

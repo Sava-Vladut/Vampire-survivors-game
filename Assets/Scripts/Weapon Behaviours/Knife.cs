@@ -16,6 +16,8 @@ public enum TargetingMode
 
 public class Knife : MonoBehaviour
 {
+    private const float DamageOutputMultiplier = 0.5f;
+
     [Header("Targeting")]
     [SerializeField, Tooltip("How to prioritize targets within the radius.")]
     public TargetingMode targetingMode = TargetingMode.Closest;
@@ -150,12 +152,27 @@ public class Knife : MonoBehaviour
             if (iconImage != null && weaponSprite != null)
                 iconImage.sprite = weaponSprite;
 
+            ConfigureAppliedUpgradeTooltip(go);
         }
 
         wt = GetComponent<WeaponTick>();
         swingAnimator = GetComponent<WeaponSwingAnimator>();
         UpdateStatsText();
         UpdateRangeVisual();
+    }
+
+    private void ConfigureAppliedUpgradeTooltip(GameObject statsObject)
+    {
+        if (statsObject == null) return;
+
+        if (!statsObject.TryGetComponent(out TooltipTarget _))
+            statsObject.AddComponent<TooltipTarget>();
+
+        var provider = statsObject.GetComponent<AppliedUpgradeTooltipProvider>();
+        if (provider == null)
+            provider = statsObject.AddComponent<AppliedUpgradeTooltipProvider>();
+
+        provider.Configure(transform, transform.name);
     }
 
     private void Update()
@@ -407,10 +424,13 @@ public class Knife : MonoBehaviour
     public int RollHitDamage()
     {
         int baseDamage = RollBaseDamage();
+        int finalDamage;
         if (Random.value < Mathf.Clamp01(critChance))
-            return PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
+            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
+        else
+            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
 
-        return PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
+        return Mathf.Max(1, Mathf.RoundToInt(finalDamage * DamageOutputMultiplier));
     }
 
     private string GetDamageRangeText()

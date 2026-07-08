@@ -5,6 +5,8 @@ using UnityEngine.Serialization;
 
 public class SimpleShooter : MonoBehaviour
 {
+    private const float DamageOutputMultiplier = 0.5f;
+
     [Header("Projectile Settings")]
     [Tooltip("Projectile prefab instantiated whenever this weapon fires.")]
     public GameObject bulletPrefab;
@@ -100,10 +102,25 @@ public class SimpleShooter : MonoBehaviour
             if (iconImage != null && weaponSprite != null)
                 iconImage.sprite = weaponSprite;
 
+            ConfigureAppliedUpgradeTooltip(go);
         }
 
         wt = GetComponent<WeaponTick>();
         UpdateStatsText();
+    }
+
+    private void ConfigureAppliedUpgradeTooltip(GameObject statsObject)
+    {
+        if (statsObject == null) return;
+
+        if (!statsObject.TryGetComponent(out TooltipTarget _))
+            statsObject.AddComponent<TooltipTarget>();
+
+        var provider = statsObject.GetComponent<AppliedUpgradeTooltipProvider>();
+        if (provider == null)
+            provider = statsObject.AddComponent<AppliedUpgradeTooltipProvider>();
+
+        provider.Configure(transform, transform.name);
     }
 
     public void ChangeBullet(GameObject newBullet)
@@ -376,10 +393,13 @@ public class SimpleShooter : MonoBehaviour
     public int RollHitDamage()
     {
         int baseDamage = RollBaseDamage();
+        int finalDamage;
         if (Random.value < Mathf.Clamp01(critChance))
-            return PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
+            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
+        else
+            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
 
-        return PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
+        return Mathf.Max(1, Mathf.RoundToInt(finalDamage * DamageOutputMultiplier));
     }
 
     private string GetDamageRangeText()
