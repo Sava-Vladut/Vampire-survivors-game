@@ -351,8 +351,8 @@ public class AppliedUpgradeTooltipProvider : MonoBehaviour, ITooltipTextProvider
         if (root == null)
             return "Item";
 
-        if (root.TryGetComponent(out Accessory accessory) && !string.IsNullOrWhiteSpace(accessory.AccesoryName))
-            return accessory.AccesoryName;
+            if (root.TryGetComponent(out Accessory accessory) && !string.IsNullOrWhiteSpace(accessory.DisplayName))
+                return accessory.DisplayName;
 
         return root.name;
     }

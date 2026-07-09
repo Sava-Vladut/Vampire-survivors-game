@@ -35,13 +35,8 @@ public class PowerUpInserter : MonoBehaviour
             return;
         }
 
-        // Avoid adding if it's already in the available or selected lists.
-        bool alreadyExists = powerUpChooser.powerUps.Exists(p => p.powerUpName == powerUpToAdd.powerUpName) ||
-                             powerUpChooser.selectedPowerUps.Exists(p => p.powerUpName == powerUpToAdd.powerUpName);
-
-        if (!alreadyExists)
+        if (powerUpChooser.TryAddAvailable(powerUpToAdd))
         {
-            powerUpChooser.powerUps.Add(powerUpToAdd);
             Debug.Log($"'{powerUpToAdd.powerUpName}' was added to the available power-ups.", this);
         }
     }

@@ -46,9 +46,11 @@ public class ExplosionDamage2D : MonoBehaviour
     /// <summary>Triggers the explosion manually if explodeOnAwake is false.</summary>
     public void DoExplosion()
     {
-
         Vector2 center = transform.position;
-        var cols = Physics2D.OverlapCircleAll(center, radius, damageLayers);
+        PlayerAccessoryStats stats = GetSourceAccessoryStats();
+        float effectiveRadius = GetEffectiveRadius(stats);
+        ScaleVisual(effectiveRadius);
+        var cols = Physics2D.OverlapCircleAll(center, effectiveRadius, damageLayers);
         foreach (var col in cols)
         {
             if (col == null) continue;
@@ -57,31 +59,34 @@ public class ExplosionDamage2D : MonoBehaviour
             if (health == null || !health.IsAlive) continue;
             if (_hitOnce.Contains(health)) continue;
 
-            int dmg = CalculateDamage(center, col);
+            int dmg = CalculateDamage(center, col, effectiveRadius, stats);
             if (dmg > 0)
             {
                 health.TakeDamage(dmg, damageType, true, true, sourceObject != null ? sourceObject : gameObject, sourceDetail);
-                ApplyKnockback(center, col);
+                ApplyKnockback(center, col, stats);
                 _hitOnce.Add(health);
             }
         }
     }
 
-    private int CalculateDamage(Vector2 center, Collider2D col)
+    private int CalculateDamage(Vector2 center, Collider2D col, float effectiveRadius, PlayerAccessoryStats stats)
     {
-        if (!useDistanceFalloff) return baseDamage;
+        int effectiveBaseDamage = sourceObject == null && stats != null ? stats.ApplyGlobalDamage(baseDamage) : baseDamage;
+        if (!useDistanceFalloff) return effectiveBaseDamage;
 
         Vector2 closest = col.ClosestPoint(center);
         float dist = Vector2.Distance(center, closest);
-        float t = Mathf.Clamp01(dist / Mathf.Max(0.0001f, radius));
+        float t = Mathf.Clamp01(dist / Mathf.Max(0.0001f, effectiveRadius));
 
-        float scaled = baseDamage * (1f - t);
+        float scaled = effectiveBaseDamage * (1f - t);
         return Mathf.CeilToInt(scaled);
     }
 
-    private void ApplyKnockback(Vector2 center, Collider2D col)
+    private void ApplyKnockback(Vector2 center, Collider2D col, PlayerAccessoryStats stats)
     {
-        if (knockbackForce <= 0f) return;
+        float effectiveKnockback = knockbackForce;
+        if (stats != null) effectiveKnockback += stats.KnockbackStrengthBonus;
+        if (effectiveKnockback <= 0f) return;
 
         Vector2 closestPoint = col.ClosestPoint(center);
         Vector2 direction = closestPoint - center;
@@ -92,7 +97,7 @@ public class ExplosionDamage2D : MonoBehaviour
         if (direction.sqrMagnitude <= 0.0001f)
             direction = Vector2.right;
 
-        Vector2 impulse = direction.normalized * knockbackForce;
+        Vector2 impulse = direction.normalized * effectiveKnockback;
         if (col.GetComponentInParent<EnemyChaser>() is EnemyChaser chaser)
         {
             chaser.ApplyKnockback(impulse);
@@ -101,6 +106,28 @@ public class ExplosionDamage2D : MonoBehaviour
 
         if (col.GetComponentInParent<Snappy2DController>() is Snappy2DController playerMovement)
             playerMovement.ApplyKnockback(impulse);
+    }
+
+    private float GetEffectiveRadius(PlayerAccessoryStats stats)
+    {
+        return Mathf.Max(0f, radius * (stats != null ? stats.WeaponAreaMultiplier : 1f));
+    }
+
+    private PlayerAccessoryStats GetSourceAccessoryStats()
+    {
+        PlayerAccessoryStats stats = PlayerAccessoryStats.Find(sourceObject != null ? sourceObject.transform : null);
+        if (stats != null) return stats;
+
+        int enemyLayer = LayerMask.NameToLayer("Enemy");
+        bool damagesEnemies = enemyLayer >= 0 && (damageLayers.value & (1 << enemyLayer)) != 0;
+        return damagesEnemies ? PlayerAccessoryStats.FindPlayer() : null;
+    }
+
+    private void ScaleVisual(float effectiveRadius)
+    {
+        if (!scaleChildToRadius || transform.childCount <= 0) return;
+        float diameter = effectiveRadius;
+        transform.GetChild(0).localScale = new Vector3(diameter, diameter, 1f);
     }
 
     private void Cleanup()

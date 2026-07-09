@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ad3d3395574b554e84af0f509d322e3, type: 3}
+  m_Name: Coat
+  m_EditorClassIdentifier: Grim::PowerUpDefinition
+  stableId: f115425b03b447da8f9b135ff4f5ba42
+  displayName: Coat
+  description: A thick, durable garment that provides extra protection against environmental
+    hazards and minor physical strikes.
+  icon: {fileID: -1388866057315300545, guid: 059063c078d0ce246ab42105aec6a340, type: 3}
+  tags: 4
+  rarity: 0
+  selectionWeight: 40
+  activationObject: {fileID: 6225423114966541088, guid: 9e0f6d8a92dbd414eb5bc01a53eab454, type: 3}

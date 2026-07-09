@@ -1,0 +1,141 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1183352694537773841
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6053226470818580766}
+  - component: {fileID: 1357435404668373358}
+  - component: {fileID: 2565158195869893213}
+  - component: {fileID: 8598296137063512122}
+  m_Layer: 6
+  m_Name: Grave Pact
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &6053226470818580766
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183352694537773841}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1357435404668373358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183352694537773841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  displayName: Grave Pact
+  baseDescription: 
+  icon: {fileID: 311489795467858359, guid: b2e1d811d6684f7419b7f86f91c311fb, type: 3}
+  upgradeProfile: {fileID: 11400000, guid: 240630999bd00eb418fa26212b6cbb70, type: 2}
+  legacyStatsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
+  legacyUiParent: {fileID: 0}
+--- !u!114 &2565158195869893213
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183352694537773841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b54f0b4985b442d4998abf1b6d9f02a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  missingHealthStep: 0.1
+  bonusPerMissingStep: 0.02
+  maxBonusDamage: 0.2
+  refreshInterval: 0.1
+--- !u!114 &8598296137063512122
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1183352694537773841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rollOnAwake: 1
+  rngSeed: 0
+  upgradeWeights: {fileID: 0}
+  current: 0
+  weights:
+    common: 40
+    uncommon: 25
+    rare: 12
+    legendary: 5
+  ranges:
+    damageMult: {x: 1.1, y: 1.3}
+    damageFlatAdd: {x: 3, y: 12}
+    atkSpeedFrac: {x: 0.1, y: 0.25}
+    critChanceAdd: {x: 0.05, y: 0.2}
+    critMultAdd: {x: 0.25, y: 1}
+    hpFlatAdd: {x: 15, y: 60}
+    hpMult: {x: 1.05, y: 1.25}
+    regenAdd: {x: 0.1, y: 1.5}
+    armorAdd: {x: 3, y: 12}
+    evasionAdd: {x: 3, y: 12}
+    armorMult: {x: 1.05, y: 1.25}
+    evasionMult: {x: 1.05, y: 1.25}
+    resistAdd: {x: 0.05, y: 0.2}
+    knifeRadiusMult: {x: 1.1, y: 1.3}
+    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
+    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
+    shooterLifetimeAdd: {x: 0.5, y: 2}
+    shooterForceAdd: {x: 1, y: 4}
+    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
+  tiers:
+    damagePercent: 5
+    damageFlat: 5
+    attackSpeed: 5
+    critChance: 5
+    critMultiplier: 5
+    hpFlat: 5
+    hpPercent: 5
+    regen: 5
+    armor: 5
+    evasion: 5
+    armorPercent: 5
+    evasionPercent: 5
+    resist: 5
+    knifeRadius: 5
+    knifeSplashRadius: 5
+    knifeOnslaughtOnKill: 5
+    shooterLifetime: 5
+    shooterForce: 5
+    shooterAccuracy: 5
+    multiplierCurve:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    useCurve: 0
+    defaultMinMax: {x: 0.5, y: 2}
+  healthSystem: {fileID: 0}
+  applied: []

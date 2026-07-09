@@ -80,6 +80,7 @@ public class SimpleShooter : MonoBehaviour
     private Image iconImage;
     private AudioSource shootSource;
     private GameObject statsGameobjectInstance;
+    private PlayerAccessoryStats accessoryStats;
 
     private void Awake()
     {
@@ -106,6 +107,7 @@ public class SimpleShooter : MonoBehaviour
         }
 
         wt = GetComponent<WeaponTick>();
+        accessoryStats = PlayerAccessoryStats.Find(transform);
         UpdateStatsText();
     }
 
@@ -173,7 +175,14 @@ public class SimpleShooter : MonoBehaviour
 
         // Compute dynamic fields
         const string numColor = "#8888FF";
-        string delay = wt != null ? $"<color={numColor}>{wt.interval:F1}</color>s" : "N/A";
+        string delay = wt != null ? $"<color={numColor}>{wt.EffectiveInterval:F1}</color>s" : "N/A";
+        float effectiveSpeed = GetEffectiveProjectileSpeed();
+        float effectiveLifetime = GetEffectiveProjectileLifetime();
+        int effectivePenetration = GetEffectivePenetration();
+        float effectiveCritChance = GetEffectiveCritChance();
+        float effectiveCritMultiplier = GetEffectiveCritMultiplier();
+        float effectiveStatusChance = GetEffectiveStatusChance();
+        float effectiveStatusDuration = GetEffectiveStatusDuration();
 
         // Build text (Knife.cs style)
         var sb = new System.Text.StringBuilder();
@@ -196,23 +205,23 @@ public class SimpleShooter : MonoBehaviour
         if (damageType != SimpleHealth.DamageType.Physical)
             sb.AppendLine($"Type: <color={damageColor}>{damageType}</color>");
         sb.AppendLine($"Delay: {delay}");
-        if (shootForce > 0f)
-            sb.AppendLine($"Speed: <color={numColor}>{shootForce:F1}</color>");
-        if (bulletLifetime > 0f)
-            sb.AppendLine($"Life: <color={numColor}>{bulletLifetime:F1}</color>s");
+        if (effectiveSpeed > 0f)
+            sb.AppendLine($"Speed: <color={numColor}>{effectiveSpeed:F1}</color>");
+        if (effectiveLifetime > 0f)
+            sb.AppendLine($"Life: <color={numColor}>{effectiveLifetime:F1}</color>s");
         if (projectileCount > 1)
             sb.AppendLine($"Shots: <color={numColor}>{projectileCount}</color>");
-        if (penetration > 1)
-            sb.AppendLine($"Pierce: <color={numColor}>{penetration}</color>");
-        if (critChance > 0f)
-            sb.AppendLine($"Crit: <color={numColor}>{(Mathf.Clamp01(critChance) * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
+        if (effectivePenetration > 1)
+            sb.AppendLine($"Pierce: <color={numColor}>{effectivePenetration}</color>");
+        if (effectiveCritChance > 0f)
+            sb.AppendLine($"Crit: <color={numColor}>{(effectiveCritChance * 100f):F0}</color>% x<color={numColor}>{effectiveCritMultiplier:F2}</color>");
         if (forkShotChance > 0f)
             sb.AppendLine($"Fork: <color={numColor}>{forkShotChance * 100f:F0}</color>% for <color={numColor}>{forkShotDamagePercent * 100f:F0}</color>% dmg");
 
         if (applyStatusEffectOnHit)
         {
-            sb.AppendLine($"Proc: <color={numColor}>{statusApplyChance * 100f:F0}</color>%");
-            sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{statusEffectDuration:F1}</color>s)");
+            sb.AppendLine($"Proc: <color={numColor}>{effectiveStatusChance * 100f:F0}</color>%");
+            sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{effectiveStatusDuration:F1}</color>s)");
         }
 
         int configuredChainHits = GetConfiguredChainHits();
@@ -320,14 +329,14 @@ public class SimpleShooter : MonoBehaviour
             bulletDamage.damageAmount = finalDamage;
             bulletDamage.damageType = damageType;
             bulletDamage.penetration = configuredChainHits > 0
-                ? Mathf.Max(penetration, configuredChainHits + 1)
-                : penetration;
-            bulletDamage.knockbackForce = knockbackForce;
+                ? Mathf.Max(GetEffectivePenetration(), configuredChainHits + 1)
+                : GetEffectivePenetration();
+            bulletDamage.knockbackForce = GetEffectiveKnockback();
             bulletDamage.cullThreshold = cullThreshold;
-            bulletDamage.statusApplyChance = statusApplyChance;
+            bulletDamage.statusApplyChance = GetEffectiveStatusChance();
             bulletDamage.applyStatusEffectOnHit = applyStatusEffectOnHit;
             bulletDamage.statusEffectOnHit = statusEffectOnHit;
-            bulletDamage.statusEffectDuration = statusEffectDuration;
+            bulletDamage.statusEffectDuration = GetEffectiveStatusDuration();
             bulletDamage.sourceObject = gameObject;
             bulletDamage.canTriggerForkShot = canTriggerForkShot;
         }
@@ -341,10 +350,11 @@ public class SimpleShooter : MonoBehaviour
         }
 
         if (bullet.TryGetComponent<Rigidbody2D>(out var rb))
-            rb.linearVelocity = shootDir * shootForce;
+            rb.linearVelocity = shootDir * GetEffectiveProjectileSpeed();
 
-        if (bulletLifetime > 0f)
-            Destroy(bullet, bulletLifetime);
+        float effectiveLifetime = GetEffectiveProjectileLifetime();
+        if (effectiveLifetime > 0f)
+            Destroy(bullet, effectiveLifetime);
     }
 
     private int GetConfiguredChainHits()
@@ -403,13 +413,29 @@ public class SimpleShooter : MonoBehaviour
     {
         int baseDamage = RollBaseDamage();
         int finalDamage;
-        if (Random.value < Mathf.Clamp01(critChance))
-            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
+        if (Random.value < GetEffectiveCritChance())
+            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * GetEffectiveCritMultiplier()));
         else
             finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
 
         return Mathf.Max(1, Mathf.RoundToInt(finalDamage * DamageOutputMultiplier));
     }
+
+    private PlayerAccessoryStats GetAccessoryStats()
+    {
+        if (accessoryStats == null)
+            accessoryStats = PlayerAccessoryStats.Find(transform);
+        return accessoryStats;
+    }
+
+    private float GetEffectiveProjectileSpeed() => Mathf.Max(0f, shootForce * (GetAccessoryStats() != null ? accessoryStats.ProjectileSpeedMultiplier : 1f));
+    private float GetEffectiveProjectileLifetime() => Mathf.Max(0f, bulletLifetime * (GetAccessoryStats() != null ? accessoryStats.ProjectileLifetimeMultiplier : 1f));
+    private int GetEffectivePenetration() => Mathf.Max(1, penetration + (GetAccessoryStats() != null ? accessoryStats.ProjectilePenetrationBonus : 0));
+    private float GetEffectiveKnockback() => Mathf.Max(0f, knockbackForce + (GetAccessoryStats() != null ? accessoryStats.KnockbackStrengthBonus : 0f));
+    private float GetEffectiveCritChance() => Mathf.Clamp01(critChance + (GetAccessoryStats() != null ? accessoryStats.CriticalChanceBonus : 0f));
+    private float GetEffectiveCritMultiplier() => Mathf.Max(1f, critMultiplier + (GetAccessoryStats() != null ? accessoryStats.CriticalDamageBonus : 0f));
+    private float GetEffectiveStatusChance() => Mathf.Clamp01(statusApplyChance + (GetAccessoryStats() != null ? accessoryStats.StatusApplicationChanceBonus : 0f));
+    private float GetEffectiveStatusDuration() => Mathf.Max(0f, statusEffectDuration * (GetAccessoryStats() != null ? accessoryStats.StatusDurationMultiplier : 1f));
 
     private string GetDamageRangeText()
     {

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ad3d3395574b554e84af0f509d322e3, type: 3}
+  m_Name: Life Ring
+  m_EditorClassIdentifier: Grim::PowerUpDefinition
+  stableId: 9d2d4dc295504541a910c698cc3ec10b
+  displayName: Life Ring
+  description: "A sturdy band infused with vital energy. Increases the wearer\u2019s
+    maximum health, bolstering their endurance in battle."
+  icon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
+  tags: 4
+  rarity: 0
+  selectionWeight: 10
+  activationObject: {fileID: 2856095508459464809, guid: 3d507295e3ad16d4aa52392e3e4ed543, type: 3}

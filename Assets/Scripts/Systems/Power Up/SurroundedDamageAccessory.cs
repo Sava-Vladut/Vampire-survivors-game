@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SurroundedDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierProvider, IAccessoryDescriptionProvider
+public class SurroundedDamageAccessory : AccessoryBehaviour, IPlayerDamageMultiplierProvider
 {
     [SerializeField, Min(0f)] private float radius = 5f;
     [SerializeField, Tooltip("Damage bonus gained per surrounding enemy. 0.10 = 10%.")]
@@ -19,7 +19,7 @@ public class SurroundedDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierP
     public float CurrentBonusDamage => Mathf.Min(surroundingEnemyCount * bonusPerSurroundingEnemy, maxBonusDamage);
     public float DamageMultiplier => 1f + CurrentBonusDamage;
 
-    private void OnEnable()
+    protected override void OnAccessoryEnabled()
     {
         RefreshCount(true);
     }
@@ -58,11 +58,11 @@ public class SurroundedDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierP
         if (force || surroundingEnemyCount != lastDisplayedCount)
         {
             lastDisplayedCount = surroundingEnemyCount;
-            GetComponent<Accessory>()?.NotifyRootToRefresh();
+            MarkDescriptionDirty();
         }
     }
 
-    public string GetAccessoryDescriptionLine()
+    public override string GetAccessoryDescriptionLine()
     {
         return $"<color=#FFD166>Damage: +{CurrentBonusDamage * 100f:F0}% ({surroundingEnemyCount} nearby)</color>";
     }

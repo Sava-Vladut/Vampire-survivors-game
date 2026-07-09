@@ -6,7 +6,7 @@ using UnityEngine;
 // SimpleHealth when its GameObject is activated (via PowerUpChooser.TryChoosePowerUp).
 // Offers are rolled at runtime by RandomUpgradeGenerator through RandomizeAsOffer.
 //
-public class AccessoriesUpgrades : MonoBehaviour
+public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect
 {
     /// <summary>Maximum number of upgrades a single accessory can receive.</summary>
     public const int MaxUpgrades = 20;
@@ -29,6 +29,27 @@ public class AccessoriesUpgrades : MonoBehaviour
         MoveSpeedFlat,
         DashDistanceFlat,
         ThornsFlat,
+        ProjectileCountFlat,
+        CooldownReduction,
+        AttackSpeedPercent,
+        GlobalDamagePercent,
+        CriticalChanceFlat,
+        CriticalDamageFlat,
+        WeaponAreaPercent,
+        ProjectileSpeedPercent,
+        ProjectileLifetimePercent,
+        ProjectilePenetrationFlat,
+        KnockbackStrengthFlat,
+        PickupRadiusFlat,
+        XpGainPercent,
+        HealingReceivedPercent,
+        StatusDurationPercent,
+        StatusApplicationChanceFlat,
+        DashCooldownReduction,
+        AdditionalDashChargeFlat,
+        DashInvulnerabilityFlat,
+        ContactDamageReduction,
+        EnemySlowAura,
     }
 
     [Header("Power-Up")]
@@ -40,83 +61,37 @@ public class AccessoriesUpgrades : MonoBehaviour
     [Tooltip("Flat amount, or a fraction for percent-based types (e.g., 0.25 = 25%).")]
     public float value = 0f;
 
-    // ---------------------- Lifecycle ----------------------
-
-    private void Awake()
-    {
-        ApplyUpgrade();
-    }
+    [SerializeField, HideInInspector] private bool hasApplied;
+    public bool HasApplied => hasApplied;
 
     // ---------------------- Apply ----------------------
 
     public void ApplyUpgrade()
     {
-        if (upgradeType == StatUpgradeType.None) return;
+        if (hasApplied) return;
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        Accessory owner = GetComponentInParent<Accessory>(true);
+        if (player == null || owner == null) return;
+        var selection = new PowerUpSelectionContext(null, Upgrade, gameObject, player.transform);
+        hasApplied = TryApplyUpgrade(new AccessoryEquipContext(selection, owner, player.transform));
+        if (hasApplied) owner.MarkChanged();
+    }
 
-        if (upgradeType == StatUpgradeType.MoveSpeedFlat ||
-            upgradeType == StatUpgradeType.DashDistanceFlat)
-        {
-            var movement = FindPlayerMovement();
-            if (movement == null)
-            {
-                Debug.LogWarning("[AccessoriesUpgrades] No player Snappy2DController found; movement upgrade not applied.", this);
-                return;
-            }
+    public bool TryApply(PowerUpSelectionContext context)
+    {
+        if (hasApplied) return true;
+        Accessory owner = GetComponentInParent<Accessory>(true);
+        if (owner == null || context.PlayerRoot == null) return false;
+        hasApplied = TryApplyUpgrade(new AccessoryEquipContext(context, owner, context.PlayerRoot));
+        if (hasApplied) owner.MarkChanged();
+        return hasApplied;
+    }
 
-            if (upgradeType == StatUpgradeType.MoveSpeedFlat)
-                movement.IncreaseMoveSpeed(value);
-            else
-                movement.IncreaseDashDistance(value);
-
-            return;
-        }
-
-        var health = FindPlayerHealth();
-        if (health == null)
-        {
-            Debug.LogWarning("[AccessoriesUpgrades] No player SimpleHealth found; upgrade not applied.", this);
-            return;
-        }
-
-        switch (upgradeType)
-        {
-            case StatUpgradeType.MaxHealthFlat:
-                health.IncreaseMaxHealth(Mathf.RoundToInt(value));
-                break;
-            case StatUpgradeType.MaxHealthPercent:
-                health.IncreaseMaxHealth(Mathf.Max(1, Mathf.RoundToInt(health.MaxHealth * value)));
-                break;
-            case StatUpgradeType.RegenFlat:
-                health.regenRate += value;
-                break;
-            case StatUpgradeType.ArmorFlat:
-                health.GiveArmor(value);
-                break;
-            case StatUpgradeType.ArmorPercent:
-                health.GiveArmor(health.armor * value);
-                break;
-            case StatUpgradeType.EvasionFlat:
-                health.GiveEvasion(value);
-                break;
-            case StatUpgradeType.EvasionPercent:
-                health.GiveEvasion(health.evasion * value);
-                break;
-            case StatUpgradeType.FireResist:
-                health.AddFireResist(value);
-                break;
-            case StatUpgradeType.ColdResist:
-                health.AddColdResist(value);
-                break;
-            case StatUpgradeType.LightningResist:
-                health.AddLightningResist(value);
-                break;
-            case StatUpgradeType.PoisonResist:
-                health.AddPoisonResist(value);
-                break;
-            case StatUpgradeType.ThornsFlat:
-                health.GiveThorns(value);
-                break;
-        }
+    private bool TryApplyUpgrade(AccessoryEquipContext context)
+    {
+        if (!AccessoryStatApplicator.CanApply(upgradeType, context)) return false;
+        AccessoryStatApplicator.Apply(upgradeType, value, context);
+        return true;
     }
 
     // ---------------------- Random generation ----------------------
@@ -131,17 +106,15 @@ public class AccessoriesUpgrades : MonoBehaviour
     public bool RandomizeAsOffer(ICollection<StatUpgradeType> excludeTypes = null)
     {
         var health = FindPlayerHealth();
-        bool isBoots = IsBootsOwner();
-        bool isArmor = IsOwnerNamed("Armor");
+        Accessory owner = GetComponentInParent<Accessory>(true);
+        AccessoryUpgradeProfile profile = owner != null ? owner.UpgradeProfile : null;
 
         var allowed = new List<StatUpgradeType>();
         foreach (StatUpgradeType t in System.Enum.GetValues(typeof(StatUpgradeType)))
         {
             if (t == StatUpgradeType.None) continue;
             if (excludeTypes != null && excludeTypes.Contains(t)) continue;
-            if ((t == StatUpgradeType.MoveSpeedFlat ||
-                 t == StatUpgradeType.DashDistanceFlat) && !isBoots) continue;
-            if (t == StatUpgradeType.ThornsFlat && !isArmor) continue;
+            if (profile != null ? !profile.Allows(t) : !AccessoryUpgradeProfile.IsDefaultType(t)) continue;
             // Percent types are useless without a base stat to scale
             if (t == StatUpgradeType.ArmorPercent && (health == null || health.armor <= 0f)) continue;
             if (t == StatUpgradeType.EvasionPercent && (health == null || health.evasion <= 0f)) continue;
@@ -186,6 +159,27 @@ public class AccessoriesUpgrades : MonoBehaviour
             case StatUpgradeType.MoveSpeedFlat: return Random.Range(0.15f, 0.75f);
             case StatUpgradeType.DashDistanceFlat: return Random.Range(0.25f, 1.50f);
             case StatUpgradeType.ThornsFlat: return Mathf.Round(Random.Range(2f, 12f));
+            case StatUpgradeType.ProjectileCountFlat: return 1f;
+            case StatUpgradeType.CooldownReduction: return Random.Range(0.03f, 0.12f);
+            case StatUpgradeType.AttackSpeedPercent: return Random.Range(0.05f, 0.20f);
+            case StatUpgradeType.GlobalDamagePercent: return Random.Range(0.05f, 0.20f);
+            case StatUpgradeType.CriticalChanceFlat: return Random.Range(0.02f, 0.10f);
+            case StatUpgradeType.CriticalDamageFlat: return Random.Range(0.10f, 0.50f);
+            case StatUpgradeType.WeaponAreaPercent: return Random.Range(0.05f, 0.25f);
+            case StatUpgradeType.ProjectileSpeedPercent: return Random.Range(0.05f, 0.30f);
+            case StatUpgradeType.ProjectileLifetimePercent: return Random.Range(0.05f, 0.30f);
+            case StatUpgradeType.ProjectilePenetrationFlat: return 1f;
+            case StatUpgradeType.KnockbackStrengthFlat: return Random.Range(0.50f, 2.50f);
+            case StatUpgradeType.PickupRadiusFlat: return Random.Range(0.50f, 3f);
+            case StatUpgradeType.XpGainPercent: return Random.Range(0.05f, 0.20f);
+            case StatUpgradeType.HealingReceivedPercent: return Random.Range(0.05f, 0.25f);
+            case StatUpgradeType.StatusDurationPercent: return Random.Range(0.10f, 0.40f);
+            case StatUpgradeType.StatusApplicationChanceFlat: return Random.Range(0.03f, 0.12f);
+            case StatUpgradeType.DashCooldownReduction: return Random.Range(0.05f, 0.20f);
+            case StatUpgradeType.AdditionalDashChargeFlat: return 1f;
+            case StatUpgradeType.DashInvulnerabilityFlat: return Random.Range(0.05f, 0.20f);
+            case StatUpgradeType.ContactDamageReduction: return Random.Range(0.05f, 0.20f);
+            case StatUpgradeType.EnemySlowAura: return Random.Range(0.05f, 0.20f);
         }
         return 0f;
     }
@@ -220,13 +214,34 @@ public class AccessoriesUpgrades : MonoBehaviour
             StatUpgradeType.MoveSpeedFlat => ($"Fleetfoot +{decimalValue}", $"Move {decimalValue} faster at all times."),
             StatUpgradeType.DashDistanceFlat => ($"Bounding Step +{decimalValue}", $"Dash and blink {decimalValue} farther."),
             StatUpgradeType.ThornsFlat => ($"Spiked Plate +{flat}", $"Retaliate for {flat} physical damage whenever an enemy wounds you."),
+            StatUpgradeType.ProjectileCountFlat => ($"Multishot +{flat}", $"Fire {flat} additional projectile from every ranged weapon."),
+            StatUpgradeType.CooldownReduction => ($"Quick Recovery +{pct}", $"Reduce the delay between weapon attacks by {pct}."),
+            StatUpgradeType.AttackSpeedPercent => ($"Rapid Assault +{pct}", $"Increase attack and burst speed by {pct}."),
+            StatUpgradeType.GlobalDamagePercent => ($"Brutal Force +{pct}", $"Increase all weapon damage by {pct}."),
+            StatUpgradeType.CriticalChanceFlat => ($"Keen Eye +{pct}", $"Gain {pct} critical-hit chance."),
+            StatUpgradeType.CriticalDamageFlat => ($"Deadly Precision +{pct}", $"Critical hits deal {pct} additional damage."),
+            StatUpgradeType.WeaponAreaPercent => ($"Expansive Reach +{pct}", $"Increase weapon area and explosion radius by {pct}."),
+            StatUpgradeType.ProjectileSpeedPercent => ($"High Velocity +{pct}", $"Increase projectile speed by {pct}."),
+            StatUpgradeType.ProjectileLifetimePercent => ($"Lingering Shots +{pct}", $"Increase projectile lifetime by {pct}."),
+            StatUpgradeType.ProjectilePenetrationFlat => ($"Piercing Rounds +{flat}", $"Projectiles pass through {flat} additional target."),
+            StatUpgradeType.KnockbackStrengthFlat => ($"Heavy Impact +{decimalValue}", $"Add {decimalValue} knockback strength to weapon hits."),
+            StatUpgradeType.PickupRadiusFlat => ($"Far Reach +{decimalValue}", $"Attract pickups from {decimalValue} units farther away."),
+            StatUpgradeType.XpGainPercent => ($"Fast Learner +{pct}", $"Gain {pct} more experience."),
+            StatUpgradeType.HealingReceivedPercent => ($"Restorative Blood +{pct}", $"Increase all healing received by {pct}."),
+            StatUpgradeType.StatusDurationPercent => ($"Lasting Affliction +{pct}", $"Your weapon status effects last {pct} longer."),
+            StatUpgradeType.StatusApplicationChanceFlat => ($"Reliable Affliction +{pct}", $"Gain {pct} status-application chance."),
+            StatUpgradeType.DashCooldownReduction => ($"Light Step +{pct}", $"Reduce dash recharge time by {pct}."),
+            StatUpgradeType.AdditionalDashChargeFlat => ($"Reserve Step +{flat}", $"Store {flat} additional dash charge."),
+            StatUpgradeType.DashInvulnerabilityFlat => ($"Phase Step +{decimalValue}s", $"Remain invulnerable for {decimalValue} seconds after dashing."),
+            StatUpgradeType.ContactDamageReduction => ($"Impact Guard +{pct}", $"Take {pct} less damage from direct enemy contact."),
+            StatUpgradeType.EnemySlowAura => ($"Dread Presence +{pct}", $"Slow nearby enemies by {pct}."),
             _ => ("No Upgrade", "This upgrade slot is empty."),
         };
 
         // Prefix with the owning accessory's name
         var owner = GetComponentInParent<Accessory>(true);
-        string ownerName = owner != null && !string.IsNullOrWhiteSpace(owner.AccesoryName)
-            ? owner.AccesoryName
+        string ownerName = owner != null && !string.IsNullOrWhiteSpace(owner.DisplayName)
+            ? owner.DisplayName
             : (transform.parent != null ? transform.parent.name : null);
 
         Upgrade.powerUpName = string.IsNullOrEmpty(ownerName) ? title : $"{ownerName} - {title}";
@@ -238,8 +253,8 @@ public class AccessoriesUpgrades : MonoBehaviour
         if (Upgrade == null) return;
 
         var owner = GetComponentInParent<Accessory>(true);
-        if (owner != null && owner.icon != null)
-            Upgrade.powerUpIcon = owner.icon;
+        if (owner != null && owner.Icon != null)
+            Upgrade.powerUpIcon = owner.Icon;
     }
 
     // ---------------------- Helpers ----------------------
@@ -253,28 +268,4 @@ public class AccessoriesUpgrades : MonoBehaviour
         return player != null ? player.GetComponentInChildren<SimpleHealth>() : null;
     }
 
-    private Snappy2DController FindPlayerMovement()
-    {
-        var inParent = GetComponentInParent<Snappy2DController>(true);
-        if (inParent != null) return inParent;
-
-        var player = GameObject.FindGameObjectWithTag("Player");
-        return player != null ? player.GetComponentInChildren<Snappy2DController>() : null;
-    }
-
-    private bool IsBootsOwner()
-    {
-        return IsOwnerNamed("Boots");
-    }
-
-    private bool IsOwnerNamed(string expectedName)
-    {
-        var owner = GetComponentInParent<Accessory>(true);
-        if (owner == null) return false;
-
-        return string.Equals(
-            owner.AccesoryName?.Trim(),
-            expectedName,
-            System.StringComparison.OrdinalIgnoreCase);
-    }
 }

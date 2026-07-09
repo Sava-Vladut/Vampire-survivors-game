@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class MissingHealthDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierProvider, IAccessoryDescriptionProvider
+public class MissingHealthDamageAccessory : AccessoryBehaviour, IPlayerDamageMultiplierProvider
 {
     [SerializeField, Tooltip("Missing max-health fraction needed for each damage step. 0.10 = every missing 10% health.")]
     private float missingHealthStep = 0.10f;
@@ -17,7 +17,7 @@ public class MissingHealthDamageAccessory : MonoBehaviour, IPlayerDamageMultipli
     public float CurrentBonusDamage => CalculateBonusDamage();
     public float DamageMultiplier => 1f + CurrentBonusDamage;
 
-    private void OnEnable()
+    protected override void OnAccessoryEnabled()
     {
         health = GetComponentInParent<SimpleHealth>(true);
         RefreshDescriptionIfNeeded(true);
@@ -53,10 +53,10 @@ public class MissingHealthDamageAccessory : MonoBehaviour, IPlayerDamageMultipli
             return;
 
         lastDisplayedBonus = current;
-        GetComponent<Accessory>()?.NotifyRootToRefresh();
+        MarkDescriptionDirty();
     }
 
-    public string GetAccessoryDescriptionLine()
+    public override string GetAccessoryDescriptionLine()
     {
         float missingPercent = health != null && health.MaxHealth > 0
             ? Mathf.Clamp01(1f - (health.currentHealth / health.MaxHealth)) * 100f

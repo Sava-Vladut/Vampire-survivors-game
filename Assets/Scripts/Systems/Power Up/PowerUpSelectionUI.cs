@@ -4,6 +4,11 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 
+/// <summary>
+/// Presentation/controller for one power-up selection session. It stores offer
+/// references instead of mutable pool indices and delegates rolling/formatting to
+/// dedicated services.
+/// </summary>
 public class PowerUpSelectionUI : MonoBehaviour
 {
     [Header("UI Setup")]
@@ -22,7 +27,7 @@ public class PowerUpSelectionUI : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private PowerUpChooser powerUpChooser;
-    [Tooltip("Rolls fresh random upgrade offers each time the selection opens. Auto-found if left empty.")]
+    [Tooltip("Builds transient upgrade offers. Auto-created for legacy scenes if missing.")]
     [SerializeField] private RandomUpgradeGenerator upgradeGenerator;
     [SerializeField] private Volume slowMoVolume;
 
@@ -39,58 +44,253 @@ public class PowerUpSelectionUI : MonoBehaviour
     [Tooltip("Starting chance granted when the selector first enables a weapon's on-hit status effect.")]
     [Range(0f, 1f)][SerializeField] private float firstOnHitBaseChance = 0.15f;
 
-    private int[] shownIndices;
+    [Header("Behavior")]
+    [SerializeField] private bool isFirstSelection = true;
+    [SerializeField] private bool firstSelectionWeaponsOnly = false;
+    [Min(1)][SerializeField] private int firstSelectionCount = 3;
+    [Min(1)][SerializeField] private int choicesPerSelection = 3;
+
+    private readonly List<PowerUp> shownOffers = new();
     private bool warnedNoDefault;
     private int refreshesRemaining;
-    private readonly List<PowerUp> activeStatusOffers = new();
-    [Header("Behavior")]
-    [SerializeField] private bool isFirstSelection = true; // first selection shows weapons only
-    [SerializeField] private bool firstSelectionWeaponsOnly = false;
+    private bool sessionOpen;
+    private float previousTimeScale = 1f;
+    private float previousVolumeWeight;
 
-    // Optional: number of choices for the first selection
-    [SerializeField] private int firstSelectionCount = 3;
+    public bool IsOpen => sessionOpen;
 
     private void Awake()
     {
         if (selectionPanel != null) selectionPanel.SetActive(false);
         refreshesRemaining = refreshesPerGame;
 
+        ResolveReferences();
+        WireButtons();
+        SetExtraButtonsVisible(false);
+    }
+
+    private void OnDisable()
+    {
+        if (sessionOpen)
+            ClosePanel(false);
+    }
+
+    public void ShowSelection()
+    {
+        ResolveReferences();
+        if (!ValidateConfiguration()) return;
+
+        if (!sessionOpen)
+        {
+            powerUpChooser.SyncActiveToSelected();
+            OpenPanel();
+        }
+
+        RefreshOffersAndDisplay();
+    }
+
+    private void RefreshOffersAndDisplay()
+    {
+        bool firstPresentation = isFirstSelection;
+
+        GeneratedUpgradeSettings.Load()?.EnsureAllRanges();
+        upgradeGenerator?.RefreshOffers(firstOnHitBaseChance);
+
+        var eligible = new List<PowerUp>();
+        IReadOnlyList<PowerUp> available = powerUpChooser.AvailablePowerUps;
+        for (int i = 0; i < available.Count; i++)
+        {
+            PowerUp offer = available[i];
+            if (!powerUpChooser.CanSelect(offer)) continue;
+            if (firstPresentation && firstSelectionWeaponsOnly && !offer.IsWeapon) continue;
+            eligible.Add(offer);
+        }
+
+        if (eligible.Count == 0)
+        {
+            Debug.Log("[PowerUpSelectionUI] No eligible power-ups to show.", this);
+            ClosePanel();
+            return;
+        }
+
+        int desired = firstPresentation ? firstSelectionCount : choicesPerSelection;
+        int slots = Mathf.Min(Mathf.Max(1, desired), selectButtons.Length, eligible.Count);
+        shownOffers.Clear();
+        shownOffers.AddRange(PowerUpWeightedSelector.Pick(eligible, slots));
+
+        RenderOffers();
+        SetExtraButtonsVisible(true);
+
+        if (firstPresentation)
+            isFirstSelection = false;
+    }
+
+    private void RenderOffers()
+    {
+        if (defaultIcon == null && !warnedNoDefault)
+        {
+            warnedNoDefault = true;
+            Debug.LogWarning("[PowerUpSelectionUI] defaultIcon is not assigned.", this);
+        }
+
+        for (int i = 0; i < selectButtons.Length; i++)
+        {
+            bool hasOffer = i < shownOffers.Count;
+            PowerUp offer = hasOffer ? shownOffers[i] : null;
+
+            if (nameTexts != null && i < nameTexts.Length && nameTexts[i] != null)
+                nameTexts[i].text = offer?.powerUpName ?? string.Empty;
+
+            if (descriptionTexts != null && i < descriptionTexts.Length && descriptionTexts[i] != null)
+                descriptionTexts[i].text = PowerUpCardFormatter.BuildDescription(offer);
+
+            if (iconImages != null && i < iconImages.Length && iconImages[i] != null)
+            {
+                Image image = iconImages[i];
+                image.sprite = hasOffer ? offer.powerUpIcon ?? defaultIcon : null;
+                image.enabled = hasOffer;
+                image.gameObject.SetActive(hasOffer);
+            }
+
+            Button button = selectButtons[i];
+            if (button != null)
+            {
+                button.interactable = hasOffer;
+                button.gameObject.SetActive(hasOffer);
+            }
+        }
+    }
+
+    private void SelectPowerUp(int buttonSlot)
+    {
+        if (buttonSlot < 0 || buttonSlot >= shownOffers.Count) return;
+
+        PowerUp offer = shownOffers[buttonSlot];
+        if (!powerUpChooser.TryChoosePowerUp(offer))
+        {
+            Debug.LogWarning("[PowerUpSelectionUI] The selected offer could not be applied.", this);
+            RefreshOffersAndDisplay();
+            return;
+        }
+
+        ClosePanel();
+    }
+
+    private void SkipChoice()
+    {
+        Debug.Log("[PowerUpSelectionUI] Player skipped the power-up selection.", this);
+        ClosePanel();
+    }
+
+    private void RefreshSelection()
+    {
+        if (!sessionOpen || refreshesRemaining <= 0) return;
+        refreshesRemaining--;
+        RefreshOffersAndDisplay();
+    }
+
+    private void OpenPanel()
+    {
+        sessionOpen = true;
+        previousTimeScale = Time.timeScale;
+        previousVolumeWeight = slowMoVolume != null ? slowMoVolume.weight : 0f;
+
+        if (slowMoVolume != null) slowMoVolume.weight = 1f;
+        Time.timeScale = 0f;
+        if (selectionPanel != null) selectionPanel.SetActive(true);
+        PlaySFX(openSFX);
+    }
+
+    private void ClosePanel(bool playSound = true)
+    {
+        if (selectionPanel != null) selectionPanel.SetActive(false);
+        if (playSound) PlaySFX(closeSFX);
+
+        if (sessionOpen)
+        {
+            Time.timeScale = previousTimeScale;
+            if (slowMoVolume != null) slowMoVolume.weight = previousVolumeWeight;
+        }
+
+        upgradeGenerator?.ClearOffers();
+        shownOffers.Clear();
+        sessionOpen = false;
+        SetExtraButtonsVisible(false);
+    }
+
+    private void SetExtraButtonsVisible(bool visible)
+    {
+        if (skipButton != null)
+        {
+            for (int i = 0; i < skipButton.Length; i++)
+                if (skipButton[i] != null)
+                    skipButton[i].gameObject.SetActive(visible);
+        }
+
+        if (rerollButton != null)
+            rerollButton.gameObject.SetActive(visible && refreshesRemaining > 0);
+    }
+
+    private void ResolveReferences()
+    {
+        if (powerUpChooser == null)
+            powerUpChooser = GetComponent<PowerUpChooser>();
+        if (powerUpChooser == null)
+            powerUpChooser = FindAnyObjectByType<PowerUpChooser>();
+
         if (upgradeGenerator == null && powerUpChooser != null)
             upgradeGenerator = powerUpChooser.GetComponent<RandomUpgradeGenerator>();
 
-        // Existing scenes/prefabs may predate RandomUpgradeGenerator. Keep the
-        // selection system functional without requiring every scene to be rewired.
+        // Compatibility path for existing scenes. New scenes should add this
+        // component explicitly so its offer counts are visible in the Inspector.
         if (upgradeGenerator == null && powerUpChooser != null)
             upgradeGenerator = powerUpChooser.gameObject.AddComponent<RandomUpgradeGenerator>();
+    }
 
-        // Wire up selection buttons safely
+    private bool ValidateConfiguration()
+    {
+        if (powerUpChooser == null)
+        {
+            Debug.LogWarning("[PowerUpSelectionUI] No PowerUpChooser assigned.", this);
+            return false;
+        }
+
+        if (selectButtons == null || selectButtons.Length == 0)
+        {
+            Debug.LogWarning("[PowerUpSelectionUI] No select buttons assigned.", this);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void WireButtons()
+    {
         if (selectButtons != null)
         {
             for (int i = 0; i < selectButtons.Length; i++)
             {
                 if (selectButtons[i] == null) continue;
-                int idx = i; // capture
+                int slot = i;
                 selectButtons[i].onClick.RemoveAllListeners();
-                selectButtons[i].onClick.AddListener(() => SelectPowerUp(idx));
+                selectButtons[i].onClick.AddListener(() => SelectPowerUp(slot));
             }
         }
 
         if (skipButton != null)
         {
-            foreach (var btn in skipButton)
+            for (int i = 0; i < skipButton.Length; i++)
             {
-                if (btn == null) continue;
-                btn.onClick.AddListener(SkipChoice);
-                btn.gameObject.SetActive(false); // hide initially
+                if (skipButton[i] == null) continue;
+                skipButton[i].onClick.RemoveListener(SkipChoice);
+                skipButton[i].onClick.AddListener(SkipChoice);
             }
         }
 
-        // Hook up reroll button
         if (rerollButton != null)
         {
             rerollButton.onClick.RemoveAllListeners();
             rerollButton.onClick.AddListener(RefreshSelection);
-            rerollButton.gameObject.SetActive(false); // hidden until selection is shown
         }
     }
 
@@ -99,250 +299,4 @@ public class PowerUpSelectionUI : MonoBehaviour
         if (audioSource != null && clip != null)
             audioSource.PlayOneShot(clip);
     }
-
-    public void ShowSelection()
-    {
-        if (powerUpChooser == null || powerUpChooser.powerUps == null)
-        {
-            Debug.LogWarning("[PowerUpSelectionUI] No PowerUpChooser assigned!");
-            return;
-        }
-
-        if (selectButtons == null || selectButtons.Length == 0)
-        {
-            Debug.LogWarning("[PowerUpSelectionUI] No select buttons assigned.");
-            return;
-        }
-
-        // Keep lists in sync (chooser owns the logic)
-        powerUpChooser.SyncActiveToSelected();
-
-        // Roll fresh random upgrade offers for owned weapons/accessories
-        // (also discards offers from a previous open/reroll)
-        GeneratedUpgradeSettings.Load()?.EnsureAllRanges();
-        if (upgradeGenerator != null)
-            upgradeGenerator.RefreshOffers();
-        WeaponUpgrades.RefreshFirstOnHitStatusOffers(powerUpChooser, activeStatusOffers, firstOnHitBaseChance);
-
-        if (powerUpChooser.powerUps.Count == 0)
-        {
-            Debug.LogWarning("[PowerUpSelectionUI] No power-ups available!");
-            return;
-        }
-
-        // Build eligible candidates strictly by caps/type rules
-        // (first selection forces weapons only)
-        List<int> candidates = new List<int>();
-        for (int i = 0; i < powerUpChooser.powerUps.Count; i++)
-        {
-            if (!powerUpChooser.CanSelectByIndex(i)) continue;
-            if (isFirstSelection && firstSelectionWeaponsOnly && !powerUpChooser.powerUps[i].IsWeapon) continue;
-            candidates.Add(i);
-        }
-
-        if (candidates.Count == 0)
-        {
-            Debug.Log("[PowerUpSelectionUI] No eligible power-ups to show (type caps reached).");
-            ClosePanel();
-            return;
-        }
-
-        if (slowMoVolume) slowMoVolume.weight = 1f;
-        Time.timeScale = 0f;
-
-        if (selectionPanel != null) selectionPanel.SetActive(true);
-        PlaySFX(openSFX);
-
-        int desired = isFirstSelection ? Mathf.Max(1, firstSelectionCount) : 3;
-        int slotCount = Mathf.Min(desired, selectButtons.Length, candidates.Count);
-        shownIndices = PickRandomUnique(candidates, slotCount);
-
-        // After first presentation, subsequent selections are normal
-        if (isFirstSelection)
-            isFirstSelection = false;
-
-        if (defaultIcon == null && !warnedNoDefault)
-        {
-            warnedNoDefault = true;
-            Debug.LogWarning("[PowerUpSelectionUI] defaultIcon is not assigned.");
-        }
-
-        // Fill visible slots
-        for (int i = 0; i < selectButtons.Length; i++)
-        {
-            bool has = i < shownIndices.Length;
-
-            // Name
-            if (nameTexts != null && i < nameTexts.Length && nameTexts[i] != null)
-                nameTexts[i].text = has ? powerUpChooser.powerUps[shownIndices[i]].powerUpName : string.Empty;
-
-            // Description
-            if (descriptionTexts != null && i < descriptionTexts.Length && descriptionTexts[i] != null)
-            {
-                if (has)
-                {
-                    var pu = powerUpChooser.powerUps[shownIndices[i]];
-                    descriptionTexts[i].text = string.Empty;
-
-                    if (pu.IsUpgrade)
-                    {
-                        string rarityName = PowerUp.GetRarityDisplayName(pu.rarity).ToUpperInvariant();
-                        string rarityColor = PowerUp.GetRarityColor(pu.rarity);
-                        descriptionTexts[i].text += $"<b><color={rarityColor}>[{rarityName}]</color></b> ";
-                    }
-
-                    if (pu.IsWeapon)
-                        descriptionTexts[i].text += "<b>[WEAPON] </b>";
-
-                    if (pu.IsAccessory)
-                        descriptionTexts[i].text += "<b>[ACCESSORY] </b>";
-
-                    if (pu.IsUpgrade || pu.IsWeapon || pu.IsAccessory)
-                        descriptionTexts[i].text += "\n";
-
-                    descriptionTexts[i].text += pu.powerUpDescription;
-                }
-                else
-                {
-                    descriptionTexts[i].text = string.Empty;
-                }
-            }
-
-
-            // Icon
-            if (iconImages != null && i < iconImages.Length && iconImages[i] != null)
-            {
-                var img = iconImages[i];
-                if (has)
-                {
-                    var pu = powerUpChooser.powerUps[shownIndices[i]];
-                    img.sprite = pu.powerUpIcon != null ? pu.powerUpIcon : defaultIcon;
-                    img.enabled = true;
-                    img.gameObject.SetActive(true);
-                }
-                else
-                {
-                    img.sprite = null;
-                    img.enabled = false;
-                    img.gameObject.SetActive(false);
-                }
-            }
-
-            // Button
-            if (selectButtons[i] != null)
-            {
-                selectButtons[i].interactable = has;
-                selectButtons[i].gameObject.SetActive(has);
-            }
-        }
-
-        SetExtraButtonsVisible(true);
-    }
-
-    /// <summary>Shows/hides the skip and reroll buttons together.</summary>
-    private void SetExtraButtonsVisible(bool visible)
-    {
-        if (skipButton != null)
-        {
-            foreach (var btn in skipButton)
-            {
-                if (btn != null) btn.gameObject.SetActive(visible);
-            }
-        }
-
-        if (rerollButton != null)
-            rerollButton.gameObject.SetActive(visible && refreshesRemaining > 0);
-    }
-
-    private void SelectPowerUp(int buttonSlot)
-    {
-        if (shownIndices == null || buttonSlot < 0 || buttonSlot >= shownIndices.Length) return;
-
-        int powerUpIndex = shownIndices[buttonSlot];
-        if (powerUpChooser == null || powerUpChooser.powerUps == null ||
-            powerUpIndex < 0 || powerUpIndex >= powerUpChooser.powerUps.Count)
-        {
-            Debug.LogWarning("[PowerUpSelectionUI] Selected power-up index is no longer valid.");
-            ClosePanel();
-            return;
-        }
-
-        powerUpChooser.TryChoosePowerUp(powerUpIndex);
-        ClosePanel();
-    }
-
-    private void SkipChoice()
-    {
-        Debug.Log("[PowerUpSelectionUI] Player skipped the power-up selection.");
-        ClosePanel();
-    }
-
-    private void RefreshSelection()
-    {
-        if (refreshesRemaining <= 0) return;
-        refreshesRemaining--;
-        ShowSelection();
-    }
-
-    private void ClosePanel()
-    {
-        if (selectionPanel != null) selectionPanel.SetActive(false);
-        PlaySFX(closeSFX);
-        Time.timeScale = 1f;
-        if (slowMoVolume) slowMoVolume.weight = 0f;
-
-        // Discard whatever offers were not picked
-        if (upgradeGenerator != null)
-            upgradeGenerator.ClearOffers();
-        WeaponUpgrades.ClearFirstOnHitStatusOffers(powerUpChooser, activeStatusOffers);
-
-        shownIndices = null;
-
-        SetExtraButtonsVisible(false);
-    }
-
-    /// <summary>
-    /// Weighted sampling without replacement: picks up to 'count' unique
-    /// power-up indices from 'source', weighted by each power-up's weight.
-    /// </summary>
-    private int[] PickRandomUnique(List<int> source, int count)
-    {
-        var result = new List<int>(count);
-        var available = new List<int>(source);
-
-        // Cache weights once; keep the two lists index-aligned as we remove picks
-        var weights = new List<float>(available.Count);
-        float totalWeight = 0f;
-        foreach (var idx in available)
-        {
-            float w = Mathf.Max(0f, powerUpChooser.powerUps[idx].weight);
-            weights.Add(w);
-            totalWeight += w;
-        }
-
-        for (int picks = 0; picks < count && available.Count > 0; picks++)
-        {
-            float roll = Random.value * totalWeight;
-            float cumulative = 0f;
-            int chosen = 0;
-
-            for (int i = 0; i < available.Count; i++)
-            {
-                cumulative += weights[i];
-                if (roll <= cumulative)
-                {
-                    chosen = i;
-                    break;
-                }
-            }
-
-            result.Add(available[chosen]);
-            totalWeight -= weights[chosen];
-            available.RemoveAt(chosen);
-            weights.RemoveAt(chosen);
-        }
-
-        return result.ToArray();
-    }
-
 }

@@ -171,6 +171,7 @@ public class SimpleHealth : MonoBehaviour
     // Cached components for performance
     private DPSChecker _dpsChecker;
     private StatusEffectSystem _statusEffectSystem;
+    private PlayerAccessoryStats _accessoryStats;
     private bool _subscribedToStatusPopups;
 
     // Stats UI (matches Knife.cs pattern)
@@ -218,6 +219,7 @@ public class SimpleHealth : MonoBehaviour
         soundSource = GetComponent<AudioSource>();
         _dpsChecker = GetComponent<DPSChecker>();
         _statusEffectSystem = GetComponent<StatusEffectSystem>();
+        _accessoryStats = PlayerAccessoryStats.Find(transform);
         SubscribeToStatusPopups();
 
         if (spriteRenderer == null)
@@ -500,6 +502,9 @@ public class SimpleHealth : MonoBehaviour
 
         float dmgFrac = Mathf.Clamp01((float)dmg / Mathf.Max(1, maxHealth));
         int dotDamage = Mathf.Max(1, Mathf.RoundToInt(dmg * 0.20f));
+        PlayerAccessoryStats sourceStats = PlayerAccessoryStats.Find(source != null ? source.transform : null);
+        float statusChance = Mathf.Clamp01(dmgFrac + (sourceStats != null ? sourceStats.StatusApplicationChanceBonus : 0f));
+        float durationMultiplier = sourceStats != null ? sourceStats.StatusDurationMultiplier : 1f;
 
         float roll = Random.value;
 
@@ -507,41 +512,41 @@ public class SimpleHealth : MonoBehaviour
         {
             case DamageType.Lightning:
                 {
-                    if (roll < dmgFrac)
-                        ses.AddStatus(StatusEffectSystem.StatusType.Shock, 5f, 1f, source);
+                    if (roll < statusChance)
+                        ses.AddStatus(StatusEffectSystem.StatusType.Shock, 5f * durationMultiplier, 1f, source);
                     break;
                 }
             case DamageType.Fire:
                 {
-                    if (roll < dmgFrac)
+                    if (roll < statusChance)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Ignite, 5f, 1f, source);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Ignite, 5f * durationMultiplier, 1f, source);
                         ses.igniteDamagePerTick = dotDamage;
                     }
                     break;
                 }
             case DamageType.Cold:
                 {
-                    if (roll < dmgFrac)
+                    if (roll < statusChance)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Frozen, 3f, 1f, source);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Frozen, 3f * durationMultiplier, 1f, source);
                     }
                     break;
                 }
             case DamageType.Poison:
                 {
-                    if (roll < dmgFrac)
+                    if (roll < statusChance)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Poison, 15f, 0.5f, source);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Poison, 15f * durationMultiplier, 0.5f, source);
                         ses.poisonDamagePerTick = dotDamage;
                     }
                     break;
                 }
             case DamageType.Physical:
                 {
-                    if (roll < dmgFrac)
+                    if (roll < statusChance)
                     {
-                        ses.AddStatus(StatusEffectSystem.StatusType.Bleeding, 5f, 1f, source);
+                        ses.AddStatus(StatusEffectSystem.StatusType.Bleeding, 5f * durationMultiplier, 1f, source);
                         ses.bleedingDamagePerTick = dotDamage;
                     }
                     break;
@@ -553,6 +558,11 @@ public class SimpleHealth : MonoBehaviour
     public void TakeDamage(int amount, bool mitigatable = true)
     {
         TakeDamage(amount, DamageType.Physical, mitigatable);
+    }
+
+    public void TakeContactDamage(int amount)
+    {
+        TakeDamage(amount, DamageType.Physical, true, true, null, "Contact");
     }
 
     // NEW: main overload with type
@@ -567,6 +577,11 @@ public class SimpleHealth : MonoBehaviour
         if (amount <= 0 || IsProtectedBySafeZone() || isInvulnerable || !IsAlive) return;
 
         float incomingDamage = amount;
+        if (IsContactDamage(sourceObject, sourceDetail))
+        {
+            PlayerAccessoryStats stats = GetAccessoryStats();
+            if (stats != null) incomingDamage *= stats.ContactDamageMultiplier;
+        }
 
         // Absorb damage with temporary health first
         if (enableTemporaryHealth && currentTemporaryHealth > 0)
@@ -949,14 +964,38 @@ public class SimpleHealth : MonoBehaviour
 
     private int GetModifiedHealingAmount(int amount)
     {
-        if (_statusEffectSystem == null)
-            return amount;
-
-        float multiplier = _statusEffectSystem.HealingReceivedMultiplier;
+        float multiplier = _statusEffectSystem != null ? _statusEffectSystem.HealingReceivedMultiplier : 1f;
+        PlayerAccessoryStats stats = GetAccessoryStats();
+        if (stats != null) multiplier *= stats.HealingReceivedMultiplier;
         if (multiplier <= 0f)
             return 0;
 
         return Mathf.Max(1, Mathf.RoundToInt(amount * multiplier));
+    }
+
+    private PlayerAccessoryStats GetAccessoryStats()
+    {
+        if (_accessoryStats == null)
+            _accessoryStats = PlayerAccessoryStats.Find(transform);
+        return _accessoryStats;
+    }
+
+    private static bool IsContactDamage(GameObject sourceObject, string sourceDetail)
+    {
+        if (!string.IsNullOrWhiteSpace(sourceDetail))
+        {
+            if (sourceDetail.IndexOf("contact", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            if (sourceDetail.IndexOf("projectile", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                sourceDetail.IndexOf("explosion", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                sourceDetail.IndexOf("bleeding", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                sourceDetail.IndexOf("ignite", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                sourceDetail.IndexOf("poison", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                sourceDetail.IndexOf("cull", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return false;
+        }
+
+        return sourceObject != null && sourceObject.GetComponentInParent<EnemyChaser>() != null;
     }
 
     public void Kill()

@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ad3d3395574b554e84af0f509d322e3, type: 3}
+  m_Name: Boots
+  m_EditorClassIdentifier: Grim::PowerUpDefinition
+  stableId: 58701fc22cee4b95aeede6acae9bb115
+  displayName: Boots
+  description: Run faster than Twitch chat spamming LULW during a fail clip.
+  icon: {fileID: -4499610800817194292, guid: 56f49ca85e719464aad70d75aae56889, type: 3}
+  tags: 4
+  rarity: 0
+  selectionWeight: 30
+  activationObject: {fileID: 1640227568376179118, guid: 12cc25c98c676bc40a81d3e4801a3ed8, type: 3}

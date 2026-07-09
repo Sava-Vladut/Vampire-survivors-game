@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
     "com.lexonegit.unity-twitch-chat": "https://github.com/lexonegit/Unity-Twitch-Chat.git?path=/Unity-Twitch-Chat/Assets/Package",
     "com.unity.2d.animation": "14.0.3",
     "com.unity.2d.aseprite": "4.0.1",

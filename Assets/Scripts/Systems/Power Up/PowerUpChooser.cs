@@ -1,81 +1,13 @@
-﻿using NaughtyAttributes;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-public enum PowerUpRarity
-{
-    Common,
-    Uncommon,
-    Rare,
-    Curse
-}
-
-[System.Serializable]
-public class PowerUp
-{
-    public string powerUpName;
-    [TextArea] public string powerUpDescription;
-
-    [Header("Activation")]
-    [Tooltip("Prefab or in-scene GameObject to spawn/enable when selected.")]
-    public GameObject powerUpObject;
-
-    [Header("Type")]
-    [Tooltip("Treat this power-up as an Accessory (counts toward accessory cap).")]
-    public bool IsAccessory;
-    [Tooltip("Treat this power-up as a Weapon (counts toward weapon cap).")]
-    public bool IsWeapon;
-    [Tooltip("This entry upgrades an owned item and does not consume a weapon/accessory slot.")]
-    public bool IsUpgrade;
-
-    [Header("Visuals")]
-    [Tooltip("Icon representing this power-up. If null, UI will use its default icon.")]
-    [ShowAssetPreview] public Sprite powerUpIcon;
-
-    [Header("Rarity")]
-    [Tooltip("Multiplier tier for generated upgrade values.")]
-    public PowerUpRarity rarity = PowerUpRarity.Common;
-
-    [Header("Spawn Weight")]
-    [Tooltip("Relative chance for this power-up to appear in selection. Higher = more common.")]
-    [Min(0f)] public float weight = 1f;
-
-    public float RarityMultiplier => GetRarityMultiplier(rarity);
-
-    public static PowerUpRarity RollRandomRarity()
-    {
-        return GeneratedUpgradeSettings.RollPowerUpRarity();
-    }
-
-    public static float GetRarityMultiplier(PowerUpRarity rarity)
-    {
-        return GeneratedUpgradeSettings.GetPowerUpRarityMultiplier(rarity);
-    }
-
-    public static string GetRarityDisplayName(PowerUpRarity rarity)
-    {
-        return rarity switch
-        {
-            PowerUpRarity.Uncommon => "Uncommon",
-            PowerUpRarity.Rare => "Rare",
-            PowerUpRarity.Curse => "Curse",
-            _ => "Common",
-        };
-    }
-
-    public static string GetRarityColor(PowerUpRarity rarity)
-    {
-        return rarity switch
-        {
-            PowerUpRarity.Uncommon => "#33CC66",
-            PowerUpRarity.Rare => "#4D8DFF",
-            PowerUpRarity.Curse => "#B84DFF",
-            _ => "#D9D9D9",
-        };
-    }
-}
-
+/// <summary>
+/// Owns the available pool and the player's selected power-ups. Selection rules,
+/// activation, and explicit selection effects are coordinated here; presentation
+/// and random offer generation live in separate classes.
+/// </summary>
 public class PowerUpChooser : MonoBehaviour
 {
     [Header("Available & Selected")]
@@ -87,100 +19,126 @@ public class PowerUpChooser : MonoBehaviour
     [Min(0)] public int maxWeapons = 1;
 
     [Header("Stats UI")]
-    [Tooltip("Optional: TextMeshProUGUI that will show 'Accessories: cur/max' and 'Weapons: cur/max'.")]
+    [Tooltip("Optional: TextMeshProUGUI that will show current and maximum item counts.")]
     [SerializeField] private TextMeshProUGUI statsSummaryText;
 
     [Header("Curse")]
     [Tooltip("Optional Twitch listener to punish cursed upgrade picks. Auto-found if left empty.")]
     [SerializeField] private TwitchListener twitchListener;
 
-    // Track the actual active instance for each PowerUp (either in-scene object or instantiated prefab)
+    [Header("Optional Data Catalog")]
+    [Tooltip("Reusable asset-backed offers to add alongside legacy scene entries.")]
+    [SerializeField] private PowerUpCatalog initialCatalog;
+    [SerializeField] private bool loadCatalogOnAwake = true;
+
+    [Header("Runtime Instances")]
+    [Tooltip("Player receiving selection effects. Auto-resolved from the Player tag when empty.")]
+    [SerializeField] private Transform playerRoot;
+    [Tooltip("Parent for instantiated accessory prefabs. Defaults to the resolved player root.")]
+    [SerializeField] private Transform accessoryInstanceParent;
+
     private readonly Dictionary<PowerUp, GameObject> spawnedInstances = new();
+
+    public event Action<PowerUp, GameObject> PowerUpSelected;
+    public event Action<PowerUp> PowerUpDropped;
+
+    public IReadOnlyList<PowerUp> AvailablePowerUps => powerUps;
+    public IReadOnlyList<PowerUp> SelectedPowerUps => selectedPowerUps;
 
     public int CurrentAccessories => CountSelected(p => p.IsAccessory && !p.IsUpgrade);
     public int CurrentWeapons => CountSelected(p => p.IsWeapon && !p.IsUpgrade);
     public int MaxAccessories => maxAccessories;
     public int MaxWeapons => maxWeapons;
-
     public int RemainingAccessorySlots => Mathf.Max(0, maxAccessories - CurrentAccessories);
     public int RemainingWeaponSlots => Mathf.Max(0, maxWeapons - CurrentWeapons);
+    public Transform PlayerRoot => ResolvePlayerRoot();
 
-    private void OnEnable()
+    private void Awake()
     {
-        SyncActiveToSelected();
+        powerUps ??= new List<PowerUp>();
+        selectedPowerUps ??= new List<PowerUp>();
+
+        if (loadCatalogOnAwake && initialCatalog != null)
+            AddCatalog(initialCatalog);
     }
+
+    private void OnEnable() => SyncActiveToSelected();
 
 #if UNITY_EDITOR
     private void OnValidate()
     {
+        maxAccessories = Mathf.Max(0, maxAccessories);
+        maxWeapons = Mathf.Max(0, maxWeapons);
         RefreshStatsText();
     }
 #endif
 
-    public bool CanSelect(PowerUp pu)
+    public bool CanSelect(PowerUp offer)
     {
-        if (pu == null) return false;
-        if (pu.IsUpgrade) return true;
-        if (pu.IsAccessory && RemainingAccessorySlots <= 0) return false;
-        if (pu.IsWeapon && RemainingWeaponSlots <= 0) return false;
+        if (offer == null) return false;
+        if (offer.IsUpgrade) return true;
+        if (offer.IsAccessory && RemainingAccessorySlots <= 0) return false;
+        if (offer.IsWeapon && RemainingWeaponSlots <= 0) return false;
         return true;
     }
 
     public bool CanSelectByIndex(int index) =>
         index >= 0 && index < powerUps.Count && CanSelect(powerUps[index]);
 
-    /// <summary>
-    /// Choose the power-up at index. Spawns/enables its object,
-    /// moves it to selected list, and removes it from available list.
-    /// </summary>
     public bool TryChoosePowerUp(int index)
     {
-        if (!CanSelectByIndex(index)) return false;
+        return index >= 0 && index < powerUps.Count && TryChoosePowerUp(powerUps[index]);
+    }
 
-        var selected = powerUps[index];
+    public bool TryChoosePowerUp(PowerUp offer)
+    {
+        if (offer == null || !powerUps.Contains(offer) || !CanSelect(offer))
+            return false;
 
-        // Spawn or enable the associated object (if any)
-        if (selected.powerUpObject != null)
-        {
-            GameObject instance;
-            if (!selected.powerUpObject.scene.IsValid())
-            {
-                // Prefab: instantiate and track instance
-                instance = Instantiate(selected.powerUpObject);
-            }
-            else
-            {
-                // In-scene object: enable and track that object
-                instance = selected.powerUpObject;
-                if (!instance.activeSelf) instance.SetActive(true);
-            }
+        if (!TryActivateOffer(offer, out GameObject instance))
+            return false;
 
-            spawnedInstances[selected] = instance;
-        }
+        spawnedInstances[offer] = instance;
+        selectedPowerUps.Add(offer);
+        powerUps.Remove(offer);
 
-        selectedPowerUps.Add(selected);
-        powerUps.RemoveAt(index);
-
-        ApplyCursePenalty(selected);
+        ApplyCursePenalty(offer);
         RefreshStatsText();
+        PowerUpSelected?.Invoke(offer, instance);
         return true;
     }
 
-    private void ApplyCursePenalty(PowerUp selected)
+    public bool TryAddAvailable(PowerUp offer, bool allowDuplicateIdentity = false)
     {
-        if (selected == null || selected.rarity != PowerUpRarity.Curse)
-            return;
+        if (offer == null) return false;
 
-        TwitchListener listener = twitchListener;
-        if (listener == null)
-            listener = Object.FindAnyObjectByType<TwitchListener>();
+        if (!allowDuplicateIdentity)
+        {
+            if (ContainsIdentity(powerUps, offer) || ContainsIdentity(selectedPowerUps, offer))
+                return false;
+        }
 
-        listener?.ApplyCursePowerUpPenalty();
+        powerUps.Add(offer);
+        return true;
+    }
+
+    public bool RemoveAvailable(PowerUp offer) => offer != null && powerUps.Remove(offer);
+
+    public void AddCatalog(PowerUpCatalog catalog)
+    {
+        if (catalog == null || catalog.Entries == null) return;
+
+        for (int i = 0; i < catalog.Entries.Length; i++)
+        {
+            PowerUpDefinition definition = catalog.Entries[i];
+            if (definition != null)
+                TryAddAvailable(definition.CreateOffer());
+        }
     }
 
     /// <summary>
-    /// Move any already-active, in-scene objects from powerUps to selectedPowerUps,
-    /// and track their instance in spawnedInstances.
+    /// Moves already-active scene entries into the selected collection. This keeps
+    /// old scenes compatible while new content can use prefab-backed definitions.
     /// </summary>
     public void SyncActiveToSelected()
     {
@@ -188,91 +146,92 @@ public class PowerUpChooser : MonoBehaviour
 
         for (int i = powerUps.Count - 1; i >= 0; i--)
         {
-            var pu = powerUps[i];
-            if (pu == null || pu.powerUpObject == null) continue;
+            PowerUp offer = powerUps[i];
+            if (offer?.powerUpObject == null) continue;
 
-            if (pu.powerUpObject.scene.IsValid() && pu.powerUpObject.activeInHierarchy)
-            {
-                if (!selectedPowerUps.Contains(pu))
-                    selectedPowerUps.Add(pu);
+            GameObject configuredObject = offer.powerUpObject;
+            if (!configuredObject.scene.IsValid() || !configuredObject.activeInHierarchy)
+                continue;
 
-                // Track active in-scene instance if not tracked yet
-                if (!spawnedInstances.ContainsKey(pu))
-                    spawnedInstances[pu] = pu.powerUpObject;
+            if (!selectedPowerUps.Contains(offer))
+                selectedPowerUps.Add(offer);
 
-                powerUps.RemoveAt(i);
-            }
+            spawnedInstances[offer] = configuredObject;
+            powerUps.RemoveAt(i);
         }
 
         RefreshStatsText();
     }
 
-    /// <summary>
-    /// Drop (remove) a weapon from selectedPowerUps.
-    /// Disables its active instance (SetActive(false)).
-    /// Optionally returns it to the available pool.
-    /// </summary>
-    public bool TryDropWeapon(PowerUp pu, bool addBackToAvailable = true)
+    public bool TryDropWeapon(PowerUp offer, bool addBackToAvailable = true)
     {
-        if (pu == null || !pu.IsWeapon) return false;
-
-        if (!selectedPowerUps.Remove(pu))
+        if (offer == null || !offer.IsWeapon || offer.IsUpgrade)
             return false;
 
-        // Disable spawned/in-scene instance if we have it
-        if (spawnedInstances.TryGetValue(pu, out var inst) && inst != null)
-        {
-            inst.SetActive(false);
-            spawnedInstances.Remove(pu);
-        }
-        else
-        {
-            // Fallback: if they never got tracked, try the configured object if it's in-scene
-            if (pu.powerUpObject != null && pu.powerUpObject.scene.IsValid())
-                pu.powerUpObject.SetActive(false);
-        }
+        if (!selectedPowerUps.Remove(offer))
+            return false;
 
-        if (addBackToAvailable)
-            powerUps.Add(pu);
+        DeactivateTrackedInstance(offer);
+
+        if (addBackToAvailable && !powerUps.Contains(offer))
+            powerUps.Add(offer);
 
         RefreshStatsText();
+        PowerUpDropped?.Invoke(offer);
         return true;
     }
 
-    /// <summary>
-    /// Drop weapon by index in selectedPowerUps (index must point to a weapon).
-    /// </summary>
+    /// <summary>Removes any selected entry while keeping instance tracking consistent.</summary>
+    public bool TryRemoveSelected(PowerUp offer, bool disableInstance, bool destroyInstance)
+    {
+        if (offer == null || !selectedPowerUps.Remove(offer))
+            return false;
+
+        if (spawnedInstances.TryGetValue(offer, out GameObject instance))
+        {
+            if (instance != null)
+            {
+                if (destroyInstance) Destroy(instance);
+                else if (disableInstance) instance.SetActive(false);
+            }
+            spawnedInstances.Remove(offer);
+        }
+        else if (offer.powerUpObject != null && offer.powerUpObject.scene.IsValid())
+        {
+            if (destroyInstance) Destroy(offer.powerUpObject);
+            else if (disableInstance) offer.powerUpObject.SetActive(false);
+        }
+
+        RefreshStatsText();
+        PowerUpDropped?.Invoke(offer);
+        return true;
+    }
+
     public bool TryDropWeaponBySelectedIndex(int selectedIndex, bool addBackToAvailable = true)
     {
         if (selectedIndex < 0 || selectedIndex >= selectedPowerUps.Count) return false;
-        var pu = selectedPowerUps[selectedIndex];
-        return TryDropWeapon(pu, addBackToAvailable);
+        return TryDropWeapon(selectedPowerUps[selectedIndex], addBackToAvailable);
     }
 
-    /// <summary>
-    /// Picks a random weapon from selectedPowerUps and drops it.
-    /// Returns true if something was dropped.
-    /// </summary>
     public bool DropRandomWeapon(bool addBackToAvailable = true)
     {
-        // Build a temp list of weapons only
         var weapons = ListPool<PowerUp>.Get();
         try
         {
             for (int i = 0; i < selectedPowerUps.Count; i++)
             {
-                var pu = selectedPowerUps[i];
-                if (pu != null && pu.IsWeapon) weapons.Add(pu);
+                PowerUp offer = selectedPowerUps[i];
+                if (offer != null && offer.IsWeapon && !offer.IsUpgrade)
+                    weapons.Add(offer);
             }
 
             if (weapons.Count == 0)
             {
-                Debug.LogWarning("[PowerUpChooser] No weapons to drop.");
+                Debug.LogWarning("[PowerUpChooser] No equipped weapons to drop.", this);
                 return false;
             }
 
-            int pick = Random.Range(0, weapons.Count);
-            return TryDropWeapon(weapons[pick], addBackToAvailable);
+            return TryDropWeapon(weapons[UnityEngine.Random.Range(0, weapons.Count)], addBackToAvailable);
         }
         finally
         {
@@ -280,68 +239,164 @@ public class PowerUpChooser : MonoBehaviour
         }
     }
 
-    // Context menu: right-click the component header and run this in the Editor
     [ContextMenu("Drop Random Weapon")]
     private void ContextMenuDropRandomWeapon()
     {
-        bool ok = DropRandomWeapon(true);
-        Debug.Log(ok
+        bool success = DropRandomWeapon(true);
+        Debug.Log(success
             ? "[PowerUpChooser] Dropped a random weapon."
-            : "[PowerUpChooser] Failed to drop a weapon (none available).");
+            : "[PowerUpChooser] Failed to drop a weapon (none available).", this);
     }
 
-    private int CountSelected(System.Predicate<PowerUp> predicate)
-    {
-        int c = 0;
-        for (int i = 0; i < selectedPowerUps.Count; i++)
-            if (predicate(selectedPowerUps[i])) c++;
-        return c;
-    }
-
-    /// <summary>
-    /// Updates the bound TextMeshProUGUI with current/max counts.
-    /// </summary>
     public void RefreshStatsText()
     {
         if (statsSummaryText == null) return;
-
         statsSummaryText.text =
             $"Accessories: {CurrentAccessories}/{MaxAccessories}\n" +
             $"Weapons: {CurrentWeapons}/{MaxWeapons}";
     }
 
-    /// <summary>
-    /// Adjusts the maximum number of weapons by a delta (can be negative).
-    /// Clamps the result to be non-negative and refreshes the UI.
-    /// </summary>
     public void AddMaxWeapons(int delta)
     {
         maxWeapons = Mathf.Max(0, maxWeapons + delta);
         RefreshStatsText();
     }
 
-    /// <summary>
-    /// Adjusts the maximum number of accessories by a delta (can be negative).
-    /// Clamps the result to be non-negative and refreshes the UI.
-    /// </summary>
     public void AddMaxAccessories(int delta)
     {
         maxAccessories = Mathf.Max(0, maxAccessories + delta);
         RefreshStatsText();
     }
+
+    private bool TryActivateOffer(PowerUp offer, out GameObject instance)
+    {
+        instance = null;
+        GameObject configuredObject = offer.powerUpObject;
+        if (configuredObject == null)
+            return true;
+
+        bool isSceneObject = configuredObject.scene.IsValid();
+        bool wasActive = isSceneObject && configuredObject.activeSelf;
+
+        Transform parent = !isSceneObject && offer.IsAccessory ? ResolveAccessoryInstanceParent() : null;
+        instance = isSceneObject ? configuredObject : Instantiate(configuredObject, parent);
+        if (instance == null) return false;
+
+        if (!instance.activeSelf)
+            instance.SetActive(true);
+
+        var context = new PowerUpSelectionContext(this, offer, instance, ResolvePlayerRoot());
+        MonoBehaviour[] behaviours = instance.GetComponents<MonoBehaviour>();
+
+        try
+        {
+            for (int i = 0; i < behaviours.Length; i++)
+            {
+                if (behaviours[i] is IPowerUpSelectionEffect effect && !effect.TryApply(context))
+                {
+                    RollBackActivation(instance, isSceneObject, wasActive);
+                    instance = null;
+                    return false;
+                }
+            }
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception, instance);
+            RollBackActivation(instance, isSceneObject, wasActive);
+            instance = null;
+            return false;
+        }
+
+        return true;
+    }
+
+    private void DeactivateTrackedInstance(PowerUp offer)
+    {
+        if (spawnedInstances.TryGetValue(offer, out GameObject instance) && instance != null)
+        {
+            if (offer.powerUpObject != null && offer.powerUpObject.scene.IsValid())
+                instance.SetActive(false);
+            else
+                Destroy(instance);
+            spawnedInstances.Remove(offer);
+            return;
+        }
+
+        if (offer.powerUpObject != null && offer.powerUpObject.scene.IsValid())
+            offer.powerUpObject.SetActive(false);
+    }
+
+    private static void RollBackActivation(GameObject instance, bool isSceneObject, bool wasActive)
+    {
+        if (instance == null) return;
+        if (isSceneObject)
+        {
+            if (!wasActive) instance.SetActive(false);
+        }
+        else
+        {
+            Destroy(instance);
+        }
+    }
+
+    private void ApplyCursePenalty(PowerUp selected)
+    {
+        if (selected == null || selected.rarity != PowerUpRarity.Curse)
+            return;
+
+        TwitchListener listener = twitchListener != null
+            ? twitchListener
+            : FindAnyObjectByType<TwitchListener>();
+        listener?.ApplyCursePowerUpPenalty();
+    }
+
+    private Transform ResolvePlayerRoot()
+    {
+        if (playerRoot != null) return playerRoot;
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null) playerRoot = player.transform;
+        return playerRoot;
+    }
+
+    private Transform ResolveAccessoryInstanceParent()
+    {
+        if (accessoryInstanceParent != null) return accessoryInstanceParent;
+        Transform player = ResolvePlayerRoot();
+        if (player == null) return null;
+        Transform existing = player.Find("Accessory Runtime");
+        accessoryInstanceParent = existing != null ? existing : player;
+        return accessoryInstanceParent;
+    }
+
+    private int CountSelected(Predicate<PowerUp> predicate)
+    {
+        int count = 0;
+        for (int i = 0; i < selectedPowerUps.Count; i++)
+        {
+            PowerUp offer = selectedPowerUps[i];
+            if (offer != null && predicate(offer)) count++;
+        }
+        return count;
+    }
+
+    private static bool ContainsIdentity(List<PowerUp> list, PowerUp candidate)
+    {
+        for (int i = 0; i < list.Count; i++)
+            if (list[i] != null && list[i].HasSameIdentity(candidate))
+                return true;
+        return false;
+    }
 }
 
-/// <summary>
-/// Lightweight list pool to avoid allocs in DropRandomWeapon (optional).
-/// Remove if you already use another pooling utility.
-/// </summary>
-static class ListPool<T>
+internal static class ListPool<T>
 {
-    static readonly Stack<List<T>> pool = new();
-    public static List<T> Get() => pool.Count > 0 ? pool.Pop() : new List<T>();
+    private static readonly Stack<List<T>> Pool = new();
+    public static List<T> Get() => Pool.Count > 0 ? Pool.Pop() : new List<T>();
+
     public static void Release(List<T> list)
     {
         list.Clear();
-        pool.Push(list);
+        Pool.Push(list);
     }
 }

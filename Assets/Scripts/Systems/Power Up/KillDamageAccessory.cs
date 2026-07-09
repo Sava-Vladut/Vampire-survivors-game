@@ -1,34 +1,6 @@
 using UnityEngine;
 
-public interface IPlayerDamageMultiplierProvider
-{
-    float DamageMultiplier { get; }
-}
-
-public static class PlayerDamageMultiplierUtility
-{
-    public static int Apply(GameObject source, int damage)
-    {
-        if (source == null || damage <= 0)
-            return damage;
-
-        float multiplier = 1f;
-        var providers = source.transform.root.GetComponentsInChildren<MonoBehaviour>(true);
-        for (int i = 0; i < providers.Length; i++)
-        {
-            var behaviour = providers[i];
-            if (behaviour == null || !behaviour.enabled || !behaviour.gameObject.activeInHierarchy)
-                continue;
-
-            if (behaviour is IPlayerDamageMultiplierProvider provider)
-                multiplier *= Mathf.Max(0f, provider.DamageMultiplier);
-        }
-
-        return Mathf.Max(1, Mathf.RoundToInt(damage * multiplier));
-    }
-}
-
-public class KillDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierProvider, IAccessoryDescriptionProvider
+public class KillDamageAccessory : AccessoryBehaviour, IPlayerDamageMultiplierProvider
 {
     [SerializeField, Tooltip("Damage bonus gained per enemy killed. 0.001 = 0.1%.")]
     private float bonusPerEnemyKilled = 0.001f;
@@ -41,13 +13,13 @@ public class KillDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierProvide
     public float CurrentBonusDamage => Mathf.Min(enemyKills * bonusPerEnemyKilled, maxBonusDamage);
     public float DamageMultiplier => 1f + CurrentBonusDamage;
 
-    private void OnEnable()
+    protected override void OnAccessoryEnabled()
     {
         SimpleHealth.AnyDied += OnAnyDied;
         RefreshDescriptionIfNeeded(true);
     }
 
-    private void OnDisable()
+    protected override void OnAccessoryDisabled()
     {
         SimpleHealth.AnyDied -= OnAnyDied;
     }
@@ -71,10 +43,10 @@ public class KillDamageAccessory : MonoBehaviour, IPlayerDamageMultiplierProvide
             return;
 
         lastDisplayedBonus = current;
-        GetComponent<Accessory>()?.NotifyRootToRefresh();
+        MarkDescriptionDirty();
     }
 
-    public string GetAccessoryDescriptionLine()
+    public override string GetAccessoryDescriptionLine()
     {
         return $"<color=#FFD166>Damage: +{CurrentBonusDamage * 100f:F1}% ({enemyKills} kills)</color>";
     }

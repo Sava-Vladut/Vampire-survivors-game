@@ -4,7 +4,7 @@ using System.Text;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public class WeaponRarityController : MonoBehaviour
+public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
 {
     [Header("Lifecycle")]
     [SerializeField] private bool rollOnAwake = true;
@@ -31,6 +31,9 @@ public class WeaponRarityController : MonoBehaviour
     private HealthAdapter health;
     private IUITextSink uiSink;
     private System.Random rng;
+    private bool isAccessory;
+
+    public int Order => 100;
 
     [System.Serializable]
     private sealed class AppliedUpgrade
@@ -70,6 +73,7 @@ public class WeaponRarityController : MonoBehaviour
         var k = GetComponent<Knife>();
         var s = GetComponent<SimpleShooter>();
         var acc = GetComponent<Accessory>();
+        isAccessory = acc != null;
         var t = GetComponent<WeaponTick>();
 
         if (k) { knife = new KnifeAdapter(k); uiSink = knife; }
@@ -81,7 +85,14 @@ public class WeaponRarityController : MonoBehaviour
 
         rng = rngSeed == 0 ? new System.Random() : new System.Random(rngSeed);
 
+        if (rollOnAwake && !isAccessory) RerollRarityAndStats();
+    }
+
+    public bool TryEquip(AccessoryEquipContext context)
+    {
+        if (!isAccessory) return true;
         if (rollOnAwake) RerollRarityAndStats();
+        return true;
     }
 
     [ContextMenu("Rarity/Reroll Rarity + All Stats")]

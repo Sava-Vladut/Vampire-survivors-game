@@ -29,6 +29,9 @@ public class WeaponTick : MonoBehaviour
     private Coroutine tickCoroutine;
     private PlayerSafeZoneStatus safeZoneStatus;
     private StatusEffectSystem statusEffects;
+    private PlayerAccessoryStats accessoryStats;
+
+    public float EffectiveInterval => Mathf.Max(0f, interval) * GetCooldownMultiplier() / GetAttackSpeedMultiplier();
 
     private void Awake()
     {
@@ -82,7 +85,7 @@ public class WeaponTick : MonoBehaviour
         {
             // Read the current Inspector values every cycle so Play Mode changes
             // take effect without restarting the coroutine.
-            float currentInterval = Mathf.Max(0f, interval) / GetAttackSpeedMultiplier();
+            float currentInterval = EffectiveInterval;
 
             // Wait until the next cycle/burst start
             if (useUnscaledTime)
@@ -166,7 +169,19 @@ public class WeaponTick : MonoBehaviour
         if (statusEffects == null)
             statusEffects = GetComponentInParent<StatusEffectSystem>();
 
-        return statusEffects != null ? Mathf.Max(0.01f, statusEffects.AttackSpeedMultiplier) : 1f;
+        if (accessoryStats == null)
+            accessoryStats = PlayerAccessoryStats.Find(transform);
+
+        float statusMultiplier = statusEffects != null ? Mathf.Max(0.01f, statusEffects.AttackSpeedMultiplier) : 1f;
+        float accessoryMultiplier = accessoryStats != null ? accessoryStats.AttackSpeedMultiplier : 1f;
+        return Mathf.Max(0.01f, statusMultiplier * accessoryMultiplier);
+    }
+
+    private float GetCooldownMultiplier()
+    {
+        if (accessoryStats == null)
+            accessoryStats = PlayerAccessoryStats.Find(transform);
+        return accessoryStats != null ? accessoryStats.CooldownMultiplier : 1f;
     }
 
     private void OnDisable()

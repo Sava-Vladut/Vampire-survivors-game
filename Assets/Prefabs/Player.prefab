@@ -1,432 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &8812001000
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8812001001}
-  - component: {fileID: 8812001002}
-  - component: {fileID: 8812001003}
-  - component: {fileID: 8812001004}
-  m_Layer: 6
-  m_Name: Reaper's Ledger
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &8812001001
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001000}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8812001002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Reaper's Ledger
-  AccesoryDescription: 
-  icon: {fileID: 5540992825214292966, guid: ae3a69ce3f6fc0e42b49c15d72cba43a, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls: []
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &8812001003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8d44a7200e0642ebba55da41ed93a210, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  bonusPerEnemyKilled: 0.001
-  maxBonusDamage: 1.5
---- !u!114 &8812001004
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
---- !u!1 &8812001010
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8812001011}
-  - component: {fileID: 8812001012}
-  - component: {fileID: 8812001013}
-  - component: {fileID: 8812001014}
-  m_Layer: 6
-  m_Name: Bloodied Banner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &8812001011
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001010}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8812001012
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001010}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Bloodied Banner
-  AccesoryDescription: 
-  icon: {fileID: 1274299836955854301, guid: 60f95579b05f10749996070b23ce694d, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls: []
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &8812001013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001010}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: abbb6bb62bee4c419b2a94e2bec2ce2d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  radius: 5
-  bonusPerSurroundingEnemy: 0.1
-  maxBonusDamage: 1
-  enemyLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  refreshInterval: 0.15
---- !u!114 &8812001014
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001010}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
---- !u!1 &8812001020
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8812001021}
-  - component: {fileID: 8812001022}
-  - component: {fileID: 8812001023}
-  - component: {fileID: 8812001024}
-  m_Layer: 6
-  m_Name: Grave Pact
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &8812001021
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001020}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8812001022
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001020}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Grave Pact
-  AccesoryDescription: 
-  icon: {fileID: 311489795467858359, guid: b2e1d811d6684f7419b7f86f91c311fb, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls: []
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &8812001023
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001020}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b54f0b4985b442d4998abf1b6d9f02a4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  missingHealthStep: 0.1
-  bonusPerMissingStep: 0.02
-  maxBonusDamage: 0.2
-  refreshInterval: 0.1
---- !u!114 &8812001024
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8812001020}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &68772939556683932
 GameObject:
   m_ObjectHideFlags: 0
@@ -1493,6 +1066,8 @@ MonoBehaviour:
   spriteOffset: {x: 0.5, y: 0, z: 0}
   spriteScale: 3
   sortingOrder: 5
+  aimSwingAtTarget: 1
+  mirrorFallbackWithPlayerFacing: 1
   playerSpriteRenderer: {fileID: 30405735645601086}
 --- !u!1 &519535130097200017
 GameObject:
@@ -2260,144 +1835,9 @@ MonoBehaviour:
   spriteOffset: {x: 0.5, y: 0, z: 0}
   spriteScale: 3
   sortingOrder: 5
+  aimSwingAtTarget: 1
+  mirrorFallbackWithPlayerFacing: 1
   playerSpriteRenderer: {fileID: 30405735645601086}
---- !u!1 &763878338640954299
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1420364789606767436}
-  - component: {fileID: 7754145506774124050}
-  - component: {fileID: 919886633822181183}
-  m_Layer: 6
-  m_Name: Life Ring
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &1420364789606767436
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 763878338640954299}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7754145506774124050
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 763878338640954299}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Life Ring
-  AccesoryDescription: +50 Max Health
-  icon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: IncreaseMaxHealth
-        m_Mode: 3
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 50
-          m_FloatArgument: 5
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &919886633822181183
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 763878338640954299}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &819256001971131541
 GameObject:
   m_ObjectHideFlags: 0
@@ -3759,6 +3199,9 @@ GameObject:
   - component: {fileID: 1755575790829812756}
   - component: {fileID: 6608178519213617443}
   - component: {fileID: 3392709203779967207}
+  - component: {fileID: 4528598387122518391}
+  - component: {fileID: 8586437444134913013}
+  - component: {fileID: 4028253297862754050}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -3786,6 +3229,7 @@ Transform:
   - {fileID: 5833988517266502027}
   - {fileID: 4939500946709195127}
   - {fileID: 7208348425349241254}
+  - {fileID: 7628823837636377418}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &30405735645601086
@@ -4242,6 +3686,45 @@ AudioLowPassFilter:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &4528598387122518391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1227099894277660166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79cd31def9d466640aeba23a0c8b66ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Grim::AccessoryInventory
+--- !u!114 &8586437444134913013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1227099894277660166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dad0a0401ed25f64fb31f1b7d0708dbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Grim::PlayerDamageModifierRegistry
+--- !u!114 &4028253297862754050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1227099894277660166}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d40794106b1f23a4c9d021cd1bb03331, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Grim::AccessoryInventoryPresenter
+  inventory: {fileID: 4528598387122518391}
+  entryPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
+  contentParent: {fileID: 3771470944807517528}
 --- !u!1 &1247444226582579560
 GameObject:
   m_ObjectHideFlags: 0
@@ -4926,157 +4409,6 @@ MonoBehaviour:
   m_Spacing: {x: 0, y: 0}
   m_Constraint: 0
   m_ConstraintCount: 2
---- !u!1 &1454800635535539524
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 9147439597678959549}
-  - component: {fileID: 6355551625964360536}
-  - component: {fileID: 8435410987459581995}
-  m_Layer: 6
-  m_Name: Boots
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &9147439597678959549
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1454800635535539524}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6355551625964360536
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1454800635535539524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Boots
-  AccesoryDescription: '+0.3 Move Speed
-
-    +5 Evasion'
-  icon: {fileID: -4499610800817194292, guid: 56f49ca85e719464aad70d75aae56889, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1160076805280392997}
-        m_TargetAssemblyTypeName: Snappy2DController, Assembly-CSharp
-        m_MethodName: IncreaseMoveSpeed
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: GiveEvasion
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 5
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &8435410987459581995
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1454800635535539524}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &1465697286572918320
 GameObject:
   m_ObjectHideFlags: 0
@@ -5879,6 +5211,37 @@ MonoBehaviour:
   OnInventoryChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &1894448733130481218
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7628823837636377418}
+  m_Layer: 0
+  m_Name: Accessory Runtime
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7628823837636377418
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1894448733130481218}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4856266244198735824}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2552549081488545481
 GameObject:
   m_ObjectHideFlags: 0
@@ -6983,7 +6346,7 @@ MonoBehaviour:
   - {fileID: 1622259568897221392}
   - {fileID: 5685144089492879069}
   - {fileID: 7949703235095861557}
-  distance: 2.8
+  distance: 1.5
   speed: 100
   startAngleDegrees: 0
 --- !u!114 &2487946357741454958
@@ -7421,143 +6784,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!1 &3162848350499587913
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1432232446246633481}
-  - component: {fileID: 6680414583333143163}
-  - component: {fileID: 4132545019636135579}
-  m_Layer: 6
-  m_Name: Projectile Charm
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &1432232446246633481
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3162848350499587913}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6680414583333143163
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3162848350499587913}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Projectile Charm
-  AccesoryDescription: +1 Projectile Count
-  icon: {fileID: -8639265281806335974, guid: a767dfe450289bc449574b956acd63cf, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 6680414583333143163}
-        m_TargetAssemblyTypeName: Accessory, Assembly-CSharp
-        m_MethodName: UpProjectileCount
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 5
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &4132545019636135579
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3162848350499587913}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &3192952584146739683
 GameObject:
   m_ObjectHideFlags: 0
@@ -9582,7 +8808,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -538.2551, y: -12.419006}
+  m_AnchoredPosition: {x: -538.2551, y: -12.418945}
   m_SizeDelta: {x: -1076.5105, y: -24.839}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &4126775312410175649
@@ -12364,17 +11590,7 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 5702712710036007540}
-  - {fileID: 356201777624814905}
-  - {fileID: 1420364789606767436}
-  - {fileID: 4692018829585025914}
-  - {fileID: 6127085084844003805}
-  - {fileID: 1432232446246633481}
-  - {fileID: 9147439597678959549}
-  - {fileID: 8812001001}
-  - {fileID: 8812001011}
-  - {fileID: 8812001021}
+  m_Children: []
   m_Father: {fileID: 4856266244198735824}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5342084887342761200
@@ -12527,157 +11743,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 3.1
---- !u!1 &5841996677559753328
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6127085084844003805}
-  - component: {fileID: 4640056499397819691}
-  - component: {fileID: 3679139543241106478}
-  m_Layer: 6
-  m_Name: 'Lighting/Poison Res Ring '
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &6127085084844003805
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5841996677559753328}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4640056499397819691
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5841996677559753328}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Ring
-  AccesoryDescription: '+30% Lightning Resist
-
-    +30% Poison Resist'
-  icon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddLightningResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddPoisonResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &3679139543241106478
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5841996677559753328}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &5862486877742866835
 GameObject:
   m_ObjectHideFlags: 0
@@ -13817,143 +12882,6 @@ MonoBehaviour:
   moveSpeed: 20
   stopDistance: 0.05
   rotateTowardsCursor: 0
---- !u!1 &6315981466353871724
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5702712710036007540}
-  - component: {fileID: 4104966517400091509}
-  - component: {fileID: 2423581163331950451}
-  m_Layer: 6
-  m_Name: Armor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &5702712710036007540
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6315981466353871724}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4104966517400091509
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6315981466353871724}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Armor
-  AccesoryDescription: +20 Armor
-  icon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Assembly-CSharp
-        m_MethodName: GiveArmor
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 20
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &2423581163331950451
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6315981466353871724}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &6330886543815198051
 GameObject:
   m_ObjectHideFlags: 0
@@ -14264,7 +13192,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -11.90509}
+  m_AnchoredPosition: {x: 0, y: -11.905029}
   m_SizeDelta: {x: 0, y: -23.8102}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4528660461258716763
@@ -14686,6 +13614,8 @@ MonoBehaviour:
   spriteOffset: {x: 0.5, y: 0, z: 0}
   spriteScale: 3
   sortingOrder: 5
+  aimSwingAtTarget: 1
+  mirrorFallbackWithPlayerFacing: 1
   playerSpriteRenderer: {fileID: 30405735645601086}
 --- !u!1 &6825222994911543504
 GameObject:
@@ -15592,157 +14522,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!1 &6983563826141616389
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4692018829585025914}
-  - component: {fileID: 1499925000110016057}
-  - component: {fileID: 2291322387813836490}
-  m_Layer: 6
-  m_Name: 'Cold/Fire Res Ring '
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &4692018829585025914
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6983563826141616389}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1499925000110016057
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6983563826141616389}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Ring
-  AccesoryDescription: '+30% Cold Resist
-
-    +30% Fire Resist'
-  icon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddColdResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 10
-          m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: AddFireResist
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0.3
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &2291322387813836490
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6983563826141616389}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &6987822466726327103
 GameObject:
   m_ObjectHideFlags: 0
@@ -16147,143 +14926,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!1 &7449588020780478462
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 356201777624814905}
-  - component: {fileID: 5954073109839091591}
-  - component: {fileID: 687177725637758421}
-  m_Layer: 6
-  m_Name: Coat
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &356201777624814905
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7449588020780478462}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5432253268087408168}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5954073109839091591
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7449588020780478462}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  AccesoryName: Coat
-  AccesoryDescription: +20 Evasion
-  icon: {fileID: -1388866057315300545, guid: 059063c078d0ce246ab42105aec6a340, type: 3}
-  onAwake:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 5791096993671492205}
-        m_TargetAssemblyTypeName: SimpleHealth, Grim
-        m_MethodName: GiveEvasion
-        m_Mode: 4
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 20
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-  statsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
-  uiParent: {fileID: 3771470944807517528}
-  statsTextInstance: {fileID: 0}
---- !u!114 &687177725637758421
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7449588020780478462}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fdb6ec8c105e6194d9d86c4118cb1227, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rollOnAwake: 1
-  rngSeed: 0
-  upgradeWeights: {fileID: 0}
-  current: 0
-  weights:
-    common: 40
-    uncommon: 25
-    rare: 12
-    legendary: 5
-  ranges:
-    damageMult: {x: 1.1, y: 1.3}
-    damageFlatAdd: {x: 3, y: 12}
-    atkSpeedFrac: {x: 0.1, y: 0.25}
-    critChanceAdd: {x: 0.05, y: 0.2}
-    critMultAdd: {x: 0.25, y: 1}
-    hpFlatAdd: {x: 15, y: 60}
-    hpMult: {x: 1.05, y: 1.25}
-    regenAdd: {x: 0.1, y: 1.5}
-    armorAdd: {x: 3, y: 12}
-    evasionAdd: {x: 3, y: 12}
-    armorMult: {x: 1.05, y: 1.25}
-    evasionMult: {x: 1.05, y: 1.25}
-    resistAdd: {x: 0.05, y: 0.2}
-    knifeRadiusMult: {x: 1.1, y: 1.3}
-    knifeSplashRadiusMult: {x: 1.1, y: 1.3}
-    knifeOnslaughtOnKillChance: {x: 0.15, y: 0.35}
-    shooterLifetimeAdd: {x: 0.5, y: 2}
-    shooterForceAdd: {x: 1, y: 4}
-    shooterSpreadReduceFrac: {x: 0.1, y: 0.35}
-  tiers:
-    damagePercent: 5
-    damageFlat: 5
-    attackSpeed: 5
-    critChance: 5
-    critMultiplier: 5
-    hpFlat: 5
-    hpPercent: 5
-    regen: 5
-    armor: 5
-    evasion: 5
-    armorPercent: 5
-    evasionPercent: 5
-    resist: 5
-    knifeRadius: 5
-    knifeSplashRadius: 5
-    knifeOnslaughtOnKill: 5
-    shooterLifetime: 5
-    shooterForce: 5
-    shooterAccuracy: 5
-    multiplierCurve:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    useCurve: 0
-    defaultMinMax: {x: 0.5, y: 2}
-  healthSystem: {fileID: 5791096993671492205}
-  applied: []
 --- !u!1 &7487222791868677263
 GameObject:
   m_ObjectHideFlags: 0
@@ -16871,6 +15513,8 @@ MonoBehaviour:
   spriteOffset: {x: 0.5, y: 0, z: 0}
   spriteScale: 3
   sortingOrder: 5
+  aimSwingAtTarget: 1
+  mirrorFallbackWithPlayerFacing: 1
   playerSpriteRenderer: {fileID: 30405735645601086}
 --- !u!1 &7666189916886687150
 GameObject:

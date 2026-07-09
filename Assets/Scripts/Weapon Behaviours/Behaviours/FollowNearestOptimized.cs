@@ -17,7 +17,8 @@ public class FollowNearestOptimized : MonoBehaviour
 
     void Update()
     {
-        if (target == null || ((Vector2)target.position - (Vector2)tr.position).sqrMagnitude > searchRadius * searchRadius)
+        float effectiveRadius = GetEffectiveSearchRadius(target);
+        if (target == null || ((Vector2)target.position - (Vector2)tr.position).sqrMagnitude > effectiveRadius * effectiveRadius)
             FindNearest();
 
         if (target != null)
@@ -37,12 +38,22 @@ public class FollowNearestOptimized : MonoBehaviour
             if (t == tr) continue;
 
             float d2 = ((Vector2)t.position - (Vector2)tr.position).sqrMagnitude;
-            if (d2 < bestD2 && d2 <= searchRadius * searchRadius)
+            float effectiveRadius = GetEffectiveSearchRadius(t);
+            if (d2 < bestD2 && d2 <= effectiveRadius * effectiveRadius)
             {
                 bestD2 = d2;
                 best = t;
             }
         }
         target = best;
+    }
+
+    private float GetEffectiveSearchRadius(Transform candidate)
+    {
+        if (!string.Equals(targetTag, "Player", System.StringComparison.OrdinalIgnoreCase) || candidate == null)
+            return Mathf.Max(0f, searchRadius);
+
+        PlayerAccessoryStats stats = PlayerAccessoryStats.Find(candidate);
+        return Mathf.Max(0f, searchRadius + (stats != null ? stats.PickupRadiusBonus : 0f));
     }
 }

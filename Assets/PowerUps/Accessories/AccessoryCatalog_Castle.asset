@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8556442bc2425942a63cfe2e71a25f4, type: 3}
+  m_Name: AccessoryCatalog_Castle
+  m_EditorClassIdentifier: Grim::PowerUpCatalog
+  entries:
+  - {fileID: 11400000, guid: 49626342c5ad55d4aa72fc575b6020dc, type: 2}
+  - {fileID: 11400000, guid: 32019cd401ff6f944acb359b16fe760d, type: 2}
+  - {fileID: 11400000, guid: e0f48fdc8704de948832d91282e859c8, type: 2}
+  - {fileID: 11400000, guid: 7dbd48e937809424690784212f484a7c, type: 2}
+  - {fileID: 11400000, guid: 620597e56e6e24542848829734cbfd51, type: 2}
+  - {fileID: 11400000, guid: 4a8ed6156fc490041ad81c94eccd64cc, type: 2}
+  - {fileID: 11400000, guid: 852530bf9546b954f9b4c7ae3ada98c4, type: 2}
+  - {fileID: 11400000, guid: bfe35ed97d6c8f14f84a346383a9d5bb, type: 2}
+  - {fileID: 11400000, guid: 0029980a975e6fa49964dcf7c182ae52, type: 2}
+  - {fileID: 11400000, guid: 6638fd03ff17df7429096bb77bbc81a0, type: 2}
+  - {fileID: 11400000, guid: 4fc5080925602624aa7a54d5dff19bd1, type: 2}

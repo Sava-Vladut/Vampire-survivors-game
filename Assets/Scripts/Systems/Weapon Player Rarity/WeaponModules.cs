@@ -129,7 +129,7 @@ public sealed class AccessoryAdapter : IUITextSink
     public AccessoryAdapter(Accessory a) { this.a = a; }
     public string Text
     {
-        get => a != null ? (a.AccesoryDescription ?? string.Empty) : string.Empty;
+        get => a != null ? a.BaseDescription : string.Empty;
         set { if (a != null) a.SetDescription(value ?? string.Empty); }
     }
     public void SetText(string s)

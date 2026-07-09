@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ad3d3395574b554e84af0f509d322e3, type: 3}
+  m_Name: Armor
+  m_EditorClassIdentifier: Grim::PowerUpDefinition
+  stableId: f2264858f5964993ae9a4218f6c18147
+  displayName: Armor
+  description: Keeps you alive through the clown fiesta, like mod shields the streamer
+    from chat spam. BibleThump
+  icon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
+  tags: 4
+  rarity: 0
+  selectionWeight: 70
+  activationObject: {fileID: 5770607654962526311, guid: 0ca21b83121ac6a4db523622be50ac7c, type: 3}

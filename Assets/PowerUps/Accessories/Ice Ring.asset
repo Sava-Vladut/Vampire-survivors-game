@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ad3d3395574b554e84af0f509d322e3, type: 3}
+  m_Name: Ice Ring
+  m_EditorClassIdentifier: Grim::PowerUpDefinition
+  stableId: 36f963dee82543d8a2b692c685a485a6
+  displayName: Ice Ring
+  description: A frozen circle of power that wreathes the user in biting frost. Enemies
+    caught within its radius are slowed and gradually chilled to the bone, taking
+    cold damage over time.
+  icon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
+  tags: 4
+  rarity: 0
+  selectionWeight: 30
+  activationObject: {fileID: 3605124808545381407, guid: 8c2f2c0d74736354daa0a45b28b4bda7, type: 3}

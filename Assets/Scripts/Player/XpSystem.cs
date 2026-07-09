@@ -47,6 +47,7 @@ public class XpSystem : MonoBehaviour
 
     private PowerUpSelectionUI PUSUI;
     [SerializeField] private StatusEffectSystem statusEffects;
+    private PlayerAccessoryStats accessoryStats;
 
     // Selection queue machinery
     private int pendingSelections = 0;
@@ -63,7 +64,9 @@ public class XpSystem : MonoBehaviour
     {
         var gc = GameObject.FindGameObjectWithTag("GameController");
         if (gc != null) PUSUI = gc.GetComponent<PowerUpSelectionUI>();
-        if (statusEffects == null) statusEffects = GameObject.FindGameObjectWithTag("Player").GetComponent<StatusEffectSystem>();
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (statusEffects == null && player != null) statusEffects = player.GetComponent<StatusEffectSystem>();
+        if (player != null) accessoryStats = PlayerAccessoryStats.Find(player.transform);
     }
 
     private void Update()
@@ -260,9 +263,14 @@ public class XpSystem : MonoBehaviour
 
     private int ApplyXpBoost(int amount)
     {
-        if (statusEffects == null) return amount;
+        if (accessoryStats == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null) accessoryStats = PlayerAccessoryStats.Find(player.transform);
+        }
 
-        float multiplier = statusEffects.CurrentXpMultiplier;
+        float multiplier = statusEffects != null ? statusEffects.CurrentXpMultiplier : 1f;
+        if (accessoryStats != null) multiplier *= accessoryStats.XpGainMultiplier;
         if (Mathf.Approximately(multiplier, 1f)) return amount;
 
         int adjusted = Mathf.RoundToInt(amount * multiplier);

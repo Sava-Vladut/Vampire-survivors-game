@@ -48,16 +48,22 @@ public class Snappy2DController : MonoBehaviour
 
     private bool isDashing;
     private float dashEndTime;
-    private float nextDashTime;
+    private float nextDashRechargeTime;
+    private int currentDashCharges = 1;
+    private int lastMaxDashCharges = 1;
     private Vector2 dashDirection;
     private AudioSource playerSource;
     private Collider2D bodyCollider;
+    private SimpleHealth playerHealth;
+    private PlayerAccessoryStats accessoryStats;
 
     public float MoveSpeed => moveSpeed;
     public float DashSpeed => dashSpeed;
     public float DashDuration => dashDuration;
     public float DashDistance => dashIsBlink ? blinkDistance : dashSpeed * dashDuration;
-    public float DashCooldown => dashCooldown;
+    public float DashCooldown => GetEffectiveDashCooldown();
+    public int CurrentDashCharges => currentDashCharges;
+    public int MaxDashCharges => GetMaxDashCharges();
 
     public void ApplyKnockback(Vector2 impulse)
     {
@@ -77,12 +83,18 @@ public class Snappy2DController : MonoBehaviour
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         bodyCollider = GetComponent<Collider2D>();
+        playerHealth = GetComponent<SimpleHealth>();
+        accessoryStats = PlayerAccessoryStats.Find(transform);
+        lastMaxDashCharges = GetMaxDashCharges();
+        currentDashCharges = lastMaxDashCharges;
     }
 
     private void Update()
     {
+        RefreshDashCharges();
+
         // Handle dash input
-        if (!isDashing && Time.time >= nextDashTime && Input.GetKeyDown(KeyCode.Space))
+        if (!isDashing && currentDashCharges > 0 && Input.GetKeyDown(KeyCode.Space))
         {
             if (input != Vector2.zero) // dash only if moving
             {
@@ -118,15 +130,16 @@ public class Snappy2DController : MonoBehaviour
                     Vector2 finalPos = start + dir * maxDist;
                     rb.position = finalPos;
                     rb.linearVelocity = Vector2.zero;
-                    nextDashTime = Time.time + dashCooldown;
                 }
                 else
                 {
                     isDashing = true;
                     dashDirection = input.normalized;
                     dashEndTime = Time.time + dashDuration;
-                    nextDashTime = Time.time + dashCooldown;
                 }
+
+                ConsumeDashCharge();
+                ApplyDashInvulnerability();
             }
         }
 
@@ -207,10 +220,13 @@ public class Snappy2DController : MonoBehaviour
     {
         if (dashSlider != null)
         {
-            float remaining = Mathf.Max(0f, nextDashTime - Time.time);
-            float fill = 1f - Mathf.Clamp01(remaining / dashCooldown); // 1 = ready
+            float effectiveCooldown = GetEffectiveDashCooldown();
+            float remaining = currentDashCharges < GetMaxDashCharges()
+                ? Mathf.Max(0f, nextDashRechargeTime - Time.time)
+                : 0f;
+            float fill = 1f - Mathf.Clamp01(remaining / effectiveCooldown); // 1 = ready
 
-            if (fill >= 1f)
+            if (currentDashCharges >= GetMaxDashCharges())
                 dashSlider.value = 0f; // ready → empty
             else
                 dashSlider.value = fill; // cooling down → fill growing
@@ -251,5 +267,62 @@ public class Snappy2DController : MonoBehaviour
     {
         if (knockbackVelocity == Vector2.zero) return;
         knockbackVelocity = Vector2.MoveTowards(knockbackVelocity, Vector2.zero, knockbackDecay * Time.fixedDeltaTime);
+    }
+
+    private PlayerAccessoryStats GetAccessoryStats()
+    {
+        if (accessoryStats == null)
+            accessoryStats = PlayerAccessoryStats.Find(transform);
+        return accessoryStats;
+    }
+
+    private float GetEffectiveDashCooldown()
+    {
+        PlayerAccessoryStats stats = GetAccessoryStats();
+        float multiplier = stats != null ? stats.DashCooldownMultiplier : 1f;
+        return Mathf.Max(0.05f, dashCooldown * multiplier);
+    }
+
+    private int GetMaxDashCharges()
+    {
+        PlayerAccessoryStats stats = GetAccessoryStats();
+        return 1 + (stats != null ? stats.AdditionalDashCharges : 0);
+    }
+
+    private void RefreshDashCharges()
+    {
+        int maxCharges = GetMaxDashCharges();
+        if (maxCharges > lastMaxDashCharges)
+            currentDashCharges += maxCharges - lastMaxDashCharges;
+
+        currentDashCharges = Mathf.Clamp(currentDashCharges, 0, maxCharges);
+        lastMaxDashCharges = maxCharges;
+
+        float cooldown = GetEffectiveDashCooldown();
+        while (currentDashCharges < maxCharges && Time.time >= nextDashRechargeTime)
+        {
+            currentDashCharges++;
+            if (currentDashCharges < maxCharges)
+                nextDashRechargeTime = Time.time + cooldown;
+        }
+    }
+
+    private void ConsumeDashCharge()
+    {
+        int maxCharges = GetMaxDashCharges();
+        bool wasFull = currentDashCharges >= maxCharges;
+        currentDashCharges = Mathf.Max(0, currentDashCharges - 1);
+        if (wasFull || nextDashRechargeTime <= 0f)
+            nextDashRechargeTime = Time.time + GetEffectiveDashCooldown();
+    }
+
+    private void ApplyDashInvulnerability()
+    {
+        PlayerAccessoryStats stats = GetAccessoryStats();
+        if (stats == null || stats.DashInvulnerabilityDuration <= 0f || playerHealth == null)
+            return;
+
+        float duration = stats.DashInvulnerabilityDuration + (dashIsBlink ? 0f : dashDuration);
+        playerHealth.SetInvulnerable(duration);
     }
 }

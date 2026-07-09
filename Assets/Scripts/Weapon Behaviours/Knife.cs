@@ -125,6 +125,7 @@ public class Knife : MonoBehaviour
     private SimpleHealth parentHealth;
     private WeaponTick wt;
     private WeaponSwingAnimator swingAnimator;
+    private PlayerAccessoryStats accessoryStats;
 
     private void Awake()
     {
@@ -157,6 +158,7 @@ public class Knife : MonoBehaviour
 
         wt = GetComponent<WeaponTick>();
         swingAnimator = GetComponent<WeaponSwingAnimator>();
+        accessoryStats = PlayerAccessoryStats.Find(transform);
         UpdateStatsText();
         UpdateRangeVisual();
     }
@@ -190,6 +192,13 @@ public class Knife : MonoBehaviour
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
             const string numColor = "#8888FF";
             WeaponUpgrades[] wu = GetComponentsInChildren<WeaponUpgrades>(true);
+            float effectiveRadius = GetEffectiveRadius();
+            float effectiveSplashRadius = GetEffectiveSplashRadius();
+            float effectiveCritChance = GetEffectiveCritChance();
+            float effectiveCritMultiplier = GetEffectiveCritMultiplier();
+            float effectiveKnockback = GetEffectiveKnockback();
+            float effectiveStatusChance = GetEffectiveStatusChance();
+            float effectiveStatusDuration = GetEffectiveStatusDuration();
 
             sb.AppendLine($"<b>{transform.name}</b>");
 
@@ -207,28 +216,28 @@ public class Knife : MonoBehaviour
             sb.AppendLine($"DMG: <color={damageColor}>{GetDamageRangeText()}</color>");
             if (damageType != SimpleHealth.DamageType.Physical)
                 sb.AppendLine($"Type: <color={damageColor}>{damageType}</color>");
-            sb.AppendLine($"Range: <color={numColor}>{radius:F2}</color>");
-            if (splashRadius > 0f && splashDamagePercent > 0f)
-                sb.AppendLine($"AOE: <color={numColor}>{splashRadius:F2}</color> (<color={numColor}>{splashDamagePercent * 100f:F0}</color>% dmg)");
+            sb.AppendLine($"Range: <color={numColor}>{effectiveRadius:F2}</color>");
+            if (effectiveSplashRadius > 0f && splashDamagePercent > 0f)
+                sb.AppendLine($"AOE: <color={numColor}>{effectiveSplashRadius:F2}</color> (<color={numColor}>{splashDamagePercent * 100f:F0}</color>% dmg)");
 
             if (wt != null)
-                sb.AppendLine($"Delay: <color={numColor}>{wt.interval:F1}</color>s");
+                sb.AppendLine($"Delay: <color={numColor}>{wt.EffectiveInterval:F1}</color>s");
 
             if (lifestealPercent > 0f)
                 sb.AppendLine($"Steal: <color={numColor}>{(lifestealPercent * 100f):F0}</color>%");
-            if (critChance > 0f)
-                sb.AppendLine($"Crit: <color={numColor}>{(critChance * 100f):F0}</color>% x<color={numColor}>{critMultiplier:F2}</color>");
+            if (effectiveCritChance > 0f)
+                sb.AppendLine($"Crit: <color={numColor}>{(effectiveCritChance * 100f):F0}</color>% x<color={numColor}>{effectiveCritMultiplier:F2}</color>");
             if (echoStrikeChance > 0f)
                 sb.AppendLine($"Echo: <color={numColor}>{echoStrikeChance * 100f:F0}</color>% for <color={numColor}>{echoStrikeDamagePercent * 100f:F0}</color>% dmg");
-            if (knockbackForce > 0f)
-                sb.AppendLine($"KB: <color={numColor}>{knockbackForce:F1}</color>");
+            if (effectiveKnockback > 0f)
+                sb.AppendLine($"KB: <color={numColor}>{effectiveKnockback:F1}</color>");
             if (maxTargetsPerTick > 0)
                 sb.AppendLine($"Targets: <color={numColor}>{maxTargetsPerTick}</color>");
 
             if (applyStatusEffectOnHit)
             {
-                sb.AppendLine($"Proc: <color={numColor}>{statusApplyChance * 100f:F0}</color>%");
-                sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{statusEffectDuration:F1}</color>s)");
+                sb.AppendLine($"Proc: <color={numColor}>{effectiveStatusChance * 100f:F0}</color>%");
+                sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{effectiveStatusDuration:F1}</color>s)");
             }
 
 
@@ -268,13 +277,18 @@ public class Knife : MonoBehaviour
         int targetsHit = 0;
         int targetCap = (maxTargetsPerTick > 0) ? maxTargetsPerTick : int.MaxValue;
         HashSet<Collider2D> processed = new HashSet<Collider2D>();
+        float effectiveRadius = GetEffectiveRadius();
+        float effectiveSplashRadius = GetEffectiveSplashRadius();
+        float effectiveStatusChance = GetEffectiveStatusChance();
+        float effectiveStatusDuration = GetEffectiveStatusDuration();
+        float effectiveKnockback = GetEffectiveKnockback();
 
         for (int oi = 0; oi < origins.Length; oi++)
         {
             var origin = origins[oi];
             if (origin == null) continue;
 
-            Collider2D[] hits = Physics2D.OverlapCircleAll(origin.position, radius, targetMask);
+            Collider2D[] hits = Physics2D.OverlapCircleAll(origin.position, effectiveRadius, targetMask);
 
             // Order/select targets based on targeting mode and remaining capacity
             List<Collider2D> selected = OrderTargets(hits, origin, targetingMode, processed, targetCap - targetsHit);
@@ -307,9 +321,9 @@ public class Knife : MonoBehaviour
                 if (health != null && health.IsAlive && !health.IsInvulnerable)
                 {
                     // status on hit
-                    if (splashStatus != null && applyStatusEffectOnHit && Random.Range(0f, 1f) <= statusApplyChance)
+                    if (splashStatus != null && applyStatusEffectOnHit && Random.Range(0f, 1f) <= effectiveStatusChance)
                     {
-                        splashStatus.AddStatus(statusEffectOnHit, statusEffectDuration, 1f, gameObject);
+                        splashStatus.AddStatus(statusEffectOnHit, effectiveStatusDuration, 1f, gameObject);
                     }
 
                     // main hit
@@ -330,8 +344,8 @@ public class Knife : MonoBehaviour
                     }
 
                     // knockback (away from the hit origin)
-                    if (knockbackForce > 0f)
-                        ApplyKnockback(col, origin.position);
+                    if (effectiveKnockback > 0f)
+                        ApplyKnockback(col, origin.position, effectiveKnockback);
 
                     // lifesteal
                     if (lifestealPercent > 0f && parentHealth != null && parentHealth.IsAlive)
@@ -341,10 +355,10 @@ public class Knife : MonoBehaviour
                     }
 
                     // splash
-                    if (splashRadius > 0f && splashDamagePercent > 0f)
+                    if (effectiveSplashRadius > 0f && splashDamagePercent > 0f)
                     {
-                        SpawnSplashCircle(col.transform.position);
-                        Collider2D[] splashHits = Physics2D.OverlapCircleAll(col.transform.position, splashRadius, targetMask);
+                        SpawnSplashCircle(col.transform.position, effectiveSplashRadius);
+                        Collider2D[] splashHits = Physics2D.OverlapCircleAll(col.transform.position, effectiveSplashRadius, targetMask);
                         for (int si = 0; si < splashHits.Length; si++)
                         {
                             var splashCol = splashHits[si];
@@ -380,14 +394,14 @@ public class Knife : MonoBehaviour
         }
     }
 
-    private void SpawnSplashCircle(Vector3 center)
+    private void SpawnSplashCircle(Vector3 center, float effectRadius)
     {
-        if (!showSplashCircle || splashRadius <= 0f || splashCircleColor.a <= 0f)
+        if (!showSplashCircle || effectRadius <= 0f || splashCircleColor.a <= 0f)
             return;
 
         var go = new GameObject("Knife Splash Circle");
         go.transform.position = center;
-        go.transform.localScale = Vector3.one * (splashRadius * 2f);
+        go.transform.localScale = Vector3.one * (effectRadius * 2f);
 
         var spriteRenderer = go.AddComponent<SpriteRenderer>();
         spriteRenderer.sprite = GetSplashCircleSprite();
@@ -399,7 +413,7 @@ public class Knife : MonoBehaviour
         go.AddComponent<SplashCircleFade>().Init(spriteRenderer, splashCircleColor, splashCircleDuration);
     }
 
-    private void ApplyKnockback(Collider2D col, Vector3 originPosition)
+    private void ApplyKnockback(Collider2D col, Vector3 originPosition, float strength)
     {
         Vector2 direction = (Vector2)col.bounds.center - (Vector2)originPosition;
         if (direction.sqrMagnitude <= 1e-6f)
@@ -409,7 +423,7 @@ public class Knife : MonoBehaviour
         if (direction.sqrMagnitude <= 1e-6f)
             direction = Vector2.right;
 
-        Vector2 impulse = direction.normalized * knockbackForce;
+        Vector2 impulse = direction.normalized * strength;
         if (col.GetComponentInParent<EnemyChaser>() is EnemyChaser chaser)
         {
             chaser.ApplyKnockback(impulse);
@@ -431,13 +445,28 @@ public class Knife : MonoBehaviour
     {
         int baseDamage = RollBaseDamage();
         int finalDamage;
-        if (Random.value < Mathf.Clamp01(critChance))
-            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * Mathf.Max(1f, critMultiplier)));
+        if (Random.value < GetEffectiveCritChance())
+            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * GetEffectiveCritMultiplier()));
         else
             finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
 
         return Mathf.Max(1, Mathf.RoundToInt(finalDamage * DamageOutputMultiplier));
     }
+
+    private PlayerAccessoryStats GetAccessoryStats()
+    {
+        if (accessoryStats == null)
+            accessoryStats = PlayerAccessoryStats.Find(transform);
+        return accessoryStats;
+    }
+
+    private float GetEffectiveRadius() => radius * (GetAccessoryStats() != null ? accessoryStats.WeaponAreaMultiplier : 1f);
+    private float GetEffectiveSplashRadius() => splashRadius * (GetAccessoryStats() != null ? accessoryStats.WeaponAreaMultiplier : 1f);
+    private float GetEffectiveCritChance() => Mathf.Clamp01(critChance + (GetAccessoryStats() != null ? accessoryStats.CriticalChanceBonus : 0f));
+    private float GetEffectiveCritMultiplier() => Mathf.Max(1f, critMultiplier + (GetAccessoryStats() != null ? accessoryStats.CriticalDamageBonus : 0f));
+    private float GetEffectiveKnockback() => Mathf.Max(0f, knockbackForce + (GetAccessoryStats() != null ? accessoryStats.KnockbackStrengthBonus : 0f));
+    private float GetEffectiveStatusChance() => Mathf.Clamp01(statusApplyChance + (GetAccessoryStats() != null ? accessoryStats.StatusApplicationChanceBonus : 0f));
+    private float GetEffectiveStatusDuration() => Mathf.Max(0f, statusEffectDuration * (GetAccessoryStats() != null ? accessoryStats.StatusDurationMultiplier : 1f));
 
     private string GetDamageRangeText()
     {
@@ -524,7 +553,7 @@ public class Knife : MonoBehaviour
         if (!autoScaleRangeVisual || rangeRenderer == null || rangeRenderer.sprite == null)
             return;
 
-        float desiredDiameter = Mathf.Max(0f, 2f * (radius + visualPadding));
+        float desiredDiameter = Mathf.Max(0f, 2f * (GetEffectiveRadius() + visualPadding));
         var sprite = rangeRenderer.sprite;
         Vector2 spriteSizeWorld = sprite.bounds.size;
 

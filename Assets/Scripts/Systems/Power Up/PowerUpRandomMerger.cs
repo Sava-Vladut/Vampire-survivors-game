@@ -57,37 +57,12 @@ public class PowerUpRandomMerger : MonoBehaviour
         var a = pool[iA];
         var b = pool[iB];
 
-        // Consume source objects (optional)
-        ConsumeSourceObject(a);
-        ConsumeSourceObject(b);
-
-        // Remove both from selected list (freeing capacity)
-        powerUpChooser.selectedPowerUps.Remove(a);
-        powerUpChooser.selectedPowerUps.Remove(b);
-
-        // Update any caps/labels the chooser shows
-        powerUpChooser.RefreshStatsText();
+        bool disable = sourceObjectHandling == SourceObjectHandling.Disable;
+        bool destroy = sourceObjectHandling == SourceObjectHandling.Destroy;
+        powerUpChooser.TryRemoveSelected(a, disable, destroy);
+        powerUpChooser.TryRemoveSelected(b, disable, destroy);
 
         Debug.Log($"[PowerUpRandomMerger] Merged and removed: \"{a?.powerUpName}\" + \"{b?.powerUpName}\".");
     }
 
-    private void ConsumeSourceObject(PowerUp p)
-    {
-        if (p == null || p.powerUpObject == null) return;
-
-        switch (sourceObjectHandling)
-        {
-            case SourceObjectHandling.Disable:
-                if (p.powerUpObject.scene.IsValid())
-                    p.powerUpObject.SetActive(false);
-                break;
-            case SourceObjectHandling.Destroy:
-                if (p.powerUpObject.scene.IsValid())
-                    Destroy(p.powerUpObject);
-                break;
-            case SourceObjectHandling.None:
-            default:
-                break;
-        }
-    }
 }

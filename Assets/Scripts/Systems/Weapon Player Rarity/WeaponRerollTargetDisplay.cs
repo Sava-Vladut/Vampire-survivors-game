@@ -23,8 +23,7 @@ public static class WeaponRerollTargetDisplay
         var accessory = controller.GetComponent<Accessory>();
         if (accessory != null)
         {
-            accessory.NotifyRootToRefresh();
-            return accessory.statsTextInstance != null ? accessory.statsTextInstance.text : string.Empty;
+            return accessory.BuildDisplayText();
         }
 
         return string.Empty;
@@ -41,7 +40,7 @@ public static class WeaponRerollTargetDisplay
         if (knife != null) return knife.weaponSprite;
 
         var accessory = controller.GetComponent<Accessory>();
-        if (accessory != null) return accessory.icon;
+        if (accessory != null) return accessory.Icon;
 
         return null;
     }

@@ -37,6 +37,8 @@ public class EnemyChaser : MonoBehaviour
     private SimpleHealth cachedHealth;
     private PlayerSafeZoneStatus targetSafeZoneStatus;
     private Transform cachedSafeZoneTarget;
+    private PlayerAccessoryStats targetAccessoryStats;
+    private Transform cachedAccessoryStatsTarget;
     private bool hasReached;
     private Vector2 knockbackVelocity;
 
@@ -140,7 +142,7 @@ public class EnemyChaser : MonoBehaviour
         }
 
         // Movement multiplier from status effects (cached component)
-        float mult = GetMoveMultiplier(cachedStatusEffects);
+        float mult = GetMoveMultiplier(cachedStatusEffects) * GetTargetSlowAuraMultiplier(distSqr);
 
         // Apply velocity (knockback is blended in on top of chase movement)
         float speed = moveSpeed * mult;
@@ -204,6 +206,24 @@ public class EnemyChaser : MonoBehaviour
     private static bool HasFear(StatusEffectSystem ses)
     {
         return ses != null && ses.HasStatus(StatusEffectSystem.StatusType.Fear);
+    }
+
+    private float GetTargetSlowAuraMultiplier(float distSqr)
+    {
+        if (target == null) return 1f;
+        if (cachedAccessoryStatsTarget != target)
+        {
+            cachedAccessoryStatsTarget = target;
+            targetAccessoryStats = null;
+        }
+
+        if (targetAccessoryStats == null)
+            targetAccessoryStats = PlayerAccessoryStats.Find(target);
+        if (targetAccessoryStats == null || !targetAccessoryStats.HasEnemySlowAura)
+            return 1f;
+
+        float radius = PlayerAccessoryStats.SlowAuraRadius;
+        return distSqr <= radius * radius ? targetAccessoryStats.EnemySlowMultiplier : 1f;
     }
 
 }

@@ -197,53 +197,23 @@ public class GeneratedUpgradeSettings : ScriptableObject
 
     private static PowerUpRarity RollDefaultRarity()
     {
-        var rarities = (PowerUpRarity[])Enum.GetValues(typeof(PowerUpRarity));
-        return rarities[UnityEngine.Random.Range(0, rarities.Length)];
+        float total = 0f;
+        foreach (PowerUpRarity rarity in Enum.GetValues(typeof(PowerUpRarity)))
+            total += Mathf.Max(0f, GetDefaultRarityFrequency(rarity));
+
+        float roll = UnityEngine.Random.value * total;
+        foreach (PowerUpRarity rarity in Enum.GetValues(typeof(PowerUpRarity)))
+        {
+            roll -= Mathf.Max(0f, GetDefaultRarityFrequency(rarity));
+            if (roll <= 0f) return rarity;
+        }
+
+        return PowerUpRarity.Common;
     }
 
     private static bool TryGetWeaponDefaults(WeaponUpgrades.UpgradeType type, out float min, out float max, out bool whole)
     {
-        min = max = 0f;
-        whole = false;
-        string name = type.ToString();
-
-        if (name.Contains("DamageFlat")) { min = 1f; max = 6f; whole = true; return true; }
-        if (name.Contains("DamagePercent")) { min = 0.03f; max = 0.12f; return true; }
-        if (name.Contains("CritChance")) { min = 0.02f; max = 0.10f; return true; }
-        if (name.Contains("CritMultiplier")) { min = 0.05f; max = 0.30f; return true; }
-        if (name.Contains("StatusApplyChanceFlat")) { min = 0.03f; max = 0.15f; return true; }
-        if (name.Contains("StatusApplyChancePercent")) { min = 0.05f; max = 0.25f; return true; }
-        if (name.Contains("StatusDurationFlat")) { min = 0.25f; max = 1.5f; return true; }
-        if (name.Contains("StatusDurationPercent")) { min = 0.05f; max = 0.25f; return true; }
-        if (name.Contains("Knockback")) { min = 0.25f; max = 1.5f; return true; }
-        if (name.Contains("CullThreshold")) { min = 0.01f; max = 0.03f; return true; }
-        if (name.Contains("ChainHits")) { min = max = 1f; whole = true; return true; }
-        if (name.Contains("PenetrationFlat")) { min = max = 1f; whole = true; return true; }
-        if (name.Contains("MaxTargets") || name.Contains("ProjectileCount"))
-        { min = 1f; max = 2f; whole = true; return true; }
-
-        switch (type)
-        {
-            case WeaponUpgrades.UpgradeType.KnifeRadiusFlat: min = 0.05f; max = 0.50f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeRadiusPercent: min = 0.03f; max = 0.15f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeLifestealFlat: min = 0.01f; max = 0.08f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeLifestealPercent: min = 0.05f; max = 0.20f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeSplashRadiusFlat: min = 0.10f; max = 0.75f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeSplashRadiusPercent: min = 0.05f; max = 0.25f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeSplashDamagePercentFlat: min = 0.03f; max = 0.15f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeSplashDamagePercentPercent: min = 0.05f; max = 0.25f; return true;
-            case WeaponUpgrades.UpgradeType.ShooterSpreadAngleFlat: min = 1f; max = 10f; return true;
-            case WeaponUpgrades.UpgradeType.ShooterSpreadAnglePercent: min = 0.05f; max = 0.25f; return true;
-            case WeaponUpgrades.UpgradeType.ShooterProjectileSpeedFlat: min = 0.25f; max = 2.5f; return true;
-            case WeaponUpgrades.UpgradeType.ShooterProjectileSpeedPercent: min = 0.05f; max = 0.25f; return true;
-            case WeaponUpgrades.UpgradeType.ShooterLifetimeFlat: min = 0.15f; max = 1f; return true;
-            case WeaponUpgrades.UpgradeType.ShooterLifetimePercent: min = 0.05f; max = 0.25f; return true;
-            case WeaponUpgrades.UpgradeType.TickRateFlat: min = 0.03f; max = 0.25f; return true;
-            case WeaponUpgrades.UpgradeType.TickRatePercent: min = 0.03f; max = 0.15f; return true;
-            case WeaponUpgrades.UpgradeType.KnifeEchoStrikeChance: min = 0.08f; max = 0.20f; return true;
-            case WeaponUpgrades.UpgradeType.ShooterForkShotChance: min = 0.08f; max = 0.20f; return true;
-            default: return false;
-        }
+        return WeaponUpgradeCatalog.TryGetDefaultRange(type, out min, out max, out whole);
     }
 
     private static bool TryGetAccessoryDefaults(AccessoriesUpgrades.StatUpgradeType type, out float min, out float max, out bool whole)
@@ -266,6 +236,27 @@ public class GeneratedUpgradeSettings : ScriptableObject
             case AccessoriesUpgrades.StatUpgradeType.MoveSpeedFlat: min = 0.15f; max = 0.75f; return true;
             case AccessoriesUpgrades.StatUpgradeType.DashDistanceFlat: min = 0.25f; max = 1.50f; return true;
             case AccessoriesUpgrades.StatUpgradeType.ThornsFlat: min = 2f; max = 12f; whole = true; return true;
+            case AccessoriesUpgrades.StatUpgradeType.ProjectileCountFlat: min = 1f; max = 1f; whole = true; return true;
+            case AccessoriesUpgrades.StatUpgradeType.CooldownReduction: min = 0.03f; max = 0.12f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.AttackSpeedPercent: min = 0.05f; max = 0.20f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.GlobalDamagePercent: min = 0.05f; max = 0.20f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.CriticalChanceFlat: min = 0.02f; max = 0.10f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.CriticalDamageFlat: min = 0.10f; max = 0.50f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.WeaponAreaPercent: min = 0.05f; max = 0.25f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.ProjectileSpeedPercent: min = 0.05f; max = 0.30f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.ProjectileLifetimePercent: min = 0.05f; max = 0.30f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.ProjectilePenetrationFlat: min = 1f; max = 1f; whole = true; return true;
+            case AccessoriesUpgrades.StatUpgradeType.KnockbackStrengthFlat: min = 0.50f; max = 2.50f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.PickupRadiusFlat: min = 0.50f; max = 3f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.XpGainPercent: min = 0.05f; max = 0.20f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.HealingReceivedPercent: min = 0.05f; max = 0.25f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.StatusDurationPercent: min = 0.10f; max = 0.40f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.StatusApplicationChanceFlat: min = 0.03f; max = 0.12f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.DashCooldownReduction: min = 0.05f; max = 0.20f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.AdditionalDashChargeFlat: min = 1f; max = 1f; whole = true; return true;
+            case AccessoriesUpgrades.StatUpgradeType.DashInvulnerabilityFlat: min = 0.05f; max = 0.20f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.ContactDamageReduction: min = 0.05f; max = 0.20f; return true;
+            case AccessoriesUpgrades.StatUpgradeType.EnemySlowAura: min = 0.05f; max = 0.20f; return true;
             default: return false;
         }
     }

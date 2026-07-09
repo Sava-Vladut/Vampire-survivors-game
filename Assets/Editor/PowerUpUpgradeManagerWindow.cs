@@ -426,14 +426,14 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
                 accessory.transform.parent.GetComponentInParent<Accessory>(true) != null)
                 continue;
 
-            string name = string.IsNullOrWhiteSpace(accessory.AccesoryName)
+            string name = string.IsNullOrWhiteSpace(accessory.DisplayName)
                 ? accessory.name
-                : accessory.AccesoryName.Trim();
+                : accessory.DisplayName.Trim();
             bool boots = name.Equals("Boots", StringComparison.OrdinalIgnoreCase);
             bool armor = name.Equals("Armor", StringComparison.OrdinalIgnoreCase);
-            string pool = boots ? "14 accessory types incl. movement" :
-                armor ? "13 accessory types incl. thorns" :
-                "12 general accessory types";
+            string pool = boots ? "33 accessory types incl. movement" :
+                armor ? "32 accessory types incl. thorns" :
+                "31 general accessory types";
             rows.Add(new ItemRow(accessory.gameObject, name, "Accessory", pool));
         }
 
@@ -824,7 +824,14 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
         type == AccessoriesUpgrades.StatUpgradeType.FireResist ||
         type == AccessoriesUpgrades.StatUpgradeType.ColdResist ||
         type == AccessoriesUpgrades.StatUpgradeType.LightningResist ||
-        type == AccessoriesUpgrades.StatUpgradeType.PoisonResist;
+        type == AccessoriesUpgrades.StatUpgradeType.PoisonResist ||
+        type == AccessoriesUpgrades.StatUpgradeType.CooldownReduction ||
+        type == AccessoriesUpgrades.StatUpgradeType.CriticalChanceFlat ||
+        type == AccessoriesUpgrades.StatUpgradeType.CriticalDamageFlat ||
+        type == AccessoriesUpgrades.StatUpgradeType.StatusApplicationChanceFlat ||
+        type == AccessoriesUpgrades.StatUpgradeType.DashCooldownReduction ||
+        type == AccessoriesUpgrades.StatUpgradeType.ContactDamageReduction ||
+        type == AccessoriesUpgrades.StatUpgradeType.EnemySlowAura;
 
     private readonly struct ItemRow
     {
