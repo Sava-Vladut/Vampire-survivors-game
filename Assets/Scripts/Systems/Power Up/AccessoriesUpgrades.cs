@@ -223,12 +223,30 @@ public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect, IPowe
     {
         if (Upgrade == null) return;
 
+        BuildSelectionText(upgradeType, value, out string title, out string desc);
+
+        // Prefix with the owning accessory's name
+        var owner = GetComponentInParent<Accessory>(true);
+        string ownerName = owner != null && !string.IsNullOrWhiteSpace(owner.DisplayName)
+            ? owner.DisplayName
+            : (transform.parent != null ? transform.parent.name : null);
+
+        Upgrade.powerUpName = string.IsNullOrEmpty(ownerName) ? title : $"{ownerName} - {title}";
+        Upgrade.powerUpDescription = desc;
+    }
+
+    public static void BuildSelectionText(
+        StatUpgradeType type,
+        float value,
+        out string title,
+        out string description)
+    {
         string flat = C(Mathf.RoundToInt(value).ToString());
         string pct = C((value * 100f).ToString("F0")) + "%";
         string perSec = C(value.ToString("F2")) + "/s";
         string decimalValue = C(value.ToString("F2"));
 
-        (string title, string desc) = upgradeType switch
+        (title, description) = type switch
         {
             StatUpgradeType.MaxHealthFlat => ($"Vitality +{flat}", $"Gain {flat} maximum health and become harder to slay."),
             StatUpgradeType.MaxHealthPercent => ($"Greater Vitality +{pct}", $"Increase your current maximum health by {pct}."),
@@ -267,15 +285,6 @@ public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect, IPowe
             StatUpgradeType.EnemySlowAura => ($"Dread Presence +{pct}", $"Slow nearby enemies by {pct}."),
             _ => ("No Upgrade", "This upgrade slot is empty."),
         };
-
-        // Prefix with the owning accessory's name
-        var owner = GetComponentInParent<Accessory>(true);
-        string ownerName = owner != null && !string.IsNullOrWhiteSpace(owner.DisplayName)
-            ? owner.DisplayName
-            : (transform.parent != null ? transform.parent.name : null);
-
-        Upgrade.powerUpName = string.IsNullOrEmpty(ownerName) ? title : $"{ownerName} - {title}";
-        Upgrade.powerUpDescription = desc;
     }
 
     private void TryAssignIconFromParent()
