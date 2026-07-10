@@ -112,6 +112,23 @@ public static class RarityTextFormatter
             var r = tiers.Scale(ranges.atkSpeedFrac, tiers.attackSpeed);
             AddPercentRangeLine(lines, "Attack Speed", r.x, r.y, tiers.attackSpeed);
         }
+        else if (upgrade == UpgradeType.ManaCost)
+        {
+            var flat = tiers.Scale(ranges.manaCostFlatReduction, tiers.manaCostFlat);
+            var percent = tiers.Scale(ranges.manaCostReductionFrac, tiers.manaCostPercent);
+            lines.Add($"{flat.x:F1}-{flat.y:F1} less Mana Cost ({RomanStatic(tiers.manaCostFlat)})");
+            lines.Add($"{percent.x * 100f:F0}-{percent.y * 100f:F0}% lower Mana Cost ({RomanStatic(tiers.manaCostPercent)})");
+        }
+        else if (upgrade == UpgradeType.ManaMax)
+        {
+            var r = tiers.Scale(ranges.manaMaxFlatAdd, tiers.manaMax, 0);
+            AddRangeLine(lines, "Max Mana", r.x, r.y, "", tiers.manaMax);
+        }
+        else if (upgrade == UpgradeType.ManaRegen)
+        {
+            var r = tiers.Scale(ranges.manaRegenAdd, tiers.manaRegen);
+            AddRangeLine(lines, "Mana Regen", r.x, r.y, "/s", tiers.manaRegen, "F1");
+        }
         else if (upgrade == UpgradeType.Crit)
         {
             var chance = tiers.Scale(ranges.critChanceAdd, tiers.critChance);

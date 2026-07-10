@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Grim::PowerUpDefinition
   stableId: f2264858f5964993ae9a4218f6c18147
   displayName: Armor
-  description: Gain +20 Armor. After taking direct damage, gain 100% increased Armor
-    for 3 seconds.
+  description: Gain +20 Armor. After a hit, Armor doubles for 3s.
   icon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
   tags: 4
   rarity: 0

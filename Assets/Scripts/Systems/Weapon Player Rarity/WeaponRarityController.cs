@@ -567,6 +567,9 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
             damage = damage,
             crit = crit,
             attack = tick,
+            // Mana rolls are opt-in per weapon. Lightning Strikes is the only
+            // prefab that enables this flag, so no other rarity pool can see them.
+            mana = tick != null && tick.AllowsManaRarityModifiers && tick.HasManaPool ? tick : null,
             knife = knife,
             shooter = shooter,
             health = health,
@@ -616,6 +619,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
             damage = live.damage != null ? preview : null,
             crit = live.crit != null ? preview : null,
             attack = live.attack != null ? preview : null,
+            mana = live.mana != null ? preview : null,
             knife = live.knife != null ? preview : null,
             shooter = live.shooter != null ? preview : null,
             health = live.health != null ? preview : null,
@@ -633,6 +637,10 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
             UpgradeType.AttackSpeed => tiers.attackSpeed,
             UpgradeType.Crit when previewText.IndexOf("Crit Chance", StringComparison.OrdinalIgnoreCase) >= 0 => tiers.critChance,
             UpgradeType.Crit => tiers.critMultiplier,
+            UpgradeType.ManaCost when previewText.IndexOf('%') >= 0 => tiers.manaCostPercent,
+            UpgradeType.ManaCost => tiers.manaCostFlat,
+            UpgradeType.ManaMax => tiers.manaMax,
+            UpgradeType.ManaRegen => tiers.manaRegen,
             UpgradeType.KnifeRadius => tiers.knifeRadius,
             UpgradeType.KnifeSplash => tiers.knifeSplashRadius,
             UpgradeType.KnifeOnslaughtOnKill => tiers.knifeOnslaughtOnKill,
@@ -715,6 +723,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         IDamageModule,
         ICritModule,
         IAttackSpeedModule,
+        IManaModule,
         IKnifeModule,
         IShooterModule,
         IHealthModule
@@ -738,6 +747,13 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
 
             if (source.attack != null)
                 Interval = source.attack.Interval;
+
+            if (source.mana != null)
+            {
+                ManaCostPerTick = source.mana.ManaCostPerTick;
+                MaxMana = source.mana.MaxMana;
+                RegenerationPerSecond = source.mana.RegenerationPerSecond;
+            }
 
             if (source.knife != null)
             {
@@ -782,6 +798,9 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         public float CritChance { get; set; }
         public float CritMultiplier { get; set; }
         public float Interval { get; set; }
+        public float ManaCostPerTick { get; set; }
+        public float MaxMana { get; private set; }
+        public float RegenerationPerSecond { get; set; }
         public float LifestealPercent { get; set; }
         public float Radius { get; set; }
         public float SplashRadius { get; set; }
@@ -799,6 +818,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         public float LightningResist { get; set; }
         public float PoisonResist { get; set; }
 
+        public void IncreaseMaxMana(float delta) => MaxMana = Mathf.Max(0f, MaxMana + delta);
         public void IncreaseMaxHealth(int delta) => MaxHealth = Mathf.Max(1, MaxHealth + delta);
     }
 }

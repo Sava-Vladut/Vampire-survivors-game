@@ -224,10 +224,10 @@ public static class PowerUpCardFormatter
             "sword" => "A knight's balanced blade, dependable in speed, reach, and killing power.",
 
             "arcane splitter bandolier" => "A spellwoven harness that conjures an additional spectral projectile whenever your weapons fire.",
-            "armor" => "Black-forged plate that hardens after impact. Taking damage doubles total Armor for 3 seconds.",
+            "armor" => "Armor doubles for 3s after taking damage.",
             "bloodied banner" => "A war standard that drinks in the press of battle, granting +10% damage per nearby enemy, up to +100%.",
             "boots" => "Road-worn boots of a royal outrider, granting their bearer speed and a lighter step.",
-            "coat" => "A shadow-stitched coat that awakens survival instinct. Taking damage doubles total Evasion for 3 seconds.",
+            "coat" => "Evasion doubles for 3s after taking damage.",
             "grave pact" => "A funerary covenant that turns suffering into strength, granting +2% damage per 10% missing health, up to +20%.",
             "ice ring" => "A frostbound signet whose pale ward steels flesh against both winter and flame.",
             "life ring" => "A living-gold band that fortifies the body and steadily knits ruined flesh.",

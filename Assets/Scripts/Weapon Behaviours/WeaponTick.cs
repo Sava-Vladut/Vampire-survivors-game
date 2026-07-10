@@ -26,6 +26,10 @@ public class WeaponTick : MonoBehaviour
     [Header("Mana")]
     [Tooltip("Mana spent for every successful tick. Set to 0 for weapons that do not use mana.")]
     [Min(0f), SerializeField] private float manaCostPerTick = 0f;
+    [Tooltip("Allow this weapon's rarity controller to roll mana-cost modifiers.")]
+    [SerializeField] private bool allowManaRarityModifiers = false;
+    [Tooltip("Allow generated Max Mana and Mana Regeneration drops for this weapon.")]
+    [SerializeField] private bool allowGlobalManaDrops = false;
 
     [Header("Event")]
     public UnityEvent onTick;
@@ -37,8 +41,19 @@ public class WeaponTick : MonoBehaviour
     private PlayerMana playerMana;
 
     public float EffectiveInterval => Mathf.Max(0f, interval) * GetCooldownMultiplier() / GetAttackSpeedMultiplier();
-    public float ManaCostPerTick => Mathf.Max(0f, manaCostPerTick);
+    public float ManaCostPerTick
+    {
+        get => Mathf.Max(0f, manaCostPerTick);
+        set
+        {
+            manaCostPerTick = Mathf.Max(0f, value);
+            if (Application.isPlaying && isActiveAndEnabled)
+                RefreshManaRegistration();
+        }
+    }
     public bool UsesMana => ManaCostPerTick > 0f;
+    public bool AllowsManaRarityModifiers => allowManaRarityModifiers && UsesMana;
+    public bool AllowsGlobalManaDrops => allowGlobalManaDrops && UsesMana;
 
     private void Awake()
     {

@@ -5,7 +5,7 @@ public static class UpgradeCatalog
 {
     public static List<UpgradeWeightProvider.Candidate> BuildCandidates(WeaponContext c)
     {
-        var list = new List<UpgradeWeightProvider.Candidate>(12);
+        var list = new List<UpgradeWeightProvider.Candidate>(16);
         void Add(bool cond, IUpgrade up, UpgradeType t)
         {
             if (cond && up != null) list.Add(new UpgradeWeightProvider.Candidate(up, t));
@@ -19,6 +19,13 @@ public static class UpgradeCatalog
 
         Add(c.attack != null, new AttackSpeedUpgrade(), UpgradeType.AttackSpeed);
         Add(c.crit != null, new CritUpgrade(), UpgradeType.Crit);
+
+        if (c.mana != null)
+        {
+            Add(true, new ManaCostUpgrade(), UpgradeType.ManaCost);
+            Add(true, new ManaMaxUpgrade(), UpgradeType.ManaMax);
+            Add(true, new ManaRegenUpgrade(), UpgradeType.ManaRegen);
+        }
 
         if (c.health != null && c.knife == null && c.shooter == null)
         {
@@ -95,10 +102,14 @@ public static class UpgradeCatalog
             18 => tiers.resist,
             19 => tiers.armorPercent,
             20 => tiers.evasionPercent,
+            21 => tiers.manaCostFlat,
+            22 => tiers.manaCostPercent,
+            23 => tiers.manaMax,
+            24 => tiers.manaRegen,
             _ => 0
         };
 
-        return slotIndex is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 9 or 10 or 12 or 13 or 14 or 15 or 16 or 17 or 18 or 19 or 20;
+        return slotIndex is 0 or 1 or 2 or 3 or 4 or 5 or 6 or 7 or 9 or 10 or 12 or 13 or 14 or 15 or 16 or 17 or 18 or 19 or 20 or 21 or 22 or 23 or 24;
     }
 
     private static bool SetTierSlot(TierSystem tiers, int slotIndex, int newValue)
@@ -125,6 +136,10 @@ public static class UpgradeCatalog
             case 18: return SetTier(ref tiers.resist, newValue);
             case 19: return SetTier(ref tiers.armorPercent, newValue);
             case 20: return SetTier(ref tiers.evasionPercent, newValue);
+            case 21: return SetTier(ref tiers.manaCostFlat, newValue);
+            case 22: return SetTier(ref tiers.manaCostPercent, newValue);
+            case 23: return SetTier(ref tiers.manaMax, newValue);
+            case 24: return SetTier(ref tiers.manaRegen, newValue);
             default: return false;
         }
     }
@@ -170,6 +185,9 @@ public static class UpgradeMetadata
         if (upgrade is DamagePercentAsFlatUpgrade) return Set(out entry, UpgradeType.DamagePercentAsFlat, "Damage", 0);
         if (upgrade is AttackSpeedUpgrade) return Set(out entry, UpgradeType.AttackSpeed, "Attack Speed", 2);
         if (upgrade is CritUpgrade) return Set(out entry, UpgradeType.Crit, "Crit", 3, 4);
+        if (upgrade is ManaCostUpgrade) return Set(out entry, UpgradeType.ManaCost, "Mana Efficiency", 21, 22);
+        if (upgrade is ManaMaxUpgrade) return Set(out entry, UpgradeType.ManaMax, "Mana Capacity", 23);
+        if (upgrade is ManaRegenUpgrade) return Set(out entry, UpgradeType.ManaRegen, "Mana Flow", 24);
         if (upgrade is KnifeRadiusUpgrade) return Set(out entry, UpgradeType.KnifeRadius, "Range", 5);
         if (upgrade is KnifeSplashUpgrade) return Set(out entry, UpgradeType.KnifeSplash, "AOE", 6);
         if (upgrade is KnifeOnslaughtOnKillUpgrade) return Set(out entry, UpgradeType.KnifeOnslaughtOnKill, "Onslaught On Kill", 7);
@@ -198,6 +216,9 @@ public static class UpgradeMetadata
             UpgradeType.DamagePercentAsFlat => new UpgradeMetadataEntry(type, "Damage", 0),
             UpgradeType.AttackSpeed => new UpgradeMetadataEntry(type, "Attack Speed", 2),
             UpgradeType.Crit => new UpgradeMetadataEntry(type, "Crit", 3, 4),
+            UpgradeType.ManaCost => new UpgradeMetadataEntry(type, "Mana Efficiency", 21, 22),
+            UpgradeType.ManaMax => new UpgradeMetadataEntry(type, "Mana Capacity", 23),
+            UpgradeType.ManaRegen => new UpgradeMetadataEntry(type, "Mana Flow", 24),
             UpgradeType.KnifeRadius => new UpgradeMetadataEntry(type, "Range", 5),
             UpgradeType.KnifeSplash => new UpgradeMetadataEntry(type, "AOE", 6),
             UpgradeType.KnifeOnslaughtOnKill => new UpgradeMetadataEntry(type, "Onslaught On Kill", 7),

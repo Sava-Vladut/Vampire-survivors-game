@@ -5,12 +5,22 @@ Current-checkout reference for the player weapons and prefab-backed accessories.
 ## Shared rules
 
 - The player can hold up to **2 weapons** and **2 accessories** in both gameplay scenes.
-- All current weapons deal **Physical** damage.
+- All current weapons except **Lightning Strikes** deal **Physical** damage. Lightning Strikes deals **Lightning** damage and can trigger the shared Shock ailment path.
 - Weapon damage below is the serialized range shown by the weapon UI. Both `Knife`-type and `SimpleShooter`-type weapons apply a final **0.5x output multiplier** after the damage roll, critical hit, and accessory damage multipliers.
 - A burst waits for the listed interval, then performs all burst hits with the listed spacing.
 - `Max targets: unlimited` means every valid, unique enemy found in the attack area can be hit on that tick.
 - Weapons and accessories can each receive up to **20 generated upgrades**.
 - Generated upgrade rarity multipliers are **Common 1x**, **Uncommon 1.5x**, **Rare 2x**, and **Curse 3x**. Their configured relative frequencies are **1**, **0.5**, **0.2**, and **0.05** respectively.
+
+## Global mana
+
+- Mana is a single player-wide resource shared by **Phantom Demonis**, **Phantom Aegis**, and **Lightning Strikes**.
+- The player starts with **100/100 mana** and regenerates **10 mana/second**.
+- A mana weapon registers itself while active, which makes the mana slider visible. If a weapon cannot pay its next tick cost, that attack is skipped; it resumes automatically once enough mana has regenerated.
+- **Phantom Demonis** costs **3 mana every 0.3s** and **Phantom Aegis** costs **6 mana every 0.6s**. Each therefore consumes **10 mana/second**, exactly matching base regeneration when used alone.
+- **Lightning Strikes** costs **5 mana per strike**, or **25 mana** for a complete five-strike burst.
+- Lightning Strikes is the only weapon whose `WeaponRarityController` can roll mana modifiers: **Mana Efficiency** lowers its per-strike cost, **Mana Capacity** increases global maximum mana, and **Mana Flow** increases global regeneration.
+- All three mana weapons can generate the global power-up drops **Arcane Reservoir** (**+10-30 Max Mana**) and **Arcane Flow** (**+1-4 mana/second regeneration**), before generated-upgrade rarity multipliers. Taking either drop from any eligible weapon improves the same global pool for all three.
 
 ## Weapons
 
@@ -58,7 +68,7 @@ Current-checkout reference for the player weapons and prefab-backed accessories.
 - **Other base effects:** No splash, status, knockback, lifesteal, cull, or echo strike.
 - **What it does:** A rapid point-blank aura that repeatedly damages every nearby enemy.
 
-### Eye of Devastation
+### Phantom Demonis / Eye of Devastation
 
 - **Prefab object name:** `Phantom Demonis`.
 - **Availability:** Both scene offer pools as the misspelled `Eye of devastion`, weight **50**.
@@ -66,20 +76,24 @@ Current-checkout reference for the player weapons and prefab-backed accessories.
 - **Damage:** **2-8**.
 - **Targets:** Unlimited unique targets across the three eye origins each tick.
 - **Critical:** **2%** chance, **2x** damage.
+- **Mana upkeep:** **3 mana per 0.3s tick** (**10 mana/second**). Damage ticks pause when the shared pool cannot pay the cost.
 - **Other base effects:** No splash, status, knockback, lifesteal, cull, or echo strike.
 - **What it does:** Three fast-orbiting damage zones continuously grind down enemies that get close to an eye.
 
 ### Lightning Strikes
 
-- **Availability:** Configured in `Player.prefab`, but **not present in the Grasslands or Castle offer pool**.
-- **Attack:** A **5-hit burst** every **1.0s**, with **0.15s** between hits. Its origin moves to a random point within **4** units as the burst runs.
+- **Availability:** Both scene offer pools, weight **25**.
+- **Attack:** A **5-strike burst** every **1.0s**, with **0.15s** between strikes. Before each strike, its origin selects a random living enemy within **7** units; if none exists, it falls back to a random ground location.
 - **Damage:** **8-26** per strike.
-- **Range:** **0.7** around the strike origin.
+- **Damage type:** **Lightning**, using lightning resistance/weakness rules and the shared chance to apply **Shock**.
+- **Range:** **0.8** around the strike origin.
 - **Targets:** **1** main target per strike.
 - **Splash:** **1.0** radius for **50%** of the main-hit damage.
-- **Critical:** **50%** chance, **1.5x** damage.
-- **Other base effects:** No status, knockback, lifesteal, cull, or echo strike.
-- **What it does:** A mobile multi-strike area attack, currently unreachable through normal scene offers.
+- **Critical:** **25%** chance, **1.5x** damage.
+- **Mana:** **5 mana per strike** (**25** for a full burst). Unaffordable strikes are skipped individually.
+- **Presentation:** Uses electric zap audio and a short procedural lightning bolt/impact-ring effect rather than the generic knife swing and slash effect.
+- **Other base effects:** No explicit status roll, knockback, lifesteal, cull, or echo strike. Shock comes from dealing Lightning damage.
+- **What it does:** Calls rapid enemy-targeted lightning from above with half-damage splash, while competing with the Phantom weapons for the global mana pool.
 
 ### Blowgun
 
@@ -118,6 +132,7 @@ Current-checkout reference for the player weapons and prefab-backed accessories.
 - **Projectile speed/lifetime:** **20** units/second for **5s**.
 - **Penetration:** **3**.
 - **Critical:** **25%** chance, **3x** damage.
+- **Trail:** Each bolt has a tapered amber trail lasting **0.32s**. The override belongs to Longshot Crossbow, so Blowgun and Burstfire Bow keep their normal projectile presentation.
 - **Other base effects:** No status, knockback, cull, chain, or fork shot.
 - **What it does:** A slow-firing precision weapon with long-lived projectiles, high critical damage, and strong piercing.
 
@@ -132,6 +147,7 @@ Current-checkout reference for the player weapons and prefab-backed accessories.
 - **Projectile speed/lifetime:** **12** units/second for **3s**.
 - **Penetration:** **1**.
 - **Critical:** **5%** chance, **2x** damage.
+- **Mana upkeep:** **6 mana per 0.6s attack** (**10 mana/second**). Projectile attacks pause when the shared pool cannot pay the cost.
 - **Other base effects:** No status, knockback, cull, chain, or fork shot.
 - **What it does:** An orbiting pair of shields that automatically fires two projectiles toward a nearby target.
 
@@ -178,5 +194,9 @@ Castle still serializes two old entries named **Fire Ring** and **Poison Ring**.
 - `Assets/Scripts/Weapon Behaviours/Knife.cs`
 - `Assets/Scripts/Weapon Behaviours/SimpleShooter.cs`
 - `Assets/Scripts/Weapon Behaviours/WeaponTick.cs`
+- `Assets/Scripts/Player/PlayerMana.cs`
+- `Assets/Scripts/Systems/Weapon Player Rarity/WeaponRarityController.cs`
+- `Assets/Scripts/Systems/Power Up/WeaponTickUpgradeDefinitions.cs`
+- `Assets/Scripts/Systems/Power Up/GeneratedUpgradeSettings.cs`
 - `Assets/Scripts/Systems/Power Up/AccessoryStatEffects.cs`
 - `Assets/Scripts/Systems/Power Up/PlayerDamageModifierRegistry.cs`

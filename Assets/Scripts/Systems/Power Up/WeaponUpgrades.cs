@@ -67,7 +67,11 @@ public class WeaponUpgrades : MonoBehaviour, IPowerUpSelectionEffect, IPowerUpOf
 
         KnifeEchoStrikeChance,
         ShooterForkShotChance,
-        ShooterPenetrationFlat
+        ShooterPenetrationFlat,
+
+        // Global mana drops. Appended to preserve existing serialized enum IDs.
+        ManaMaxFlat,
+        ManaRegenerationFlat
     }
 
     public const int MaxUpgrades = 20;

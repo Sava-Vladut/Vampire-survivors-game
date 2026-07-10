@@ -9,11 +9,21 @@ public class DamagePopup2D : MonoBehaviour
     public float floatSpeed = 1.5f;     // units/sec upward
     public float fadeStart = 0.3f;      // seconds before end to start fading
 
+    [Header("Continuous Damage")]
+    [Tooltip("How long the damage number remains still after the most recent hit.")]
+    [SerializeField, Min(0f)] private float damageHoldDuration = 0.8f;
+    [Tooltip("How long the damage number takes to rise and fade after damage stops.")]
+    [SerializeField, Min(0.05f)] private float damageEvaporateDuration = 0.3f;
+
     [Header("Critical Hits")]
     [SerializeField, Min(1f)] private float criticalSizeMultiplier = 1.5f;
 
     private TMP_Text tmp;
     private float age;
+    private float damageInactivityAge;
+    private float damageEvaporationAge;
+    private float previousEvaporationProgress;
+    private float damageBaseAlpha = 1f;
     private Vector3 normalTextScale;
     private int accumulatedDamage;
     private bool hasDamage;
@@ -27,6 +37,37 @@ public class DamagePopup2D : MonoBehaviour
     void Update()
     {
         float dt = Time.unscaledDeltaTime;
+
+        if (hasDamage)
+        {
+            UpdateDamagePopup(dt);
+            return;
+        }
+
+        UpdateTransientPopup(dt);
+    }
+
+    private void UpdateDamagePopup(float dt)
+    {
+        damageInactivityAge += dt;
+        if (damageInactivityAge < damageHoldDuration)
+            return;
+
+        damageEvaporationAge += dt;
+        float progress = Mathf.Clamp01(damageEvaporationAge / Mathf.Max(0.05f, damageEvaporateDuration));
+        float easedProgress = 1f - Mathf.Pow(1f - progress, 3f);
+        float movementDelta = easedProgress - previousEvaporationProgress;
+        previousEvaporationProgress = easedProgress;
+
+        transform.position += Vector3.up * (floatSpeed * damageEvaporateDuration * movementDelta);
+        tmp.color = new Color(tmp.color.r, tmp.color.g, tmp.color.b, damageBaseAlpha * (1f - progress));
+
+        if (progress >= 1f)
+            Destroy(gameObject);
+    }
+
+    private void UpdateTransientPopup(float dt)
+    {
         age += dt;
 
         // move up
@@ -50,6 +91,7 @@ public class DamagePopup2D : MonoBehaviour
 
         hasDamage = false;
         containsCriticalHit = false;
+        age = 0f;
         ApplyCriticalSize(false);
         tmp.text = text;
     }
@@ -62,7 +104,7 @@ public class DamagePopup2D : MonoBehaviour
         accumulatedDamage = Mathf.Max(0, damage);
         hasDamage = true;
         containsCriticalHit = isCritical;
-        tmp.color = color;
+        ResetDamageActivity(color);
         RefreshDamageText();
     }
 
@@ -76,7 +118,7 @@ public class DamagePopup2D : MonoBehaviour
 
         accumulatedDamage += Mathf.Max(0, damage);
         containsCriticalHit |= isCritical;
-        tmp.color = color;
+        ResetDamageActivity(color);
         RefreshDamageText();
     }
 
@@ -88,6 +130,9 @@ public class DamagePopup2D : MonoBehaviour
         if (!TryCacheText())
             return;
 
+        hasDamage = false;
+        containsCriticalHit = false;
+        age = 0f;
         tmp.text = text;
         tmp.color = color;
         ApplyCriticalSize(false);
@@ -158,11 +203,30 @@ public class DamagePopup2D : MonoBehaviour
         ApplyCriticalSize(containsCriticalHit);
     }
 
+    private void ResetDamageActivity(Color color)
+    {
+        damageInactivityAge = 0f;
+        damageEvaporationAge = 0f;
+        previousEvaporationProgress = 0f;
+        damageBaseAlpha = color.a;
+        tmp.color = color;
+    }
+
     private void ApplyCriticalSize(bool isCritical)
     {
         if (tmp == null)
             return;
 
         tmp.transform.localScale = normalTextScale * (isCritical ? criticalSizeMultiplier : 1f);
+    }
+
+    private void OnValidate()
+    {
+        lifetime = Mathf.Max(0f, lifetime);
+        floatSpeed = Mathf.Max(0f, floatSpeed);
+        fadeStart = Mathf.Max(0f, fadeStart);
+        damageHoldDuration = Mathf.Max(0f, damageHoldDuration);
+        damageEvaporateDuration = Mathf.Max(0.05f, damageEvaporateDuration);
+        criticalSizeMultiplier = Mathf.Max(1f, criticalSizeMultiplier);
     }
 }

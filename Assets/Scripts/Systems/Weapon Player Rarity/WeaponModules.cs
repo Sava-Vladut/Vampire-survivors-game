@@ -8,6 +8,13 @@ public interface IDamageModule
 }
 public interface ICritModule { float CritChance { get; set; } float CritMultiplier { get; set; } }
 public interface IAttackSpeedModule { float Interval { get; set; } }
+public interface IManaModule
+{
+    float ManaCostPerTick { get; set; }
+    float MaxMana { get; }
+    float RegenerationPerSecond { get; set; }
+    void IncreaseMaxMana(float delta);
+}
 public interface IKnifeModule
 {
     float LifestealPercent { get; set; }
@@ -94,11 +101,35 @@ public sealed class ShooterAdapter : IDamageModule, ICritModule, IShooterModule,
     public void SetText(string t) => s.extraTextField = t;
 }
 
-public sealed class TickAdapter : IAttackSpeedModule
+public sealed class TickAdapter : IAttackSpeedModule, IManaModule
 {
     private readonly WeaponTick t;
+    private PlayerMana mana;
     public TickAdapter(WeaponTick t) { this.t = t; }
     public float Interval { get => t.interval; set => t.interval = value; }
+    public float ManaCostPerTick { get => t.ManaCostPerTick; set => t.ManaCostPerTick = value; }
+    public float MaxMana => ResolveMana() != null ? mana.MaxMana : 0f;
+    public float RegenerationPerSecond
+    {
+        get => ResolveMana() != null ? mana.RegenerationPerSecond : 0f;
+        set { if (ResolveMana() != null) mana.RegenerationPerSecond = value; }
+    }
+    public bool AllowsManaRarityModifiers => t.AllowsManaRarityModifiers;
+    public bool HasManaPool => ResolveMana() != null;
+
+    public void IncreaseMaxMana(float delta)
+    {
+        if (ResolveMana() != null)
+            mana.IncreaseMaxMana(delta);
+    }
+
+    private PlayerMana ResolveMana()
+    {
+        if (mana == null)
+            mana = PlayerMana.Find(t.transform);
+        return mana;
+    }
+
     public void ResetAndStartIfPlaying()
     {
         if (Application.isPlaying) t.ResetAndStart();

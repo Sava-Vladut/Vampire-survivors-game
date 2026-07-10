@@ -76,6 +76,9 @@ MonoBehaviour:
   lifetime: 0.8
   floatSpeed: 1
   fadeStart: 0.3
+  damageHoldDuration: 0.8
+  damageEvaporateDuration: 0.3
+  criticalSizeMultiplier: 1.5
 --- !u!1 &5360523489210618444
 GameObject:
   m_ObjectHideFlags: 0

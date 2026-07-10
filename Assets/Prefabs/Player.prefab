@@ -2995,6 +2995,11 @@ MonoBehaviour:
   knockbackForce: 0
   cullThreshold: 0
   chainHits: 0
+  overrideProjectileTrail: 1
+  projectileTrailTime: 0.32
+  projectileTrailWidth: 0.34
+  projectileTrailStartColor: {r: 1, g: 0.82, b: 0.35, a: 1}
+  projectileTrailEndColor: {r: 0.45, g: 0.12, b: 0.03, a: 0}
   critChance: 0.25
   critMultiplier: 3
   applyStatusEffectOnHit: 0
@@ -4479,6 +4484,7 @@ MonoBehaviour:
   startingMana: 100
   regenerationPerSecond: 10
   manaSlider: {fileID: 0}
+  manaText: {fileID: 4283215228649485214}
   manaSliderObjectName: Mana Slider
 --- !u!1 &1247444226582579560
 GameObject:
@@ -7582,7 +7588,9 @@ MonoBehaviour:
   burstEnabled: 0
   burstCount: 3
   burstSpacing: 0.1
-  manaCostPerTick: 0
+  manaCostPerTick: 3
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 1
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -9949,7 +9957,9 @@ MonoBehaviour:
   burstEnabled: 0
   burstCount: 3
   burstSpacing: 0.1
-  manaCostPerTick: 0
+  manaCostPerTick: 6
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 1
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -13939,7 +13949,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: New Text
+  m_text: 100/100
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8d4db32dfbb302d4195300b724b29022, type: 2}
   m_sharedMaterial: {fileID: 4919702837162057759, guid: 8d4db32dfbb302d4195300b724b29022, type: 2}
@@ -17523,7 +17533,9 @@ MonoBehaviour:
   burstEnabled: 1
   burstCount: 5
   burstSpacing: 0.15
-  manaCostPerTick: 0
+  manaCostPerTick: 5
+  allowManaRarityModifiers: 1
+  allowGlobalManaDrops: 1
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -17729,6 +17741,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -17749,6 +17765,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5

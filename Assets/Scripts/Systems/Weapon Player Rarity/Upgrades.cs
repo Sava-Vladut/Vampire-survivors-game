@@ -23,6 +23,7 @@ public sealed class WeaponContext
     public IDamageModule damage;
     public ICritModule crit;
     public IAttackSpeedModule attack;
+    public IManaModule mana;
     public IKnifeModule knife;
     public IShooterModule shooter;
     public IHealthModule health;
@@ -276,6 +277,66 @@ public sealed class AttackSpeedUpgrade : IUpgrade
         c.attack.Interval = newInterval;
         notes.AppendLine($"+{frac * 100f:F0}% Attack Speed ({c.Roman(c.tiers.attackSpeed)})");
         return () => c.attack.Interval += actuallyReduced;
+    }
+}
+
+public sealed class ManaCostUpgrade : IUpgrade
+{
+    private const float MinimumManaCost = 0.1f;
+
+    public bool IsApplicable(WeaponContext c) => c.mana != null && c.mana.ManaCostPerTick > MinimumManaCost;
+
+    public Action Apply(WeaponContext c, StringBuilder notes)
+    {
+        float before = c.mana.ManaCostPerTick;
+        if (c.Chance(0.5f))
+        {
+            var r = c.tiers.Scale(c.ranges.manaCostFlatReduction, c.tiers.manaCostFlat);
+            float rolledReduction = Mathf.Max(0f, c.RangeFloat(r.x, r.y));
+            float after = Mathf.Max(MinimumManaCost, before - rolledReduction);
+            float actualReduction = before - after;
+            c.mana.ManaCostPerTick = after;
+            notes.AppendLine($"-{actualReduction:F1} Mana Cost ({c.Roman(c.tiers.manaCostFlat)})");
+        }
+        else
+        {
+            var r = c.tiers.Scale(c.ranges.manaCostReductionFrac, c.tiers.manaCostPercent);
+            float rolledFraction = Mathf.Clamp(c.RangeFloat(r.x, r.y), 0f, 0.9f);
+            float after = Mathf.Max(MinimumManaCost, before * (1f - rolledFraction));
+            float actualFraction = before > 0f ? 1f - after / before : 0f;
+            c.mana.ManaCostPerTick = after;
+            notes.AppendLine($"-{actualFraction * 100f:F0}% Mana Cost ({c.Roman(c.tiers.manaCostPercent)})");
+        }
+
+        return () => c.mana.ManaCostPerTick = before;
+    }
+}
+
+public sealed class ManaMaxUpgrade : IUpgrade
+{
+    public bool IsApplicable(WeaponContext c) => c.mana != null;
+
+    public Action Apply(WeaponContext c, StringBuilder notes)
+    {
+        var r = c.tiers.Scale(c.ranges.manaMaxFlatAdd, c.tiers.manaMax, 0);
+        int add = Mathf.Max(1, c.RangeIntInclusive(r.x, r.y));
+        c.mana.IncreaseMaxMana(add);
+        notes.AppendLine($"+{add} Max Mana ({c.Roman(c.tiers.manaMax)})");
+        return () => c.mana.IncreaseMaxMana(-add);
+    }
+}
+
+public sealed class ManaRegenUpgrade : IUpgrade
+{
+    public bool IsApplicable(WeaponContext c) => c.mana != null;
+
+    public Action Apply(WeaponContext c, StringBuilder notes)
+    {
+        var r = c.tiers.Scale(c.ranges.manaRegenAdd, c.tiers.manaRegen);
+        float add = Mathf.Max(0f, c.RangeFloat(r.x, r.y));
+        c.mana.RegenerationPerSecond += add;
+        notes.AppendLine($"+{add:F1}/s Mana Regen ({c.Roman(c.tiers.manaRegen)})");
+        return () => c.mana.RegenerationPerSecond = Mathf.Max(0f, c.mana.RegenerationPerSecond - add);
     }
 }
 

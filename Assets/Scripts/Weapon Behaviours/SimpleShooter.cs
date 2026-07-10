@@ -31,6 +31,16 @@ public class SimpleShooter : MonoBehaviour
     [Range(0f, 1f)] public float cullThreshold = 0f;
     [Min(0)] public int chainHits = 0;
 
+    [Header("Projectile Trail")]
+    [Tooltip("Override the spawned projectile's TrailRenderer for this weapon only.")]
+    [SerializeField] private bool overrideProjectileTrail = false;
+    [SerializeField, Min(0f), Tooltip("How long the custom trail remains visible, in seconds.")]
+    private float projectileTrailTime = 0.25f;
+    [SerializeField, Min(0f), Tooltip("Maximum world-space width of the custom tapered trail.")]
+    private float projectileTrailWidth = 0.3f;
+    [SerializeField] private Color projectileTrailStartColor = new Color(1f, 0.82f, 0.35f, 1f);
+    [SerializeField] private Color projectileTrailEndColor = new Color(0.45f, 0.12f, 0.03f, 0f);
+
     [Header("Criticals")]
     [Tooltip("Chance for a projectile to deal critical damage.")]
     [Range(0f, 1f)] public float critChance = 0f;
@@ -210,6 +220,8 @@ public class SimpleShooter : MonoBehaviour
             sb.AppendLine($"Speed: <color={numColor}>{effectiveSpeed:F1}</color>");
         if (effectiveLifetime > 0f)
             sb.AppendLine($"Life: <color={numColor}>{effectiveLifetime:F1}</color>s");
+        if (wt != null && wt.ManaCostPerTick > 0f)
+            sb.AppendLine($"Mana: <color={numColor}>{wt.ManaCostPerTick:F1}</color>/tick");
         if (!Mathf.Approximately(effectiveAreaMultiplier, 1f))
             sb.AppendLine($"Area: <color={numColor}>x{effectiveAreaMultiplier:F2}</color>");
         if (projectileCount > 1)
@@ -328,6 +340,7 @@ public class SimpleShooter : MonoBehaviour
     {
         var bullet = Instantiate(bulletPrefab, originPosition, Quaternion.identity);
         ApplyProjectileAreaScale(bullet, GetEffectiveAreaMultiplier());
+        ConfigureProjectileTrail(bullet);
         int configuredChainHits = ConfigureChainHits(bullet);
 
         float rotDeg = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
@@ -366,6 +379,34 @@ public class SimpleShooter : MonoBehaviour
         float effectiveLifetime = GetEffectiveProjectileLifetime();
         if (effectiveLifetime > 0f)
             Destroy(bullet, effectiveLifetime);
+    }
+
+    private void ConfigureProjectileTrail(GameObject bullet)
+    {
+        if (!overrideProjectileTrail || bullet == null)
+            return;
+
+        TrailRenderer trail = bullet.GetComponent<TrailRenderer>();
+        if (trail == null)
+            trail = bullet.AddComponent<TrailRenderer>();
+
+        if (trail.sharedMaterial == null && bullet.TryGetComponent<SpriteRenderer>(out var spriteRenderer))
+            trail.sharedMaterial = spriteRenderer.sharedMaterial;
+
+        trail.enabled = true;
+        trail.emitting = true;
+        trail.time = Mathf.Max(0f, projectileTrailTime);
+        trail.widthMultiplier = Mathf.Max(0f, projectileTrailWidth);
+        trail.widthCurve = new AnimationCurve(
+            new Keyframe(0f, 1f),
+            new Keyframe(0.65f, 0.55f),
+            new Keyframe(1f, 0f));
+        trail.startColor = projectileTrailStartColor;
+        trail.endColor = projectileTrailEndColor;
+        trail.minVertexDistance = 0.04f;
+        trail.numCornerVertices = 2;
+        trail.numCapVertices = 2;
+        trail.Clear();
     }
 
     private int GetConfiguredChainHits()

@@ -10,6 +10,12 @@ public class UpgradeRanges
     public Vector2 critChanceAdd = new Vector2(0.05f, 0.20f);
     public Vector2 critMultAdd = new Vector2(0.25f, 1.00f);
 
+    [Header("Mana (eligible weapons only)")]
+    public Vector2 manaCostFlatReduction = new Vector2(0.5f, 1.5f);
+    public Vector2 manaCostReductionFrac = new Vector2(0.08f, 0.20f);
+    public Vector2Int manaMaxFlatAdd = new Vector2Int(10, 30);
+    public Vector2 manaRegenAdd = new Vector2(1f, 4f);
+
     [Header("Health / Defense")]
     public Vector2Int hpFlatAdd = new Vector2Int(15, 60);
     public Vector2 hpMult = new Vector2(1.05f, 1.25f);

@@ -940,7 +940,9 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
 
     private static bool IsTickType(WeaponUpgrades.UpgradeType type) =>
         type == WeaponUpgrades.UpgradeType.TickRateFlat ||
-        type == WeaponUpgrades.UpgradeType.TickRatePercent;
+        type == WeaponUpgrades.UpgradeType.TickRatePercent ||
+        type == WeaponUpgrades.UpgradeType.ManaMaxFlat ||
+        type == WeaponUpgrades.UpgradeType.ManaRegenerationFlat;
 
     private static bool IsPercentageWeapon(WeaponUpgrades.UpgradeType type)
     {

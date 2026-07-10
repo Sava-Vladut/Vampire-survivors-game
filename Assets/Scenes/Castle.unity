@@ -556,6 +556,11 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 3015571481402315596, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
   m_PrefabInstance: {fileID: 4663750748832903826}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &2096130138 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7596130138076833886, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
+  m_PrefabInstance: {fileID: 4663750748832903826}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &108260928
 Mesh:
   m_ObjectHideFlags: 0
@@ -9998,6 +10003,17 @@ MonoBehaviour:
     powerUpIcon: {fileID: 5583272366953621293, guid: 9c929be9fa68d654e999a40812345349, type: 3}
     rarity: 0
     weight: 40
+    sourceDefinition: {fileID: 0}
+  - powerUpName: Lightning Strikes
+    powerUpDescription: Calls down a rapid storm of enemy-targeted lightning. Each
+      strike costs mana and can Shock nearby foes.
+    powerUpObject: {fileID: 2096130138}
+    IsAccessory: 0
+    IsWeapon: 1
+    IsUpgrade: 0
+    powerUpIcon: {fileID: 1781937086033352542, guid: 7ee4e681aa5aa8a44b2221fd0625bba9, type: 3}
+    rarity: 0
+    weight: 25
     sourceDefinition: {fileID: 0}
   - powerUpName: Blowgun
     powerUpDescription: Close-range blast that deletes enemies faster than Twitch
@@ -53792,10 +53808,6 @@ PrefabInstance:
     - target: {fileID: 7250410898846024135, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7596130138076833886, guid: 03ac66087621eda47bc0d3a26de6d4ed, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

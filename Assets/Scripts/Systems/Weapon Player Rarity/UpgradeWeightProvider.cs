@@ -28,7 +28,11 @@ public enum UpgradeType
     
     ShooterRange,
     ShooterAccuracy,
-    KnifeOnslaughtOnKill
+    KnifeOnslaughtOnKill,
+    // Mana values are appended to preserve existing serialized enum IDs.
+    ManaCost,
+    ManaMax,
+    ManaRegen
 }
 
 /// <summary>
@@ -43,6 +47,11 @@ public class UpgradeWeightTable
     [Min(0f)] public float damagePercentAsFlat = 1f;
     [Min(0f)] public float attackSpeed = 1f;
     [Min(0f)] public float crit = 1f;
+
+    [Header("Mana (eligible weapons only)")]
+    [Min(0f)] public float manaCost = 1f;
+    [Min(0f)] public float manaMax = 1f;
+    [Min(0f)] public float manaRegen = 1f;
 
     [Header("Health / Defense")]
     [Min(0f)] public float hpFlat = 1f;
@@ -73,6 +82,9 @@ public class UpgradeWeightTable
         UpgradeType.DamagePercentAsFlat => damagePercentAsFlat,
         UpgradeType.AttackSpeed => attackSpeed,
         UpgradeType.Crit => crit,
+        UpgradeType.ManaCost => manaCost,
+        UpgradeType.ManaMax => manaMax,
+        UpgradeType.ManaRegen => manaRegen,
         UpgradeType.HpFlat => hpFlat,
         UpgradeType.HpPercent => hpPercent,
         UpgradeType.HpRegen => hpRegen,

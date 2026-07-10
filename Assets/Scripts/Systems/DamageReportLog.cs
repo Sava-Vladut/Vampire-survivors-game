@@ -28,7 +28,7 @@ public class DamageReportLog : MonoBehaviour
     [SerializeField, Min(1)] private int maxRecentHits = 12;
 
     private readonly int[] totalByType = new int[DamageTypes.Length];
-    private readonly Dictionary<string, SourceTotals> sourceTotals = new Dictionary<string, SourceTotals>();
+    private readonly Dictionary<string, SourceTotals> sourceTotals = new Dictionary<string, SourceTotals>(StringComparer.OrdinalIgnoreCase);
     private readonly List<KeyValuePair<string, SourceTotals>> sortedSourceTotals = new List<KeyValuePair<string, SourceTotals>>();
     private readonly List<HitLine> recentHits = new List<HitLine>();
     private readonly StringBuilder builder = new StringBuilder(1024);
@@ -124,11 +124,12 @@ public class DamageReportLog : MonoBehaviour
 
         totalByType[typeIndex] += entry.Amount;
 
-        string sourceName = string.IsNullOrWhiteSpace(entry.SourceName) ? "Unknown" : entry.SourceName;
-        if (!sourceTotals.TryGetValue(sourceName, out SourceTotals totals))
+        string sourceName = string.IsNullOrWhiteSpace(entry.SourceName) ? "Unknown" : entry.SourceName.Trim();
+        string chatterName = GetChatterGroupName(sourceName);
+        if (!sourceTotals.TryGetValue(chatterName, out SourceTotals totals))
         {
             totals = new SourceTotals();
-            sourceTotals[sourceName] = totals;
+            sourceTotals[chatterName] = totals;
         }
 
         totals.Total += entry.Amount;
@@ -359,6 +360,24 @@ public class DamageReportLog : MonoBehaviour
         };
 
         return $"<color={hex}>{type}</color>";
+    }
+
+    private static string GetChatterGroupName(string sourceName)
+    {
+        int closingParenthesis = sourceName.Length - 1;
+        if (closingParenthesis < 3 || sourceName[closingParenthesis] != ')')
+            return sourceName;
+
+        int openingParenthesis = sourceName.LastIndexOf(" (", StringComparison.Ordinal);
+        if (openingParenthesis <= 0)
+            return sourceName;
+
+        string suffix = sourceName.Substring(openingParenthesis + 2, closingParenthesis - openingParenthesis - 2);
+        bool isSpawnOrdinal = int.TryParse(suffix, out int ordinal) && ordinal > 0;
+        bool isBossLabel = string.Equals(suffix, "Boss", StringComparison.OrdinalIgnoreCase);
+        return isSpawnOrdinal || isBossLabel
+            ? sourceName.Substring(0, openingParenthesis)
+            : sourceName;
     }
 
     private static string ShortType(SimpleHealth.DamageType type)

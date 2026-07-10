@@ -10,6 +10,12 @@ public class TierSystem
     [Range(1, 5)] public int critChance = 5;
     [Range(1, 5)] public int critMultiplier = 5;
 
+    [Header("Mana (eligible weapons only)")]
+    [Range(1, 5)] public int manaCostFlat = 5;
+    [Range(1, 5)] public int manaCostPercent = 5;
+    [Range(1, 5)] public int manaMax = 5;
+    [Range(1, 5)] public int manaRegen = 5;
+
     [Header("Health / Defense (1=best, 5=worst)")]
     [Range(1, 5)] public int hpFlat = 5;
     [Range(1, 5)] public int hpPercent = 5;
@@ -43,6 +49,10 @@ public class TierSystem
         attackSpeed = Roll(rng);
         critChance = Roll(rng);
         critMultiplier = Roll(rng);
+        manaCostFlat = Roll(rng);
+        manaCostPercent = Roll(rng);
+        manaMax = Roll(rng);
+        manaRegen = Roll(rng);
 
         hpFlat = Roll(rng);
         hpPercent = Roll(rng);

@@ -201,6 +201,7 @@ public class Knife : MonoBehaviour
         public float splashDamagePercent;
         public bool hasDelay;
         public float delay;
+        public float manaCostPerTick;
         public float lifestealPercent;
         public float effectiveCritChance;
         public float effectiveCritMultiplier;
@@ -226,6 +227,7 @@ public class Knife : MonoBehaviour
                    splashDamagePercent == other.splashDamagePercent &&
                    hasDelay == other.hasDelay &&
                    delay == other.delay &&
+                   manaCostPerTick == other.manaCostPerTick &&
                    lifestealPercent == other.lifestealPercent &&
                    effectiveCritChance == other.effectiveCritChance &&
                    effectiveCritMultiplier == other.effectiveCritMultiplier &&
@@ -335,6 +337,7 @@ public class Knife : MonoBehaviour
             splashDamagePercent = splashDamagePercent,
             hasDelay = wt != null,
             delay = wt != null ? wt.EffectiveInterval : 0f,
+            manaCostPerTick = wt != null ? wt.ManaCostPerTick : 0f,
             lifestealPercent = lifestealPercent,
             effectiveCritChance = effectiveValues.effectiveCritChance,
             effectiveCritMultiplier = effectiveValues.effectiveCritMultiplier,
@@ -369,6 +372,8 @@ public class Knife : MonoBehaviour
 
         if (currentSnapshot.hasDelay)
             sb.AppendLine($"Delay: <color={numColor}>{currentSnapshot.delay:F1}</color>s");
+        if (currentSnapshot.manaCostPerTick > 0f)
+            sb.AppendLine($"Mana: <color={numColor}>{currentSnapshot.manaCostPerTick:F1}</color>/tick");
 
         if (currentSnapshot.lifestealPercent > 0f)
             sb.AppendLine($"Steal: <color={numColor}>{currentSnapshot.lifestealPercent * 100f:F0}</color>%");

@@ -48,8 +48,7 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier: 
   displayName: Armor
-  baseDescription: Gain +20 Armor. After taking direct damage, gain 100% increased
-    Armor for 3 seconds.
+  baseDescription: Gain +20 Armor. After a hit, Armor doubles for 3s.
   icon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
   upgradeProfile: {fileID: 11400000, guid: c7aae5f32de13eb44890ce29a32ec81b, type: 2}
   legacyStatsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}

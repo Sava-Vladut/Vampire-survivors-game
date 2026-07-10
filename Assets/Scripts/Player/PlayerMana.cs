@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,6 +15,8 @@ public sealed class PlayerMana : MonoBehaviour
     [Header("UI")]
     [Tooltip("Optional. If empty, a child Slider named 'Mana Slider' is found automatically.")]
     [SerializeField] private Slider manaSlider;
+    [Tooltip("Optional. If empty, the first TextMeshProUGUI below the mana slider is found automatically.")]
+    [SerializeField] private TextMeshProUGUI manaText;
     [SerializeField] private string manaSliderObjectName = "Mana Slider";
 
     private readonly HashSet<Component> manaUsers = new();
@@ -23,7 +26,11 @@ public sealed class PlayerMana : MonoBehaviour
 
     public float CurrentMana => currentMana;
     public float MaxMana => maxMana;
-    public float RegenerationPerSecond => regenerationPerSecond;
+    public float RegenerationPerSecond
+    {
+        get => regenerationPerSecond;
+        set => regenerationPerSecond = Mathf.Max(0f, value);
+    }
     public bool HasManaUsers
     {
         get
@@ -72,6 +79,24 @@ public sealed class PlayerMana : MonoBehaviour
     public void Refill()
     {
         SetCurrentMana(maxMana);
+    }
+
+    public void IncreaseMaxMana(float amount)
+    {
+        if (Mathf.Approximately(amount, 0f))
+            return;
+
+        float before = maxMana;
+        maxMana = Mathf.Max(0f, maxMana + amount);
+        float actualIncrease = maxMana - before;
+        if (actualIncrease > 0f)
+            currentMana = Mathf.Min(maxMana, currentMana + actualIncrease);
+        else
+            currentMana = Mathf.Clamp(currentMana, 0f, maxMana);
+
+        startingMana = Mathf.Clamp(startingMana, 0f, maxMana);
+        SyncSlider();
+        ManaChanged?.Invoke(currentMana, maxMana);
     }
 
     public void RegisterUser(Component user)
@@ -132,12 +157,25 @@ public sealed class PlayerMana : MonoBehaviour
     private void SyncSlider()
     {
         ResolveSlider();
-        if (manaSlider == null)
+        ResolveText();
+
+        if (manaSlider != null)
+        {
+            manaSlider.minValue = 0f;
+            manaSlider.maxValue = maxMana;
+            manaSlider.value = currentMana;
+        }
+
+        if (manaText != null)
+            manaText.text = $"{Mathf.RoundToInt(currentMana)}/{Mathf.RoundToInt(maxMana)}";
+    }
+
+    private void ResolveText()
+    {
+        if (manaText != null || manaSlider == null)
             return;
 
-        manaSlider.minValue = 0f;
-        manaSlider.maxValue = maxMana;
-        manaSlider.value = currentMana;
+        manaText = manaSlider.GetComponentInChildren<TextMeshProUGUI>(true);
     }
 
     private void RefreshSliderVisibility()
