@@ -133,6 +133,62 @@ public sealed class AccessorySystemTests
         Assert.That(PlayerDamageMultiplierUtility.Apply(weapon, 20), Is.EqualTo(30));
     }
 
+    [Test]
+    public void PowerUpCardFormatter_BaseWeaponUsesRpgCopyAndLiveBaseStats()
+    {
+        GameObject weapon = Track(new GameObject("Knife"));
+        Knife knife = weapon.AddComponent<Knife>();
+        knife.minDamage = 7;
+        knife.damage = 23;
+        knife.radius = 2f;
+        knife.maxTargetsPerTick = 1;
+        knife.critChance = 0.5f;
+        knife.critMultiplier = 1.5f;
+        WeaponTick tick = weapon.AddComponent<WeaponTick>();
+        tick.interval = 0.5f;
+
+        string description = PowerUpCardFormatter.BuildDescription(new PowerUp
+        {
+            powerUpName = "Knife",
+            powerUpDescription = "Old non-RPG copy",
+            powerUpObject = weapon,
+            IsWeapon = true,
+        });
+
+        Assert.That(description, Does.Contain("duelist's blade"));
+        Assert.That(description, Does.Contain("BASE STATS"));
+        Assert.That(description, Does.Contain("7-23"));
+        Assert.That(description, Does.Contain("0.5s"));
+        Assert.That(description, Does.Not.Contain("Reach:"));
+        Assert.That(description, Does.Not.Contain("Critical:"));
+        Assert.That(description, Does.Not.Contain("Old non-RPG copy"));
+    }
+
+    [Test]
+    public void PowerUpCardFormatter_BaseAccessoryUsesRpgCopyAndSerializedStats()
+    {
+        GameObject accessory = Track(new GameObject("Ice Ring"));
+        AccessoryStatEffect effect = accessory.AddComponent<AccessoryStatEffect>();
+        SetModifiers(effect,
+            new AccessoryStatModifier { type = AccessoriesUpgrades.StatUpgradeType.MaxHealthFlat, value = 20f },
+            new AccessoryStatModifier { type = AccessoriesUpgrades.StatUpgradeType.ColdResist, value = 0.3f },
+            new AccessoryStatModifier { type = AccessoriesUpgrades.StatUpgradeType.FireResist, value = 0.3f });
+
+        string description = PowerUpCardFormatter.BuildDescription(new PowerUp
+        {
+            powerUpName = "Ice Ring",
+            powerUpDescription = "Old non-RPG copy",
+            powerUpObject = accessory,
+            IsAccessory = true,
+        });
+
+        Assert.That(description, Does.Contain("frostbound signet"));
+        Assert.That(description, Does.Contain("+20 Max Health"));
+        Assert.That(description, Does.Contain("+30% Cold Resist"));
+        Assert.That(description, Does.Not.Contain("+30% Fire Resist"));
+        Assert.That(description, Does.Not.Contain("Old non-RPG copy"));
+    }
+
     [TestCase(RecentlyHitDefenseStat.Armor)]
     [TestCase(RecentlyHitDefenseStat.Evasion)]
     public void RecentlyHitDefense_DoublesTheCurrentTotalStatForThreeSeconds(RecentlyHitDefenseStat stat)

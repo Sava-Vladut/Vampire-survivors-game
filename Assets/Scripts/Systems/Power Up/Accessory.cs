@@ -29,6 +29,10 @@ public sealed class Accessory : MonoBehaviour, IPowerUpSelectionEffect
     [Header("Generated upgrades")]
     [SerializeField] private AccessoryUpgradeProfile upgradeProfile;
 
+    [Header("Mana")]
+    [Tooltip("Enable when this accessory consumes mana. This also makes the player mana slider visible while equipped.")]
+    [SerializeField] private bool usesMana;
+
     // Retained only so old prefabs deserialize cleanly before the editor migration
     // copies these shared references to AccessoryInventoryPresenter.
     [FormerlySerializedAs("statsTextPrefab"), HideInInspector, SerializeField]
@@ -38,6 +42,7 @@ public sealed class Accessory : MonoBehaviour, IPowerUpSelectionEffect
 
     private readonly List<IAccessoryEquipEffect> equipEffects = new();
     private AccessoryInventory inventory;
+    private PlayerMana playerMana;
     private bool equipped;
 
     public event Action<Accessory> Changed;
@@ -48,6 +53,7 @@ public sealed class Accessory : MonoBehaviour, IPowerUpSelectionEffect
     public AccessoryUpgradeProfile UpgradeProfile => upgradeProfile;
     public int MaxUpgrades => upgradeProfile != null ? upgradeProfile.MaxUpgrades : AccessoriesUpgrades.MaxUpgrades;
     public bool IsEquipped => equipped;
+    public bool UsesMana => usesMana;
 
     // Source-compatible accessors for older callers. New code uses the correctly
     // spelled, read-only presentation API above.
@@ -90,6 +96,7 @@ public sealed class Accessory : MonoBehaviour, IPowerUpSelectionEffect
 
         equipped = true;
         inventory.Register(this);
+        RefreshManaRegistration(playerRoot);
         MarkChanged();
         return true;
     }
@@ -98,12 +105,43 @@ public sealed class Accessory : MonoBehaviour, IPowerUpSelectionEffect
     {
         if (inventory != null)
             inventory.Unregister(this);
+        playerMana?.UnregisterUser(this);
     }
 
     private void OnEnable()
     {
         if (equipped && inventory != null)
             inventory.Register(this);
+        if (equipped)
+            RefreshManaRegistration(transform.root);
+    }
+
+    /// <summary>Spends mana for a custom accessory effect. Returns false when the effect should not activate.</summary>
+    public bool TrySpendMana(float amount)
+    {
+        if (!usesMana || amount <= 0f)
+            return true;
+        if (playerMana == null)
+            RefreshManaRegistration(transform.root);
+        return playerMana != null && playerMana.TrySpend(amount);
+    }
+
+    private void RefreshManaRegistration(Transform playerRoot)
+    {
+        playerMana = PlayerMana.Find(playerRoot != null ? playerRoot : transform);
+        if (playerMana == null)
+            return;
+
+        if (usesMana && equipped)
+            playerMana.RegisterUser(this);
+        else
+            playerMana.UnregisterUser(this);
+    }
+
+    private void OnValidate()
+    {
+        if (Application.isPlaying && isActiveAndEnabled && equipped)
+            RefreshManaRegistration(transform.root);
     }
 
     private void ApplyOfferPresentation(PowerUp offer)

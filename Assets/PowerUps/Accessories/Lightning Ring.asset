@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Grim::PowerUpDefinition
   stableId: 5d9991a1af1e4d9083f7ccd58167aeff
   displayName: Lightning Ring
-  description: A storm-forged ring that crackles with raw energy. Bolts of lightning
-    arc outward, striking foes with blinding speed.
+  description: Gain +20 Max Health, +30% Lightning Resist, and +30% Poison Resist.
   icon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
   tags: 4
   rarity: 0

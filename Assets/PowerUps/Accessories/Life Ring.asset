@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Grim::PowerUpDefinition
   stableId: 9d2d4dc295504541a910c698cc3ec10b
   displayName: Life Ring
-  description: "A sturdy band infused with vital energy. Increases the wearer\u2019s
-    maximum health, bolstering their endurance in battle."
+  description: Gain +50 Max Health and regenerate 2 HP per second.
   icon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
   tags: 4
   rarity: 0

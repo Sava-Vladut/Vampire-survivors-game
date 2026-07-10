@@ -241,10 +241,9 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         {
             applied.Clear();
             InvalidateModifierOffers();
-            var noUpgradeLines = new List<string>
-            {
-                WeaponContext.FormatRarity(current)
-            };
+            var noUpgradeLines = new List<string>();
+            if (current != Rarity.Common)
+                noUpgradeLines.Add(WeaponContext.FormatRarity(current));
             noUpgradeLines.Add("<i>No applicable upgrades.</i>");
             WriteUIBlock(noUpgradeLines);
             return;
@@ -487,10 +486,9 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
     {
         if (uiSink == null) return;
 
-        var lines = new List<string>(1 + applied.Count)
-        {
-            WeaponContext.FormatRarity(current)
-        };
+        var lines = new List<string>(1 + applied.Count);
+        if (current != Rarity.Common)
+            lines.Add(WeaponContext.FormatRarity(current));
 
         for (int i = 0; i < applied.Count; i++)
         {

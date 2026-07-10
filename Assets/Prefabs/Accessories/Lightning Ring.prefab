@@ -47,7 +47,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayName: Ring
-  baseDescription: '+30% Lightning Resist
+  baseDescription: '+20 Max Health
+
+    +30% Lightning Resist
 
     +30% Poison Resist'
   icon: {fileID: 5851173540246750970, guid: dd1d1a126a95adf4fb3a415d883f957c, type: 3}
@@ -138,6 +140,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Grim::AccessoryStatEffect
   modifiers:
+  - type: 1
+    value: 20
   - type: 10
     value: 0.3
   - type: 11

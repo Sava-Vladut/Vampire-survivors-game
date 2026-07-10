@@ -47,7 +47,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayName: Ring
-  baseDescription: '+30% Cold Resist
+  baseDescription: '+20 Max Health
+
+    +30% Cold Resist
 
     +30% Fire Resist'
   icon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
@@ -138,6 +140,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Grim::AccessoryStatEffect
   modifiers:
+  - type: 1
+    value: 20
   - type: 9
     value: 0.3
   - type: 8

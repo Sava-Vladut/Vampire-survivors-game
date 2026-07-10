@@ -47,7 +47,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   displayName: Life Ring
-  baseDescription: +50 Max Health
+  baseDescription: '+50 Max Health
+
+    +2 Health Regen'
   icon: {fileID: -3829404428989594871, guid: 143f7645e4c79644ab93253bc2898b96, type: 3}
   upgradeProfile: {fileID: 11400000, guid: 240630999bd00eb418fa26212b6cbb70, type: 2}
   legacyStatsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
@@ -138,4 +140,6 @@ MonoBehaviour:
   modifiers:
   - type: 1
     value: 50
+  - type: 3
+    value: 2
   applied: 0

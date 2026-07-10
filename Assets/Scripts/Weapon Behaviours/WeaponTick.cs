@@ -23,6 +23,10 @@ public class WeaponTick : MonoBehaviour
     [Tooltip("Seconds between ticks inside the burst.")]
     [SerializeField] public float burstSpacing = 0.1f;
 
+    [Header("Mana")]
+    [Tooltip("Mana spent for every successful tick. Set to 0 for weapons that do not use mana.")]
+    [Min(0f), SerializeField] private float manaCostPerTick = 0f;
+
     [Header("Event")]
     public UnityEvent onTick;
 
@@ -30,13 +34,21 @@ public class WeaponTick : MonoBehaviour
     private PlayerSafeZoneStatus safeZoneStatus;
     private StatusEffectSystem statusEffects;
     private PlayerAccessoryStats accessoryStats;
+    private PlayerMana playerMana;
 
     public float EffectiveInterval => Mathf.Max(0f, interval) * GetCooldownMultiplier() / GetAttackSpeedMultiplier();
+    public float ManaCostPerTick => Mathf.Max(0f, manaCostPerTick);
+    public bool UsesMana => ManaCostPerTick > 0f;
 
     private void Awake()
     {
         if (startOnAwake)
             StartTick();
+    }
+
+    private void OnEnable()
+    {
+        RefreshManaRegistration();
     }
 
     /// <summary>Begins the tick timer. If already running, restarts it.</summary>
@@ -153,7 +165,27 @@ public class WeaponTick : MonoBehaviour
         if (IsBlockedBySafeZone())
             return;
 
+        if (UsesMana)
+        {
+            if (playerMana == null)
+                playerMana = PlayerMana.Find(transform);
+            if (playerMana == null || !playerMana.TrySpend(ManaCostPerTick))
+                return;
+        }
+
         onTick?.Invoke();
+    }
+
+    private void RefreshManaRegistration()
+    {
+        playerMana = PlayerMana.Find(transform);
+        if (playerMana == null)
+            return;
+
+        if (UsesMana)
+            playerMana.RegisterUser(this);
+        else
+            playerMana.UnregisterUser(this);
     }
 
     private bool IsBlockedBySafeZone()
@@ -186,6 +218,14 @@ public class WeaponTick : MonoBehaviour
 
     private void OnDisable()
     {
+        playerMana?.UnregisterUser(this);
         StopTick();
+    }
+
+    private void OnValidate()
+    {
+        manaCostPerTick = Mathf.Max(0f, manaCostPerTick);
+        if (Application.isPlaying && isActiveAndEnabled)
+            RefreshManaRegistration();
     }
 }

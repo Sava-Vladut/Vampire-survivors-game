@@ -30,6 +30,8 @@ public class Knife : MonoBehaviour
     public int damage = 10;
     [SerializeField, Tooltip("Damage category used for resistances, weaknesses, and damage coloring.")]
     public SimpleHealth.DamageType damageType;
+    [SerializeField, Tooltip("Name credited in combat logs for direct and splash hits.")]
+    private string damageSourceName = "Knife";
     [SerializeField, Tooltip("Which layers are considered valid targets.")]
     private LayerMask targetMask = ~0;
     [SerializeField, Tooltip("Maximum number of targets per tick (0 = unlimited).")]
@@ -499,7 +501,7 @@ public class Knife : MonoBehaviour
                     if (cull)
                         health.TakeDamage(health.CurrentHealth, damageType, false, false, gameObject, "Cull");
                     else
-                        health.TakeDamage(dealt, damageType, true, true, gameObject, "Knife", isCritical);
+                        health.TakeDamage(dealt, damageType, true, true, gameObject, GetDamageSourceName(), isCritical);
 
                     if (!cull && echoStrikeChance > 0f && health.IsAlive && Random.value <= effectiveEchoStrikeChance)
                     {
@@ -534,7 +536,7 @@ public class Knife : MonoBehaviour
 
                             SimpleHealth splashHealth = splashCol.GetComponent<SimpleHealth>();
                             if (splashHealth != null && splashHealth.IsAlive && !splashHealth.IsInvulnerable)
-                                splashHealth.TakeDamage(splashDamage, damageType, true, true, gameObject, "Knife Splash", isCritical);
+                                splashHealth.TakeDamage(splashDamage, damageType, true, true, gameObject, GetSplashDamageSourceName(), isCritical);
                         }
                     }
 
@@ -557,6 +559,16 @@ public class Knife : MonoBehaviour
             Vector3 fxPos = baseOrigin.position + (Vector3)(Random.insideUnitCircle * 1f);
             Instantiate(slashEffect, fxPos, Quaternion.identity);
         }
+    }
+
+    private string GetDamageSourceName()
+    {
+        return string.IsNullOrWhiteSpace(damageSourceName) ? "Knife" : damageSourceName.Trim();
+    }
+
+    private string GetSplashDamageSourceName()
+    {
+        return $"{GetDamageSourceName()} Splash";
     }
 
     private void SpawnSplashCircle(Vector3 center, float effectRadius)

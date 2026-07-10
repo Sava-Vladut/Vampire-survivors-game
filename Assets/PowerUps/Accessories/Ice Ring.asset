@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Grim::PowerUpDefinition
   stableId: 36f963dee82543d8a2b692c685a485a6
   displayName: Ice Ring
-  description: A frozen circle of power that wreathes the user in biting frost. Enemies
-    caught within its radius are slowed and gradually chilled to the bone, taking
-    cold damage over time.
+  description: Gain +20 Max Health, +30% Cold Resist, and +30% Fire Resist.
   icon: {fileID: -7795961845520942047, guid: 9b6ed8614b56ddc48bc4d86f32db2486, type: 3}
   tags: 4
   rarity: 0
