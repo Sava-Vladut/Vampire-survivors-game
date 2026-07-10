@@ -131,6 +131,10 @@ public class SimpleHealth : MonoBehaviour
 
     [Header("Effects and Audio")]
     [SerializeField] private Volume playerVolume;
+    [Tooltip("Optional profile used to create the player death Volume when no child Death Volume exists.")]
+    [SerializeField] private VolumeProfile deathVolumeProfile;
+    [Tooltip("Optional global Volume enabled when the player dies. A child named 'Death Volume' is found automatically when left empty.")]
+    [SerializeField] private Volume deathVolume;
     [SerializeField] private GameObject[] deathObjects;
     [SerializeField] private AudioClip[] damageClip;
     [SerializeField] private AudioClip[] deathClip;
@@ -177,6 +181,7 @@ public class SimpleHealth : MonoBehaviour
     private DPSChecker _dpsChecker;
     private StatusEffectSystem _statusEffectSystem;
     private PlayerAccessoryStats _accessoryStats;
+    private PlayerMana _playerMana;
     private bool _subscribedToStatusPopups;
 
     // Stats UI (matches Knife.cs pattern)
@@ -186,6 +191,7 @@ public class SimpleHealth : MonoBehaviour
 
     private Image iconImage;
     private AudioLowPassFilter filter;
+    private Transform deathVolumeOriginalParent;
     private PlayerSafeZoneStatus safeZoneStatus;
     // Active damage popups per damage type for accumulation
     private readonly Dictionary<DamageType, TMP_Text> _activeDamagePopups = new Dictionary<DamageType, TMP_Text>();
@@ -197,6 +203,9 @@ public class SimpleHealth : MonoBehaviour
     private float lastDashSpeed;
     private float lastDashDuration;
     private float lastDashCooldown;
+    private bool hasManaSnapshot;
+    private float lastMaxMana;
+    private float lastManaRegeneration;
     private bool healthSliderInitialActive;
     private bool healthTextInitialActive;
     private bool capturedHealthBarInitialState;
@@ -225,6 +234,8 @@ public class SimpleHealth : MonoBehaviour
         _dpsChecker = GetComponent<DPSChecker>();
         _statusEffectSystem = GetComponent<StatusEffectSystem>();
         _accessoryStats = PlayerAccessoryStats.Find(transform);
+        _playerMana = PlayerMana.Find(transform);
+        InitializeDeathVolume();
         SubscribeToStatusPopups();
 
         if (spriteRenderer == null)
@@ -284,6 +295,61 @@ public class SimpleHealth : MonoBehaviour
             float maxCutoff = 22000f;
             filter.cutoffFrequency = Mathf.Lerp(minCutoff, maxCutoff, hpFraction);
         }
+    }
+
+    private void InitializeDeathVolume()
+    {
+        if (!CompareTag("Player"))
+            return;
+
+        if (deathVolume == null)
+        {
+            Volume[] childVolumes = GetComponentsInChildren<Volume>(true);
+            for (int i = 0; i < childVolumes.Length; i++)
+            {
+                if (childVolumes[i] != null && childVolumes[i].name == "Death Volume")
+                {
+                    deathVolume = childVolumes[i];
+                    break;
+                }
+            }
+        }
+
+        if (deathVolume == null && deathVolumeProfile != null)
+        {
+            GameObject volumeObject = new GameObject("Death Volume");
+            volumeObject.transform.SetParent(transform, false);
+            deathVolume = volumeObject.AddComponent<Volume>();
+            deathVolume.isGlobal = true;
+            deathVolume.sharedProfile = deathVolumeProfile;
+        }
+
+        if (deathVolume == null)
+            return;
+
+        deathVolumeOriginalParent = deathVolume.transform.parent;
+        deathVolume.weight = 0f;
+    }
+
+    private void ActivateDeathVolume()
+    {
+        if (deathVolume == null)
+            return;
+
+        deathVolume.transform.SetParent(null, true);
+        deathVolume.gameObject.SetActive(true);
+        deathVolume.priority = Mathf.Max(deathVolume.priority, 4f);
+        deathVolume.weight = 1f;
+    }
+
+    private void ResetDeathVolume()
+    {
+        if (deathVolume == null)
+            return;
+
+        deathVolume.weight = 0f;
+        if (deathVolumeOriginalParent != null && deathVolume.transform.parent != deathVolumeOriginalParent)
+            deathVolume.transform.SetParent(deathVolumeOriginalParent, true);
     }
 
     private void OnEnable()
@@ -355,6 +421,9 @@ public class SimpleHealth : MonoBehaviour
         if (HasMovementStatsChanged())
             MarkStatsDirty();
 
+        if (HasManaStatsChanged())
+            MarkStatsDirty();
+
         if (statsDirty)
             UpdateStatsText();
     }
@@ -386,6 +455,29 @@ public class SimpleHealth : MonoBehaviour
         return false;
     }
 
+    private bool HasManaStatsChanged()
+    {
+        if (healthStatsText == null)
+            return false;
+
+        if (_playerMana == null)
+            _playerMana = PlayerMana.Find(transform);
+        if (_playerMana == null)
+            return false;
+
+        if (!hasManaSnapshot ||
+            !Mathf.Approximately(lastMaxMana, _playerMana.MaxMana) ||
+            !Mathf.Approximately(lastManaRegeneration, _playerMana.RegenerationPerSecond))
+        {
+            hasManaSnapshot = true;
+            lastMaxMana = _playerMana.MaxMana;
+            lastManaRegeneration = _playerMana.RegenerationPerSecond;
+            return true;
+        }
+
+        return false;
+    }
+
     public void UpdateStatsText()
     {
         statsDirty = false;
@@ -395,20 +487,25 @@ public class SimpleHealth : MonoBehaviour
         const string statColor = "#8888FF";
         const string healthColor = "#FF6666";
         const string currentHealthColor = "#80FF80";
+        const string manaColor = "#64C8FF";
 
         // HEALTH
         if (healthStatsText != null)
         {
             _statsBuilder.Clear();
-            _statsBuilder.AppendLine($"<b><color={healthColor}>Health</color></b>");
-            _statsBuilder.AppendLine($"Max Health: <color={healthColor}>{maxHealth}</color>");
-            _statsBuilder.Append($"Current: <color={currentHealthColor}>{CurrentHealth}</color>");
+            _statsBuilder.AppendLine($"<b><color={healthColor}><sprite name=\"heart_0\"> Health</color></b>");
+            _statsBuilder.AppendLine($"<sprite name=\"heart_0\"> Max Health: <color={healthColor}>{maxHealth}</color>");
+            if (_playerMana != null)
+                _statsBuilder.AppendLine($"<sprite name=\"power\"> Max Mana: <color={manaColor}>{_playerMana.MaxMana:F0}</color>");
+            _statsBuilder.Append($"<sprite name=\"heart_0\"> Current: <color={currentHealthColor}>{CurrentHealth}</color>");
             if (enableTemporaryHealth && currentTemporaryHealth > 0)
             {
                 _statsBuilder.Append($" <color=#64C8FF>+{Mathf.RoundToInt(currentTemporaryHealth)}</color>");
             }
             _statsBuilder.AppendLine(); // New line
-            _statsBuilder.AppendLine($"Regen: <color={currentHealthColor}>{regenRate:F2}</color>/s");
+            _statsBuilder.AppendLine($"<sprite name=\"heart_0\"> Health Regen: <color={currentHealthColor}>{regenRate:F2}</color>/s");
+            if (_playerMana != null)
+                _statsBuilder.AppendLine($"<sprite name=\"power\"> Mana Regen: <color={manaColor}>{_playerMana.RegenerationPerSecond:F1}</color>/s");
             healthStatsText.text = _statsBuilder.ToString();
         }
 
@@ -1047,6 +1144,7 @@ public class SimpleHealth : MonoBehaviour
         tempHealthDecayTimer = 0f;
         _activeDamagePopups.Clear();
         ResetRunDamage();
+        ResetDeathVolume();
         SyncSlider();
         UpdateVolume();
         UpdateStatsText();
@@ -1093,6 +1191,7 @@ public class SimpleHealth : MonoBehaviour
         }
         else
         {
+            ActivateDeathVolume();
             gameObject.SetActive(false);
         }
     }

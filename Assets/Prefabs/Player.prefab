@@ -1092,6 +1092,8 @@ MonoBehaviour:
   burstCount: 3
   burstSpacing: 0.1
   manaCostPerTick: 0
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 0
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -1283,6 +1285,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -1303,6 +1309,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -2078,6 +2088,8 @@ MonoBehaviour:
   burstCount: 3
   burstSpacing: 0.1
   manaCostPerTick: 0
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 0
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -2269,6 +2281,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -2289,6 +2305,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -2957,6 +2977,8 @@ MonoBehaviour:
   burstCount: 3
   burstSpacing: 0.1
   manaCostPerTick: 0
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 0
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -3141,6 +3163,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -3161,6 +3187,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -3202,6 +3232,9 @@ MonoBehaviour:
     damagePercentAsFlat: 1
     attackSpeed: 1
     crit: 1
+    manaCost: 1
+    manaMax: 1
+    manaRegen: 1
     hpFlat: 1
     hpPercent: 1
     hpRegen: 1
@@ -4097,6 +4130,8 @@ MonoBehaviour:
   extraTextField: 
   iconSprite: {fileID: -205270267638800340, guid: 9d198d5251e3a1c498e6ad4e73508eab, type: 3}
   playerVolume: {fileID: 2872917081157335626}
+  deathVolumeProfile: {fileID: 11400000, guid: 95ee97ff48cf00e4490fcb5e8f75b777, type: 2}
+  deathVolume: {fileID: 0}
   deathObjects: []
   damageClip:
   - {fileID: 8300000, guid: 4da70bf93e7ae9a4fb87d0509942f9c8, type: 3}
@@ -4483,7 +4518,7 @@ MonoBehaviour:
   maxMana: 100
   startingMana: 100
   regenerationPerSecond: 10
-  manaSlider: {fileID: 0}
+  manaSlider: {fileID: 7179717044204859387}
   manaText: {fileID: 4283215228649485214}
   manaSliderObjectName: Mana Slider
 --- !u!1 &1247444226582579560
@@ -7805,6 +7840,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -7825,6 +7864,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -7866,6 +7909,9 @@ MonoBehaviour:
     damagePercentAsFlat: 1
     attackSpeed: 1
     crit: 1
+    manaCost: 1
+    manaMax: 1
+    manaRegen: 1
     hpFlat: 1
     hpPercent: 1
     hpRegen: 1
@@ -8532,6 +8578,8 @@ MonoBehaviour:
   burstCount: 3
   burstSpacing: 0.1
   manaCostPerTick: 0
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 0
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -8570,6 +8618,11 @@ MonoBehaviour:
   knockbackForce: 0
   cullThreshold: 0
   chainHits: 0
+  overrideProjectileTrail: 0
+  projectileTrailTime: 0.25
+  projectileTrailWidth: 0.3
+  projectileTrailStartColor: {r: 1, g: 0.82, b: 0.35, a: 1}
+  projectileTrailEndColor: {r: 0.45, g: 0.12, b: 0.03, a: 0}
   critChance: 0
   critMultiplier: 2
   applyStatusEffectOnHit: 0
@@ -8711,6 +8764,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -8731,6 +8788,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -8772,6 +8833,9 @@ MonoBehaviour:
     damagePercentAsFlat: 1
     attackSpeed: 1
     crit: 1
+    manaCost: 1
+    manaMax: 1
+    manaRegen: 1
     hpFlat: 1
     hpPercent: 1
     hpRegen: 1
@@ -10000,6 +10064,11 @@ MonoBehaviour:
   knockbackForce: 0
   cullThreshold: 0
   chainHits: 0
+  overrideProjectileTrail: 0
+  projectileTrailTime: 0.25
+  projectileTrailWidth: 0.3
+  projectileTrailStartColor: {r: 1, g: 0.82, b: 0.35, a: 1}
+  projectileTrailEndColor: {r: 0.45, g: 0.12, b: 0.03, a: 0}
   critChance: 0.05
   critMultiplier: 2
   applyStatusEffectOnHit: 0
@@ -10160,6 +10229,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -10180,6 +10253,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -10221,6 +10298,9 @@ MonoBehaviour:
     damagePercentAsFlat: 1
     attackSpeed: 1
     crit: 1
+    manaCost: 1
+    manaMax: 1
+    manaRegen: 1
     hpFlat: 1
     hpPercent: 1
     hpRegen: 1
@@ -11854,6 +11934,8 @@ MonoBehaviour:
   burstCount: 3
   burstSpacing: 0.1
   manaCostPerTick: 0
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 0
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -12104,6 +12186,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -12124,6 +12210,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -12165,6 +12255,9 @@ MonoBehaviour:
     damagePercentAsFlat: 1
     attackSpeed: 1
     crit: 1
+    manaCost: 1
+    manaMax: 1
+    manaRegen: 1
     hpFlat: 1
     hpPercent: 1
     hpRegen: 1
@@ -15572,6 +15665,8 @@ MonoBehaviour:
   burstCount: 2
   burstSpacing: 0.3
   manaCostPerTick: 0
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 0
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -15763,6 +15858,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -15783,6 +15882,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -19192,6 +19295,8 @@ MonoBehaviour:
   burstCount: 3
   burstSpacing: 0.1
   manaCostPerTick: 0
+  allowManaRarityModifiers: 0
+  allowGlobalManaDrops: 0
   onTick:
     m_PersistentCalls:
       m_Calls:
@@ -19230,6 +19335,11 @@ MonoBehaviour:
   knockbackForce: 1
   cullThreshold: 0
   chainHits: 0
+  overrideProjectileTrail: 0
+  projectileTrailTime: 0.25
+  projectileTrailWidth: 0.3
+  projectileTrailStartColor: {r: 1, g: 0.82, b: 0.35, a: 1}
+  projectileTrailEndColor: {r: 0.45, g: 0.12, b: 0.03, a: 0}
   critChance: 0.3
   critMultiplier: 2
   applyStatusEffectOnHit: 0
@@ -19371,6 +19481,10 @@ MonoBehaviour:
     atkSpeedFrac: {x: 0.1, y: 0.25}
     critChanceAdd: {x: 0.05, y: 0.2}
     critMultAdd: {x: 0.25, y: 1}
+    manaCostFlatReduction: {x: 0.5, y: 1.5}
+    manaCostReductionFrac: {x: 0.08, y: 0.2}
+    manaMaxFlatAdd: {x: 10, y: 30}
+    manaRegenAdd: {x: 1, y: 4}
     hpFlatAdd: {x: 15, y: 60}
     hpMult: {x: 1.05, y: 1.25}
     regenAdd: {x: 0.1, y: 1.5}
@@ -19391,6 +19505,10 @@ MonoBehaviour:
     attackSpeed: 5
     critChance: 5
     critMultiplier: 5
+    manaCostFlat: 5
+    manaCostPercent: 5
+    manaMax: 5
+    manaRegen: 5
     hpFlat: 5
     hpPercent: 5
     regen: 5
@@ -19432,6 +19550,9 @@ MonoBehaviour:
     damagePercentAsFlat: 1
     attackSpeed: 1
     crit: 1
+    manaCost: 1
+    manaMax: 1
+    manaRegen: 1
     hpFlat: 1
     hpPercent: 1
     hpRegen: 1
