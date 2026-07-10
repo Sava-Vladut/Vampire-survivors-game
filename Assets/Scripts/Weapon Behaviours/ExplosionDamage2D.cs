@@ -28,6 +28,7 @@ public class ExplosionDamage2D : MonoBehaviour
     [SerializeField] private float destroyAfter = 0.0f;
 
     private readonly HashSet<SimpleHealth> _hitOnce = new();
+    private bool _hasExploded;
 
     private void Awake()
     {
@@ -37,6 +38,12 @@ public class ExplosionDamage2D : MonoBehaviour
             transform.GetChild(0).localScale = new Vector3(diameter, diameter, 1f);
         }
 
+    }
+
+    private void Start()
+    {
+        // Start runs after the spawning weapon has had a chance to assign damage,
+        // source, crit state, and other runtime data to an impact explosion.
         if (explodeOnAwake)
         {
             DoExplosion();
@@ -47,6 +54,9 @@ public class ExplosionDamage2D : MonoBehaviour
     /// <summary>Triggers the explosion manually if explodeOnAwake is false.</summary>
     public void DoExplosion()
     {
+        if (_hasExploded) return;
+        _hasExploded = true;
+
         Vector2 center = transform.position;
         PlayerAccessoryStats stats = GetSourceAccessoryStats();
         float effectiveRadius = GetEffectiveRadius(stats);
@@ -128,7 +138,10 @@ public class ExplosionDamage2D : MonoBehaviour
     {
         if (!scaleChildToRadius || transform.childCount <= 0) return;
         float diameter = effectiveRadius;
-        transform.GetChild(0).localScale = new Vector3(diameter, diameter, 1f);
+        Transform visual = transform.GetChild(0);
+        float parentScaleX = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.x));
+        float parentScaleY = Mathf.Max(0.0001f, Mathf.Abs(transform.lossyScale.y));
+        visual.localScale = new Vector3(diameter / parentScaleX, diameter / parentScaleY, 1f);
     }
 
     private void Cleanup()

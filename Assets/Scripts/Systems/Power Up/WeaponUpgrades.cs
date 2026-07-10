@@ -6,7 +6,7 @@ using UnityEngine;
 /// presentation, eligibility, and roll ranges live in target-specific definition
 /// modules registered by WeaponUpgradeCatalog.
 /// </summary>
-public class WeaponUpgrades : MonoBehaviour, IPowerUpSelectionEffect
+public class WeaponUpgrades : MonoBehaviour, IPowerUpSelectionEffect, IPowerUpOfferEligibility
 {
     // Serialized by value into scenes/settings. Do not reorder or remove values.
     public enum UpgradeType
@@ -186,6 +186,27 @@ public class WeaponUpgrades : MonoBehaviour, IPowerUpSelectionEffect
         return hasApplied;
     }
 
+    public bool CanOffer(PowerUpSelectionContext context)
+    {
+        if (upgradeType == UpgradeType.None || context.PlayerRoot == null ||
+            !WeaponUpgradeCatalog.TryGet(upgradeType, out WeaponUpgradeDefinition definition))
+        {
+            return false;
+        }
+
+        Transform target = ResolveTarget(definition);
+        if (!IsActivePlayerTarget(target, context.PlayerRoot, definition))
+            return false;
+
+        if (definition.CanOffer(target))
+            return true;
+
+        // FirstOnHitStatusOfferSource deliberately creates this offer before the
+        // target satisfies the normal status-related eligibility predicate. The
+        // seeded offer is useful because selecting it grants that first status.
+        return seedStatusApplyChance && definition.IsFirstOnHit && definition.Supports(target);
+    }
+
     public void RefreshPresentation()
     {
         if (Upgrade == null) return;
@@ -249,4 +270,24 @@ public class WeaponUpgrades : MonoBehaviour, IPowerUpSelectionEffect
     }
 
     private Transform DefaultTarget => transform.parent != null ? transform.parent : transform;
+
+    private static bool IsActivePlayerTarget(
+        Transform target,
+        Transform playerRoot,
+        WeaponUpgradeDefinition definition)
+    {
+        if (target == null || playerRoot == null || !target.gameObject.activeInHierarchy ||
+            (target != playerRoot && !target.IsChildOf(playerRoot)))
+        {
+            return false;
+        }
+
+        return definition.Target switch
+        {
+            WeaponUpgradeTarget.Knife => target.TryGetComponent(out Knife knife) && knife.isActiveAndEnabled,
+            WeaponUpgradeTarget.Shooter => target.TryGetComponent(out SimpleShooter shooter) && shooter.isActiveAndEnabled,
+            WeaponUpgradeTarget.WeaponTick => target.TryGetComponent(out WeaponTick tick) && tick.isActiveAndEnabled,
+            _ => false,
+        };
+    }
 }

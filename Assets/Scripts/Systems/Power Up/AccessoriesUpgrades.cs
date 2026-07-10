@@ -6,7 +6,7 @@ using UnityEngine;
 // SimpleHealth when its GameObject is activated (via PowerUpChooser.TryChoosePowerUp).
 // Offers are rolled at runtime by RandomUpgradeGenerator through RandomizeAsOffer.
 //
-public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect
+public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect, IPowerUpOfferEligibility
 {
     /// <summary>Maximum number of upgrades a single accessory can receive.</summary>
     public const int MaxUpgrades = 20;
@@ -87,6 +87,22 @@ public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect
         return hasApplied;
     }
 
+    public bool CanOffer(PowerUpSelectionContext context)
+    {
+        Accessory owner = GetComponentInParent<Accessory>(true);
+        if (owner == null || !owner.IsEquipped || !owner.isActiveAndEnabled ||
+            context.PlayerRoot == null ||
+            (owner.transform != context.PlayerRoot && !owner.transform.IsChildOf(context.PlayerRoot)) ||
+            context.Chooser == null ||
+            !context.Chooser.CanBenefitFromAccessoryUpgrade(upgradeType))
+        {
+            return false;
+        }
+
+        var accessoryContext = new AccessoryEquipContext(context, owner, context.PlayerRoot);
+        return AccessoryStatApplicator.CanApply(upgradeType, accessoryContext);
+    }
+
     private bool TryApplyUpgrade(AccessoryEquipContext context)
     {
         if (!AccessoryStatApplicator.CanApply(upgradeType, context)) return false;
@@ -105,6 +121,13 @@ public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect
     /// </summary>
     public bool RandomizeAsOffer(ICollection<StatUpgradeType> excludeTypes = null)
     {
+        return RandomizeAsOffer(null, excludeTypes);
+    }
+
+    public bool RandomizeAsOffer(
+        PowerUpChooser chooser,
+        ICollection<StatUpgradeType> excludeTypes = null)
+    {
         var health = FindPlayerHealth();
         Accessory owner = GetComponentInParent<Accessory>(true);
         AccessoryUpgradeProfile profile = owner != null ? owner.UpgradeProfile : null;
@@ -115,6 +138,7 @@ public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect
             if (t == StatUpgradeType.None) continue;
             if (excludeTypes != null && excludeTypes.Contains(t)) continue;
             if (profile != null ? !profile.Allows(t) : !AccessoryUpgradeProfile.IsDefaultType(t)) continue;
+            if (chooser != null && !chooser.CanBenefitFromAccessoryUpgrade(t)) continue;
             // Percent types are useless without a base stat to scale
             if (t == StatUpgradeType.ArmorPercent && (health == null || health.armor <= 0f)) continue;
             if (t == StatUpgradeType.EvasionPercent && (health == null || health.evasion <= 0f)) continue;
@@ -220,7 +244,7 @@ public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect
             StatUpgradeType.GlobalDamagePercent => ($"Brutal Force +{pct}", $"Increase all weapon damage by {pct}."),
             StatUpgradeType.CriticalChanceFlat => ($"Keen Eye +{pct}", $"Gain {pct} critical-hit chance."),
             StatUpgradeType.CriticalDamageFlat => ($"Deadly Precision +{pct}", $"Critical hits deal {pct} additional damage."),
-            StatUpgradeType.WeaponAreaPercent => ($"Expansive Reach +{pct}", $"Increase weapon area and explosion radius by {pct}."),
+            StatUpgradeType.WeaponAreaPercent => ($"Expansive Reach +{pct}", $"Increase weapon area, projectile size, and explosion radius by {pct}."),
             StatUpgradeType.ProjectileSpeedPercent => ($"High Velocity +{pct}", $"Increase projectile speed by {pct}."),
             StatUpgradeType.ProjectileLifetimePercent => ($"Lingering Shots +{pct}", $"Increase projectile lifetime by {pct}."),
             StatUpgradeType.ProjectilePenetrationFlat => ($"Piercing Rounds +{flat}", $"Projectiles pass through {flat} additional target."),

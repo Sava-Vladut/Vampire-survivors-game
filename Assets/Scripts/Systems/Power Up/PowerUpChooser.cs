@@ -75,11 +75,85 @@ public class PowerUpChooser : MonoBehaviour
 
     public bool CanSelect(PowerUp offer)
     {
-        if (offer == null) return false;
-        if (offer.IsUpgrade) return true;
-        if (offer.IsAccessory && RemainingAccessorySlots <= 0) return false;
-        if (offer.IsWeapon && RemainingWeaponSlots <= 0) return false;
-        return true;
+        if (offer == null || offer.powerUpObject == null) return false;
+        if (!offer.IsUpgrade)
+        {
+            if (offer.IsAccessory && RemainingAccessorySlots <= 0) return false;
+            if (offer.IsWeapon && RemainingWeaponSlots <= 0) return false;
+        }
+        return PassesContextualEligibility(offer);
+    }
+
+    /// <summary>
+    /// Returns whether a generated accessory stat can affect at least one system
+    /// in the player's current build. Offer generation and final selection both
+    /// use this method so their eligibility rules cannot drift apart.
+    /// </summary>
+    public bool CanBenefitFromAccessoryUpgrade(AccessoriesUpgrades.StatUpgradeType type)
+    {
+        Transform player = ResolvePlayerRoot();
+        if (player == null || type == AccessoriesUpgrades.StatUpgradeType.None)
+            return false;
+
+        SimpleHealth health = FindActiveComponent<SimpleHealth>(player);
+        bool hasMovement = HasActiveComponent<Snappy2DController>(player);
+        bool hasShooter = HasActiveComponent<SimpleShooter>(player);
+        bool hasKnife = HasActiveComponent<Knife>(player);
+        bool hasWeaponTick = HasActiveComponent<WeaponTick>(player);
+        bool hasExplosion = HasActiveComponent<ExplosionDamage2D>(player);
+        bool hasDamageWeapon = hasKnife || hasShooter || hasWeaponTick || hasExplosion;
+
+        return type switch
+        {
+            AccessoriesUpgrades.StatUpgradeType.MaxHealthFlat or
+            AccessoriesUpgrades.StatUpgradeType.MaxHealthPercent or
+            AccessoriesUpgrades.StatUpgradeType.RegenFlat or
+            AccessoriesUpgrades.StatUpgradeType.ArmorFlat or
+            AccessoriesUpgrades.StatUpgradeType.EvasionFlat or
+            AccessoriesUpgrades.StatUpgradeType.FireResist or
+            AccessoriesUpgrades.StatUpgradeType.ColdResist or
+            AccessoriesUpgrades.StatUpgradeType.LightningResist or
+            AccessoriesUpgrades.StatUpgradeType.PoisonResist or
+            AccessoriesUpgrades.StatUpgradeType.ThornsFlat or
+            AccessoriesUpgrades.StatUpgradeType.HealingReceivedPercent or
+            AccessoriesUpgrades.StatUpgradeType.ContactDamageReduction => health != null,
+
+            AccessoriesUpgrades.StatUpgradeType.ArmorPercent => health != null && health.armor > 0f,
+            AccessoriesUpgrades.StatUpgradeType.EvasionPercent => health != null && health.evasion > 0f,
+
+            AccessoriesUpgrades.StatUpgradeType.MoveSpeedFlat or
+            AccessoriesUpgrades.StatUpgradeType.DashDistanceFlat or
+            AccessoriesUpgrades.StatUpgradeType.DashCooldownReduction or
+            AccessoriesUpgrades.StatUpgradeType.AdditionalDashChargeFlat or
+            AccessoriesUpgrades.StatUpgradeType.DashInvulnerabilityFlat => hasMovement,
+
+            AccessoriesUpgrades.StatUpgradeType.ProjectileCountFlat or
+            AccessoriesUpgrades.StatUpgradeType.ProjectileSpeedPercent or
+            AccessoriesUpgrades.StatUpgradeType.ProjectileLifetimePercent or
+            AccessoriesUpgrades.StatUpgradeType.ProjectilePenetrationFlat => hasShooter,
+
+            AccessoriesUpgrades.StatUpgradeType.CooldownReduction or
+            AccessoriesUpgrades.StatUpgradeType.AttackSpeedPercent => hasWeaponTick,
+
+            AccessoriesUpgrades.StatUpgradeType.GlobalDamagePercent => hasDamageWeapon,
+
+            AccessoriesUpgrades.StatUpgradeType.CriticalChanceFlat or
+            AccessoriesUpgrades.StatUpgradeType.CriticalDamageFlat => hasKnife || hasShooter,
+
+            AccessoriesUpgrades.StatUpgradeType.WeaponAreaPercent or
+            AccessoriesUpgrades.StatUpgradeType.KnockbackStrengthFlat =>
+                hasKnife || hasShooter || hasExplosion,
+
+            AccessoriesUpgrades.StatUpgradeType.StatusDurationPercent or
+            AccessoriesUpgrades.StatUpgradeType.StatusApplicationChanceFlat => HasActiveStatusSource(player),
+
+            AccessoriesUpgrades.StatUpgradeType.XpGainPercent => FindAnyObjectByType<XpSystem>() != null,
+
+            AccessoriesUpgrades.StatUpgradeType.PickupRadiusFlat or
+            AccessoriesUpgrades.StatUpgradeType.EnemySlowAura => true,
+
+            _ => false,
+        };
     }
 
     public bool CanSelectByIndex(int index) =>
@@ -367,6 +441,66 @@ public class PowerUpChooser : MonoBehaviour
         Transform existing = player.Find("Accessory Runtime");
         accessoryInstanceParent = existing != null ? existing : player;
         return accessoryInstanceParent;
+    }
+
+    private bool PassesContextualEligibility(PowerUp offer)
+    {
+        GameObject configuredObject = offer?.powerUpObject;
+        if (configuredObject == null) return false;
+
+        var context = new PowerUpSelectionContext(this, offer, configuredObject, ResolvePlayerRoot());
+        MonoBehaviour[] behaviours = configuredObject.GetComponents<MonoBehaviour>();
+        for (int i = 0; i < behaviours.Length; i++)
+        {
+            if (behaviours[i] is not IPowerUpOfferEligibility eligibility)
+                continue;
+
+            try
+            {
+                if (!eligibility.CanOffer(context))
+                    return false;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, configuredObject);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool HasActiveStatusSource(Transform player)
+    {
+        return HasActiveComponent<Knife>(player, knife => knife.applyStatusEffectOnHit) ||
+               HasActiveComponent<SimpleShooter>(player, shooter => shooter.applyStatusEffectOnHit) ||
+               HasActiveComponent<BulletDamageTrigger>(player, trigger => trigger.applyStatusEffectOnHit) ||
+               HasActiveComponent<StatusEffectZoneTrigger2D>(player);
+    }
+
+    private static bool HasActiveComponent<T>(Transform root, Predicate<T> predicate = null)
+        where T : Behaviour
+    {
+        return FindActiveComponent(root, predicate) != null;
+    }
+
+    private static T FindActiveComponent<T>(Transform root, Predicate<T> predicate = null)
+        where T : Behaviour
+    {
+        if (root == null) return null;
+
+        T[] components = root.GetComponentsInChildren<T>(true);
+        for (int i = 0; i < components.Length; i++)
+        {
+            T component = components[i];
+            if (component != null && component.isActiveAndEnabled &&
+                (predicate == null || predicate(component)))
+            {
+                return component;
+            }
+        }
+
+        return null;
     }
 
     private int CountSelected(Predicate<PowerUp> predicate)

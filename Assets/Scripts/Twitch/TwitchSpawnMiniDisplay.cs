@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -28,6 +29,10 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
     [Header("Update")]
     [Min(0.05f)] public float refreshInterval = 0.25f;
 
+    [Header("Spawn Queue")]
+    [SerializeField] private bool showSpawnQueue = true;
+    [SerializeField, Min(1)] private int maxQueuedNames = 3;
+
     [Header("Style (hex codes without #)")]
     public string headingHex = "FFD166"; // yellow
     public string valueHex = "00AEEF"; // cyan
@@ -46,6 +51,7 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
     };
 
     private float nextRefresh;
+    private readonly List<string> queuedNameBuffer = new(4);
 
     private void Reset()
     {
@@ -77,6 +83,7 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
 
         // --- Current spawns vs global cap ---
         sb.AppendLine($"{h}<b>Spawns:</b></color> {v}{cur}</color> / {v}{cap}</color>");
+        AppendSpawnQueue(sb, h, v, n);
 
         sb.AppendLine();
 
@@ -92,6 +99,32 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
         AppendChatCommands(sb, h, v, n);
 
         return sb.ToString();
+    }
+
+    private void AppendSpawnQueue(StringBuilder sb, string h, string v, string n)
+    {
+        int queuedCount = listener.QueuedChatterCount;
+        if (!showSpawnQueue || queuedCount <= 0)
+            return;
+
+        int shown = listener.CopyQueuedChatterLabels(queuedNameBuffer, Mathf.Max(1, maxQueuedNames));
+        sb.Append($"{h}<b>Queue:</b></color> {v}{queuedCount}</color>");
+
+        if (shown > 0)
+        {
+            sb.Append($" {n}");
+            for (int i = 0; i < shown; i++)
+            {
+                if (i > 0) sb.Append(" • ");
+                sb.Append(EscapeRichText(queuedNameBuffer[i]));
+            }
+
+            if (queuedCount > shown)
+                sb.Append($" +{queuedCount - shown}");
+            sb.Append("</color>");
+        }
+
+        sb.AppendLine();
     }
 
     private void AppendChatCommands(StringBuilder sb, string h, string v, string n)
@@ -144,4 +177,12 @@ public class TwitchSpawnMiniDisplay : MonoBehaviour
     }
 
     private static string ColorTag(string hexNoHash) => $"<color=#{hexNoHash}>";
+
+    private static string EscapeRichText(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        return value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+    }
 }

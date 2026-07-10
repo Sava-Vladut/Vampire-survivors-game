@@ -26,7 +26,7 @@ public sealed class AccessoryUpgradeOfferSource : IPowerUpOfferSource
             {
                 GameObject offerObject = context.CreateOfferObject(accessory.transform, "Generated Accessory Upgrade");
                 var upgrade = offerObject.AddComponent<AccessoriesUpgrades>();
-                if (!upgrade.RandomizeAsOffer(usedTypes))
+                if (!upgrade.RandomizeAsOffer(context.Chooser, usedTypes))
                 {
                     Object.Destroy(offerObject);
                     break;

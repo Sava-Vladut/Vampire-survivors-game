@@ -133,6 +133,193 @@ public sealed class AccessorySystemTests
         Assert.That(PlayerDamageMultiplierUtility.Apply(weapon, 20), Is.EqualTo(30));
     }
 
+    [Test]
+    public void PowerUpChooser_RejectsNoOpOffersAndNewItemsPastTheirCap()
+    {
+        PowerUpChooser chooser = Track(new GameObject("Chooser")).AddComponent<PowerUpChooser>();
+        GameObject candidateObject = Track(new GameObject("Candidate Weapon"));
+        var candidate = new PowerUp { powerUpObject = candidateObject, IsWeapon = true };
+
+        Assert.That(chooser.CanSelect(candidate), Is.True);
+        Assert.That(chooser.CanSelect(new PowerUp { IsWeapon = true }), Is.False);
+
+        chooser.selectedPowerUps.Add(new PowerUp
+        {
+            powerUpObject = Track(new GameObject("Equipped Weapon")),
+            IsWeapon = true,
+        });
+        Assert.That(chooser.CanSelect(candidate), Is.False);
+    }
+
+    [Test]
+    public void WeaponUpgradeOffer_RequiresAnActivePlayerOwnedTarget()
+    {
+        GameObject player = Track(new GameObject("Player"));
+        player.tag = "Player";
+        PowerUpChooser chooser = Track(new GameObject("Chooser")).AddComponent<PowerUpChooser>();
+
+        GameObject weaponObject = Track(new GameObject("Knife"));
+        weaponObject.transform.SetParent(player.transform, false);
+        weaponObject.AddComponent<Knife>();
+
+        GameObject offerObject = Track(new GameObject("Upgrade"));
+        offerObject.SetActive(false);
+        offerObject.transform.SetParent(weaponObject.transform, false);
+        WeaponUpgrades upgrade = offerObject.AddComponent<WeaponUpgrades>();
+        Assert.That(upgrade.ConfigureAsOffer(
+            WeaponUpgrades.UpgradeType.KnifeDamageFlat,
+            5f,
+            PowerUpRarity.Common), Is.True);
+
+        Assert.That(chooser.CanSelect(upgrade.Upgrade), Is.True);
+
+        weaponObject.SetActive(false);
+        Assert.That(chooser.CanSelect(upgrade.Upgrade), Is.False);
+
+        weaponObject.SetActive(true);
+        weaponObject.transform.SetParent(null);
+        Assert.That(chooser.CanSelect(upgrade.Upgrade), Is.False);
+    }
+
+    [Test]
+    public void FirstStatusUnlock_RemainsEligibleWithoutAnExistingStatusSource()
+    {
+        GameObject player = Track(new GameObject("Player"));
+        player.tag = "Player";
+        PowerUpChooser chooser = Track(new GameObject("Chooser")).AddComponent<PowerUpChooser>();
+
+        GameObject weaponObject = Track(new GameObject("Knife"));
+        weaponObject.transform.SetParent(player.transform, false);
+        Knife knife = weaponObject.AddComponent<Knife>();
+        knife.applyStatusEffectOnHit = false;
+
+        GameObject offerObject = Track(new GameObject("First Status Upgrade"));
+        offerObject.SetActive(false);
+        offerObject.transform.SetParent(weaponObject.transform, false);
+        WeaponUpgrades upgrade = offerObject.AddComponent<WeaponUpgrades>();
+        Assert.That(upgrade.ConfigureAsOffer(
+            WeaponUpgrades.UpgradeType.KnifeStatusEffectIndex,
+            (int)StatusEffectSystem.StatusType.Poison,
+            PowerUpRarity.Common,
+            applyRarityMultiplier: false), Is.True);
+        upgrade.ConfigureStatusChanceSeed(0.15f);
+
+        Assert.That(chooser.CanSelect(upgrade.Upgrade), Is.True);
+    }
+
+    [Test]
+    public void AccessoryStatusUpgrade_RequiresEquippedOwnerAndStatusSource()
+    {
+        GameObject player = Track(new GameObject("Player"));
+        player.tag = "Player";
+        player.AddComponent<SimpleHealth>();
+        player.AddComponent<AccessoryInventory>();
+        PowerUpChooser chooser = Track(new GameObject("Chooser")).AddComponent<PowerUpChooser>();
+
+        GameObject accessoryObject = Track(new GameObject("Status Ring"));
+        accessoryObject.transform.SetParent(player.transform, false);
+        Accessory accessory = accessoryObject.AddComponent<Accessory>();
+
+        GameObject offerObject = Track(new GameObject("Status Duration Upgrade"));
+        offerObject.SetActive(false);
+        offerObject.transform.SetParent(accessoryObject.transform, false);
+        AccessoriesUpgrades upgrade = offerObject.AddComponent<AccessoriesUpgrades>();
+        upgrade.upgradeType = AccessoriesUpgrades.StatUpgradeType.StatusDurationPercent;
+        upgrade.Upgrade = new PowerUp
+        {
+            powerUpObject = offerObject,
+            IsAccessory = true,
+            IsUpgrade = true,
+        };
+
+        Assert.That(chooser.CanSelect(upgrade.Upgrade), Is.False);
+
+        var accessoryOffer = new PowerUp
+        {
+            powerUpName = "Status Ring",
+            powerUpObject = accessoryObject,
+            IsAccessory = true,
+        };
+        Assert.That(accessory.TryApply(new PowerUpSelectionContext(
+            chooser,
+            accessoryOffer,
+            accessoryObject,
+            player.transform)), Is.True);
+        Assert.That(chooser.CanSelect(upgrade.Upgrade), Is.False);
+
+        GameObject weaponObject = Track(new GameObject("Status Knife"));
+        weaponObject.transform.SetParent(player.transform, false);
+        Knife knife = weaponObject.AddComponent<Knife>();
+        knife.applyStatusEffectOnHit = true;
+
+        Assert.That(chooser.CanSelect(upgrade.Upgrade), Is.True);
+    }
+
+    [Test]
+    public void AccessoryUpgradeCapabilities_TrackProjectileTimingMovementAndStatusSystems()
+    {
+        GameObject player = Track(new GameObject("Player"));
+        player.tag = "Player";
+        PowerUpChooser chooser = Track(new GameObject("Chooser")).AddComponent<PowerUpChooser>();
+
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.ProjectileSpeedPercent), Is.False);
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.CooldownReduction), Is.False);
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.DashCooldownReduction), Is.False);
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.StatusApplicationChanceFlat), Is.False);
+
+        GameObject weaponObject = Track(new GameObject("Shooter"));
+        weaponObject.SetActive(false);
+        weaponObject.transform.SetParent(player.transform, false);
+        SimpleShooter shooter = weaponObject.AddComponent<SimpleShooter>();
+        shooter.applyStatusEffectOnHit = true;
+        WeaponTick tick = weaponObject.AddComponent<WeaponTick>();
+        var tickData = new SerializedObject(tick);
+        tickData.FindProperty("startOnAwake").boolValue = false;
+        tickData.ApplyModifiedPropertiesWithoutUndo();
+        weaponObject.SetActive(true);
+
+        player.AddComponent<Rigidbody2D>();
+        player.AddComponent<Snappy2DController>();
+
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.ProjectileSpeedPercent), Is.True);
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.CriticalChanceFlat), Is.True);
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.CooldownReduction), Is.True);
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.DashCooldownReduction), Is.True);
+        Assert.That(chooser.CanBenefitFromAccessoryUpgrade(
+            AccessoriesUpgrades.StatUpgradeType.StatusApplicationChanceFlat), Is.True);
+    }
+
+    [Test]
+    public void ContextualSelector_GuaranteesUpgradeThenUsesDuplicatesOnlyAsFallback()
+    {
+        var weapon = new PowerUp { powerUpName = "Weapon", weight = 100f };
+        var accessory = new PowerUp { powerUpName = "Accessory", weight = 100f };
+        var upgrade = new PowerUp { powerUpName = "Upgrade", IsUpgrade = true, weight = 0.01f };
+
+        List<PowerUp> result = PowerUpWeightedSelector.PickContextual(
+            new[] { weapon, accessory, upgrade },
+            3);
+
+        Assert.That(result, Has.Count.EqualTo(3));
+        Assert.That(result, Does.Contain(upgrade));
+        Assert.That(result, Does.Contain(weapon));
+        Assert.That(result, Does.Contain(accessory));
+
+        result = PowerUpWeightedSelector.PickContextual(new[] { upgrade }, 3);
+        Assert.That(result, Has.Count.EqualTo(3));
+        Assert.That(result[0], Is.SameAs(upgrade));
+        Assert.That(result[1], Is.SameAs(upgrade));
+        Assert.That(result[2], Is.SameAs(upgrade));
+    }
+
     private T Track<T>(T value) where T : Object
     {
         cleanup.Add(value);

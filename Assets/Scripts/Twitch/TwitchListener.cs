@@ -51,6 +51,12 @@ public class TwitchListener : MonoBehaviour
     public float chanceToUpgradeMinPower = 0.6f; // Chance to upgrade chatter power on spawn
     [SerializeField] private bool alwaysSpawnMaxEnemies = false;
 
+    [Header("Chatter Spawn Queue")]
+    [Tooltip("Minimum unscaled seconds between queued chatter spawns. Set to 0 to process one per frame.")]
+    [SerializeField, Min(0f)] private float queuedSpawnInterval = 0.25f;
+    [Tooltip("Maximum number of chatters waiting in the queue. Set to 0 for no limit.")]
+    [SerializeField, Min(0)] private int maxQueuedChatters = 50;
+
     [Header("Curse Power Ups")]
     [Tooltip("How much global chatter min power increases when the player chooses a cursed power-up.")]
     [SerializeField, Min(0)] private int cursePowerIncrease = 5;
@@ -111,6 +117,52 @@ public class TwitchListener : MonoBehaviour
     private readonly List<ChatterBoss> spawnedBosses = new();
     private readonly List<int> activeChatterEntryIndices = new();
     private readonly List<int> eligibleChatterEntryIndices = new();
+    private readonly Queue<QueuedChatterSpawn> chatterSpawnQueue = new();
+    private float nextQueuedSpawnTime;
+
+    private sealed class QueuedChatterSpawn
+    {
+        public readonly Chatter chatter;
+        public readonly GameObject prefab;
+        public readonly string displayName;
+        public readonly int totalUnits;
+        public int remainingUnits;
+
+        public QueuedChatterSpawn(Chatter chatter, GameObject prefab, string displayName, int totalUnits)
+        {
+            this.chatter = chatter;
+            this.prefab = prefab;
+            this.displayName = displayName;
+            this.totalUnits = totalUnits;
+            remainingUnits = totalUnits;
+        }
+
+        public int NextOrdinal => totalUnits - remainingUnits + 1;
+        public string DisplayLabel => remainingUnits > 1 ? $"{displayName} x{remainingUnits}" : displayName;
+    }
+
+    public int QueuedChatterCount => chatterSpawnQueue.Count;
+
+    public int CopyQueuedChatterLabels(List<string> destination, int maxCount)
+    {
+        if (destination == null)
+            return 0;
+
+        destination.Clear();
+        int safeMax = Mathf.Max(0, maxCount);
+        if (safeMax == 0)
+            return 0;
+
+        foreach (QueuedChatterSpawn queued in chatterSpawnQueue)
+        {
+            destination.Add(queued.DisplayLabel);
+            if (destination.Count >= safeMax)
+                break;
+        }
+
+        return destination.Count;
+    }
+
     private void Start()
     {
         if (player == null) player = transform;
@@ -150,6 +202,9 @@ public class TwitchListener : MonoBehaviour
             SetBossHealthBarVisible(false);
             return; // ✅ Prevents MissingReferenceException
         }
+
+        if (!alwaysSpawnMaxEnemies)
+            ProcessChatterSpawnQueue();
 
         bool gameRunning = Time.timeScale > 0f;
         bool timerPausedBySafeZone = IsTimerPausedBySafeZone();
@@ -313,17 +368,48 @@ public class TwitchListener : MonoBehaviour
         int budget = GetChatterPowerBudget(chatter);
         int cost = Mathf.Max(1, entry.power);
         int unitsByBudget = budget / cost;
+        if (unitsByBudget <= 0) return;
 
-        // Enforce GLOBAL max active cap = minPower * ratio
-        int globalMaxAllowed = Mathf.Max(0, minPower * Mathf.Max(1, maxSpawnPerPowerRatio));
-        int globalRemaining = Mathf.Max(0, globalMaxAllowed - spawnedChatters.Count);
-
-        int unitsToSpawn = alwaysSpawnMaxEnemies ? globalRemaining : Mathf.Min(unitsByBudget, globalRemaining);
-        for (int i = 0; i < unitsToSpawn; i++)
+        string displayName = chatter?.tags?.displayName?.Trim();
+        if (string.IsNullOrEmpty(displayName)) return;
+        if (maxQueuedChatters > 0 && chatterSpawnQueue.Count >= maxQueuedChatters)
         {
-            string nameOverride = i == 0 ? null : $"{chatter.tags.displayName} ({i + 1})";
-            TrySpawnChatter(chatter, entry.prefab, nameOverride);
+            Debug.LogWarning($"[TwitchListener] Spawn queue is full; {displayName} could not be queued.");
+            return;
         }
+
+        bool queueWasEmpty = chatterSpawnQueue.Count == 0;
+        chatterSpawnQueue.Enqueue(new QueuedChatterSpawn(chatter, entry.prefab, displayName, unitsByBudget));
+        if (queueWasEmpty)
+            nextQueuedSpawnTime = Time.unscaledTime;
+    }
+
+    private void ProcessChatterSpawnQueue()
+    {
+        if (chatterSpawnQueue.Count == 0)
+            return;
+        if (Time.unscaledTime < nextQueuedSpawnTime)
+            return;
+        if (spawnedChatters.Count >= GetGlobalSpawnCap())
+            return;
+
+        QueuedChatterSpawn queued = chatterSpawnQueue.Peek();
+        int ordinal = queued.NextOrdinal;
+        string nameOverride = ordinal == 1 ? null : $"{queued.displayName} ({ordinal})";
+        GameObject spawned = TrySpawnChatter(queued.chatter, queued.prefab, nameOverride);
+
+        nextQueuedSpawnTime = Time.unscaledTime + Mathf.Max(0f, queuedSpawnInterval);
+        if (spawned == null)
+            return;
+
+        queued.remainingUnits--;
+        if (queued.remainingUnits <= 0)
+            chatterSpawnQueue.Dequeue();
+    }
+
+    private int GetGlobalSpawnCap()
+    {
+        return Mathf.Max(0, minPower * Mathf.Max(1, maxSpawnPerPowerRatio));
     }
 
 
@@ -392,7 +478,7 @@ public class TwitchListener : MonoBehaviour
 
     private void EnsureMaxSpawns()
     {
-        int globalMaxAllowed = Mathf.Max(0, minPower * Mathf.Max(1, maxSpawnPerPowerRatio));
+        int globalMaxAllowed = GetGlobalSpawnCap();
         int globalMissing = Mathf.Max(0, globalMaxAllowed - spawnedChatters.Count);
         if (globalMissing <= 0) return;
 

@@ -9,6 +9,16 @@ public interface IPowerUpSelectionEffect
     bool TryApply(PowerUpSelectionContext context);
 }
 
+/// <summary>
+/// Optional preview-time validation for offers whose usefulness depends on the
+/// player's current build. PowerUpChooser evaluates this before an offer is
+/// displayed and again immediately before it is selected.
+/// </summary>
+public interface IPowerUpOfferEligibility
+{
+    bool CanOffer(PowerUpSelectionContext context);
+}
+
 public readonly struct PowerUpSelectionContext
 {
     public PowerUpSelectionContext(PowerUpChooser chooser, PowerUp offer, GameObject instance, Transform playerRoot)

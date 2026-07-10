@@ -114,9 +114,13 @@ public class PowerUpSelectionUI : MonoBehaviour
         }
 
         int desired = firstPresentation ? firstSelectionCount : choicesPerSelection;
-        int slots = Mathf.Min(Mathf.Max(1, desired), selectButtons.Length, eligible.Count);
+        int slots = Mathf.Min(Mathf.Max(1, desired), selectButtons.Length);
         shownOffers.Clear();
-        shownOffers.AddRange(PowerUpWeightedSelector.Pick(eligible, slots));
+        shownOffers.AddRange(PowerUpWeightedSelector.PickContextual(
+            eligible,
+            slots,
+            guaranteeUpgrade: true,
+            allowDuplicateFallback: true));
 
         RenderOffers();
         SetExtraButtonsVisible(true);

@@ -178,6 +178,7 @@ public class SimpleShooter : MonoBehaviour
         string delay = wt != null ? $"<color={numColor}>{wt.EffectiveInterval:F1}</color>s" : "N/A";
         float effectiveSpeed = GetEffectiveProjectileSpeed();
         float effectiveLifetime = GetEffectiveProjectileLifetime();
+        float effectiveAreaMultiplier = GetEffectiveAreaMultiplier();
         int effectivePenetration = GetEffectivePenetration();
         float effectiveCritChance = GetEffectiveCritChance();
         float effectiveCritMultiplier = GetEffectiveCritMultiplier();
@@ -209,6 +210,8 @@ public class SimpleShooter : MonoBehaviour
             sb.AppendLine($"Speed: <color={numColor}>{effectiveSpeed:F1}</color>");
         if (effectiveLifetime > 0f)
             sb.AppendLine($"Life: <color={numColor}>{effectiveLifetime:F1}</color>s");
+        if (!Mathf.Approximately(effectiveAreaMultiplier, 1f))
+            sb.AppendLine($"Area: <color={numColor}>x{effectiveAreaMultiplier:F2}</color>");
         if (projectileCount > 1)
             sb.AppendLine($"Shots: <color={numColor}>{projectileCount}</color>");
         if (effectivePenetration > 1)
@@ -324,6 +327,7 @@ public class SimpleShooter : MonoBehaviour
     private void SpawnProjectile(Vector3 originPosition, Vector2 shootDir, int finalDamage, bool canTriggerForkShot = true, bool isCritical = false)
     {
         var bullet = Instantiate(bulletPrefab, originPosition, Quaternion.identity);
+        ApplyProjectileAreaScale(bullet, GetEffectiveAreaMultiplier());
         int configuredChainHits = ConfigureChainHits(bullet);
 
         float rotDeg = Mathf.Atan2(shootDir.y, shootDir.x) * Mathf.Rad2Deg;
@@ -439,6 +443,28 @@ public class SimpleShooter : MonoBehaviour
         if (accessoryStats == null)
             accessoryStats = PlayerAccessoryStats.Find(transform);
         return accessoryStats;
+    }
+
+    private float GetEffectiveAreaMultiplier() => GetAccessoryStats() != null ? accessoryStats.WeaponAreaMultiplier : 1f;
+
+    private static void ApplyProjectileAreaScale(GameObject projectile, float multiplier)
+    {
+        if (projectile == null)
+            return;
+
+        multiplier = Mathf.Max(0f, multiplier);
+        if (Mathf.Approximately(multiplier, 1f))
+            return;
+
+        // Scale the projectile root so every attached/child collider and renderer
+        // shares the same area increase, regardless of the projectile prefab shape.
+        Vector3 scale = projectile.transform.localScale;
+        projectile.transform.localScale = new Vector3(scale.x * multiplier, scale.y * multiplier, scale.z);
+
+        // Growing areas need their growth speed and completion threshold scaled too,
+        // otherwise a larger starting size would make them finish prematurely.
+        if (projectile.TryGetComponent(out GrowOverTime growingArea))
+            growingArea.ConfigureAreaScale(multiplier);
     }
 
     private float GetEffectiveProjectileSpeed() => Mathf.Max(0f, shootForce * (GetAccessoryStats() != null ? accessoryStats.ProjectileSpeedMultiplier : 1f));

@@ -13,6 +13,16 @@ public class GrowOverTime : MonoBehaviour
     public UnityEvent onTargetReached;
 
     private bool triggered = false;
+    private float areaMultiplier = 1f;
+
+    /// <summary>
+    /// Keeps a growing damage area's lifetime unchanged while scaling its physical
+    /// size, growth speed, and final size with the owning player's area stat.
+    /// </summary>
+    public void ConfigureAreaScale(float multiplier)
+    {
+        areaMultiplier = Mathf.Max(0f, multiplier);
+    }
 
 
     public void InstantiateExplosion(GameObject explosion)
@@ -28,10 +38,11 @@ public class GrowOverTime : MonoBehaviour
     private void Update()
     {
         // Grow uniformly
-        transform.localScale += Vector3.one * growthRate * Time.deltaTime;
+        transform.localScale += Vector3.one * (growthRate * areaMultiplier * Time.deltaTime);
 
         // Check if we've reached the target
-        if (!triggered && transform.localScale.x >= targetScale)
+        float effectiveTargetScale = targetScale * areaMultiplier;
+        if (!triggered && transform.localScale.x >= effectiveTargetScale)
         {
             triggered = true;
             onTargetReached?.Invoke();
