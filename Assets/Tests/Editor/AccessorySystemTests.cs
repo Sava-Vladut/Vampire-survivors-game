@@ -133,6 +133,59 @@ public sealed class AccessorySystemTests
         Assert.That(PlayerDamageMultiplierUtility.Apply(weapon, 20), Is.EqualTo(30));
     }
 
+    [TestCase(RecentlyHitDefenseStat.Armor)]
+    [TestCase(RecentlyHitDefenseStat.Evasion)]
+    public void RecentlyHitDefense_DoublesTheCurrentTotalStatForThreeSeconds(RecentlyHitDefenseStat stat)
+    {
+        GameObject player = Track(new GameObject("Player"));
+        SimpleHealth health = player.AddComponent<SimpleHealth>();
+        health.armor = 20f;
+        health.evasion = 20f;
+        SetFloat(health, "maxEvasion", 0f);
+        SetFloat(health, "invulnerabilityDuration", 0f);
+        health.ResetHealth();
+
+        GameObject item = Track(new GameObject(stat.ToString()));
+        item.transform.SetParent(player.transform, false);
+        item.AddComponent<Accessory>();
+        RecentlyHitDefenseAccessory effect = item.AddComponent<RecentlyHitDefenseAccessory>();
+        SetEnum(effect, "stat", (int)stat);
+        InvokeAccessoryEnable(effect);
+
+        Assert.That(health.EffectiveArmor, Is.EqualTo(20f));
+        Assert.That(health.EffectiveEvasion, Is.EqualTo(20f));
+
+        health.TakeDamage(10, SimpleHealth.DamageType.Physical, true, false, null, "Test Hit");
+
+        Assert.That(effect.IsActive, Is.True);
+        Assert.That(effect.RemainingDuration, Is.GreaterThan(2.9f).And.LessThanOrEqualTo(3f));
+        Assert.That(
+            stat == RecentlyHitDefenseStat.Armor ? health.EffectiveArmor : health.EffectiveEvasion,
+            Is.EqualTo(40f));
+        Assert.That(effect.GetAccessoryDescriptionLine(), Does.Contain("Active:"));
+    }
+
+    [Test]
+    public void RecentlyHitDefense_IgnoresUnmitigatableDamage()
+    {
+        GameObject player = Track(new GameObject("Player"));
+        SimpleHealth health = player.AddComponent<SimpleHealth>();
+        health.armor = 20f;
+        SetFloat(health, "invulnerabilityDuration", 0f);
+        health.ResetHealth();
+
+        GameObject item = Track(new GameObject("Armor"));
+        item.transform.SetParent(player.transform, false);
+        item.AddComponent<Accessory>();
+        RecentlyHitDefenseAccessory effect = item.AddComponent<RecentlyHitDefenseAccessory>();
+        InvokeAccessoryEnable(effect);
+
+        health.TakeDamage(10, SimpleHealth.DamageType.Fire, false, false, null, "Ignite");
+
+        Assert.That(effect.IsActive, Is.False);
+        Assert.That(health.EffectiveArmor, Is.EqualTo(20f));
+    }
+
     [Test]
     public void PowerUpChooser_RejectsNoOpOffersAndNewItemsPastTheirCap()
     {
@@ -393,6 +446,27 @@ public sealed class AccessorySystemTests
             item.FindPropertyRelative("value").floatValue = modifiers[i].value;
         }
         serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void SetFloat(Object target, string propertyName, float value)
+    {
+        var serialized = new SerializedObject(target);
+        serialized.FindProperty(propertyName).floatValue = value;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void SetEnum(Object target, string propertyName, int value)
+    {
+        var serialized = new SerializedObject(target);
+        serialized.FindProperty(propertyName).enumValueIndex = value;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void InvokeAccessoryEnable(AccessoryBehaviour behaviour)
+    {
+        typeof(AccessoryBehaviour)
+            .GetMethod("OnEnable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            .Invoke(behaviour, null);
     }
 }
 

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Lightweight status effect system with add/remove/has, events, and ticking.
-/// Re-adding the same effect REFRESHES its duration (no stacking).
+/// Lightweight status effect system with add/remove/has, events, stacking, and ticking.
+/// Re-adding the same effect adds a stack up to its cap and refreshes the shared duration.
 /// Includes built-in Bleeding that damages a SimpleHealth component each tick.
 /// </summary>
 [AddComponentMenu("Gameplay/Status Effect System")]
@@ -34,6 +34,14 @@ public class StatusEffectSystem : MonoBehaviour
     public event Action<StatusType> OnStart;
     public event Action<StatusType> OnEnd;
     public event Action<StatusType, int> OnTick; // tick index (1-based) for that effect
+    public event Action<StatusType, int> OnStatusUpdated; // current stack count after add/refresh
+
+    [Serializable]
+    public class StackLimit
+    {
+        public StatusType type;
+        [Min(1)] public int maxStacks = 5;
+    }
 
     [Header("Time")]
     [Tooltip("If true, uses unscaled time (ignores slow-mo/pauses).")]
@@ -70,6 +78,10 @@ public class StatusEffectSystem : MonoBehaviour
     [Tooltip("Healing applied per tick while Regeneration is active (rounded to int).")]
     [SerializeField] public float regenerationPerTick = 5f;
 
+    [Header("Shock")]
+    [Tooltip("Incoming damage multiplier at one Shock stack.")]
+    [SerializeField, Min(0f)] private float shockDamageTakenMultiplier = 2f;
+
     [Header("XP Boost")]
     [Tooltip("If true, applying the XpBoost status adjusts XP rewards while active.")]
     [SerializeField] private bool enableXpBoost = true;
@@ -94,6 +106,10 @@ public class StatusEffectSystem : MonoBehaviour
     [Tooltip("Incoming status duration multiplier while Cursed is active.")]
     [SerializeField, Min(0f)] private float cursedStatusDurationMultiplier = 1.5f;
 
+    [Header("Stack Limits")]
+    [Tooltip("Per-status stack caps. Missing entries use 1 for hard control and 5 for other statuses.")]
+    [SerializeField] private List<StackLimit> stackLimits = new List<StackLimit>();
+
     [Header("UnityEvent Defaults")]
     [SerializeField, Min(0.01f)] private float defaultDuration = 5f;
     [SerializeField, Min(0f)] private float defaultTickInterval = 1f;
@@ -107,18 +123,19 @@ public class StatusEffectSystem : MonoBehaviour
         public float tickInterval;     // seconds between ticks
         public float tickTimer;        // accumulates until tick
         public int tickCount;          // number of ticks fired for this activation
+        public int stackCount;         // stacks sharing this activation's duration and cadence
     }
 
     private readonly Dictionary<StatusType, Effect> _active = new Dictionary<StatusType, Effect>(8);
     private readonly Dictionary<StatusType, GameObject> _sources = new Dictionary<StatusType, GameObject>(8);
     private static readonly List<StatusType> _keysCache = new List<StatusType>(8);
-    private float currentXpMultiplier = 1f;
     private enum BuiltInEvent { Started, Refreshed, Tick, Ended }
 
-    public float CurrentXpMultiplier => enableXpBoost ? currentXpMultiplier : 1f;
-    public float HealingReceivedMultiplier => HasStatus(StatusType.Cursed) ? cursedHealingReceivedMultiplier : 1f;
-    public float StatusDurationReceivedMultiplier => HasStatus(StatusType.Cursed) ? cursedStatusDurationMultiplier : 1f;
-    public float AttackSpeedMultiplier => HasStatus(StatusType.Onslaught) ? onslaughtAttackSpeedMultiplier : 1f;
+    public float CurrentXpMultiplier => enableXpBoost ? GetScaledMultiplier(StatusType.XpBoost, xpBoostMultiplier) : 1f;
+    public float HealingReceivedMultiplier => GetScaledMultiplier(StatusType.Cursed, cursedHealingReceivedMultiplier);
+    public float StatusDurationReceivedMultiplier => GetScaledMultiplier(StatusType.Cursed, cursedStatusDurationMultiplier);
+    public float AttackSpeedMultiplier => GetScaledMultiplier(StatusType.Onslaught, onslaughtAttackSpeedMultiplier);
+    public float IncomingDamageMultiplier => GetScaledMultiplier(StatusType.Shock, shockDamageTakenMultiplier);
 
     public float MovementSpeedMultiplier
     {
@@ -129,11 +146,11 @@ public class StatusEffectSystem : MonoBehaviour
 
             float multiplier = 1f;
             if (HasStatus(StatusType.Speed))
-                multiplier *= speedMoveMultiplier;
+                multiplier *= GetScaledMultiplier(StatusType.Speed, speedMoveMultiplier);
             if (HasStatus(StatusType.Slow))
-                multiplier *= slowMoveMultiplier;
+                multiplier *= GetScaledMultiplier(StatusType.Slow, slowMoveMultiplier);
             if (HasStatus(StatusType.Onslaught))
-                multiplier *= onslaughtMoveMultiplier;
+                multiplier *= GetScaledMultiplier(StatusType.Onslaught, onslaughtMoveMultiplier);
 
             return multiplier;
         }
@@ -143,12 +160,16 @@ public class StatusEffectSystem : MonoBehaviour
     {
         if (health == null)
             health = GetComponent<SimpleHealth>();
-        currentXpMultiplier = 1f;
     }
 
     private void Update()
     {
         float dt = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+        AdvanceEffects(dt);
+    }
+
+    private void AdvanceEffects(float dt)
+    {
         if (dt <= 0f || _active.Count == 0) return;
 
         _keysCache.Clear();
@@ -198,9 +219,9 @@ public class StatusEffectSystem : MonoBehaviour
 
 
     /// <summary>
-    /// Adds or REFRESHES a status effect.
-    /// If already active, resets remaining time to 'duration' (no stacking),
-    /// and resets tick cadence. Does NOT fire OnStart again on refresh.
+    /// Adds or stacks a status effect.
+    /// If already active, adds a stack up to its cap and resets remaining time to 'duration'.
+    /// Tick cadence is preserved and OnStart does not fire again on refresh.
     /// </summary>
 
     public void AddStatus(StatusType type, float duration, float tickInterval = 1f, GameObject sourceObject = null)
@@ -210,13 +231,13 @@ public class StatusEffectSystem : MonoBehaviour
 
         if (_active.TryGetValue(type, out var e))
         {
-            // ---- REFRESH: duration only ----
-            e.remaining = duration;              // reset remaining time
-                                                 // keep e.tickInterval, e.tickTimer, e.tickCount as-is
-                                                 // ignore tickInterval parameter on refresh
+            e.stackCount = Mathf.Min(e.stackCount + 1, GetMaxStacks(type));
+            e.remaining = duration;
+            // Keep tickInterval, tickTimer, and tickCount from the first application.
             if (sourceObject != null)
                 _sources[type] = sourceObject;
             HandleBuiltIn(type, BuiltInEvent.Refreshed);
+            OnStatusUpdated?.Invoke(type, e.stackCount);
         }
         else
         {
@@ -226,13 +247,15 @@ public class StatusEffectSystem : MonoBehaviour
                 remaining = duration,
                 tickInterval = Mathf.Max(0f, tickInterval),
                 tickTimer = 0f,
-                tickCount = 0
+                tickCount = 0,
+                stackCount = 1
             };
             _active.Add(type, e);
             if (sourceObject != null)
                 _sources[type] = sourceObject;
             OnStart?.Invoke(type);
             HandleBuiltIn(type, BuiltInEvent.Started);
+            OnStatusUpdated?.Invoke(type, e.stackCount);
         }
     }
 
@@ -269,6 +292,25 @@ public class StatusEffectSystem : MonoBehaviour
         }
         _active.Clear();
         _sources.Clear();
+    }
+
+    /// <summary>Current stack count for a status (0 if not active).</summary>
+    public int GetStackCount(StatusType type)
+    {
+        return _active.TryGetValue(type, out var e) ? Mathf.Max(0, e.stackCount) : 0;
+    }
+
+    /// <summary>Configured stack cap for a status.</summary>
+    public int GetMaxStacks(StatusType type)
+    {
+        for (int i = 0; stackLimits != null && i < stackLimits.Count; i++)
+        {
+            StackLimit limit = stackLimits[i];
+            if (limit != null && limit.type == type)
+                return Mathf.Max(1, limit.maxStacks);
+        }
+
+        return IsHardControl(type) ? 1 : 5;
     }
 
 
@@ -320,40 +362,19 @@ public class StatusEffectSystem : MonoBehaviour
             regenerationPerTick = amount;
     }
 
-    private void SetXpBoostActive(bool active)
-    {
-        if (!enableXpBoost)
-        {
-            currentXpMultiplier = 1f;
-            return;
-        }
-
-        currentXpMultiplier = active ? Mathf.Max(0f, xpBoostMultiplier) : 1f;
-    }
-
     // ---- Built-in handlers ----
     private void HandleBuiltIn(StatusType type, BuiltInEvent evt)
     {
-        if (type == StatusType.XpBoost)
-        {
-            if (evt == BuiltInEvent.Started || evt == BuiltInEvent.Refreshed)
-            {
-                SetXpBoostActive(true);
-            }
-            else if (evt == BuiltInEvent.Ended)
-            {
-                SetXpBoostActive(false);
-            }
-        }
-
         if (evt != BuiltInEvent.Tick)
             return;
+
+        int stacks = GetStackCount(type);
 
         if (type == StatusType.Bleeding && enableBleeding && bleedingDamagePerTick > 0f)
         {
             if (health != null)
             {
-                int dmg = Mathf.Max(1, Mathf.RoundToInt(bleedingDamagePerTick));
+                int dmg = Mathf.Max(1, Mathf.RoundToInt(bleedingDamagePerTick * stacks));
                 // Uses your health system's public API:
                 // SimpleHealth.TakeDamage(int amount)
                 health.TakeDamage(dmg, SimpleHealth.DamageType.Physical, false, false, GetSource(type), "Bleeding"); // will handle armor, invuln, popup, etc.
@@ -365,7 +386,7 @@ public class StatusEffectSystem : MonoBehaviour
         {
             if (health != null)
             {
-                int dmg = Mathf.Max(1, Mathf.RoundToInt(igniteDamagePerTick));
+                int dmg = Mathf.Max(1, Mathf.RoundToInt(igniteDamagePerTick * stacks));
                 // Uses your health system's public API:
                 // SimpleHealth.TakeDamage(int amount)
                 health.TakeDamage(dmg, SimpleHealth.DamageType.Fire, false, false, GetSource(type), "Ignite");
@@ -377,7 +398,7 @@ public class StatusEffectSystem : MonoBehaviour
         {
             if (health != null)
             {
-                int dmg = Mathf.Max(1, Mathf.RoundToInt(poisonDamagePerTick));
+                int dmg = Mathf.Max(1, Mathf.RoundToInt(poisonDamagePerTick * stacks));
                 // Uses your health system's public API:
                 // SimpleHealth.TakeDamage(int amount)
                 health.TakeDamage(dmg, SimpleHealth.DamageType.Poison, false, false, GetSource(type), "Poison");
@@ -389,7 +410,7 @@ public class StatusEffectSystem : MonoBehaviour
         {
             if (health != null)
             {
-                int heal = Mathf.Max(1, Mathf.RoundToInt(regenerationPerTick));
+                int heal = Mathf.Max(1, Mathf.RoundToInt(regenerationPerTick * stacks));
                 // Uses your health system's public API:
                 // SimpleHealth.Heal(int amount)
                 health.Heal(heal);
@@ -401,6 +422,20 @@ public class StatusEffectSystem : MonoBehaviour
     private GameObject GetSource(StatusType type)
     {
         return _sources.TryGetValue(type, out GameObject source) ? source : null;
+    }
+
+    private float GetScaledMultiplier(StatusType type, float configuredMultiplier)
+    {
+        int stacks = GetStackCount(type);
+        if (stacks <= 0)
+            return 1f;
+
+        return Mathf.Max(0f, 1f + (configuredMultiplier - 1f) * stacks);
+    }
+
+    private static bool IsHardControl(StatusType type)
+    {
+        return type == StatusType.Stun || type == StatusType.Frozen || type == StatusType.Fear;
     }
 
     private float GetIncomingDurationMultiplier(StatusType type)

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Text;
 using System.Collections;
@@ -83,6 +84,90 @@ namespace CommandTerminal
 
         public static void Log(TerminalLogType type, string format, params object[] message) {
             Buffer.HandleLog(string.Format(format, message), type);
+        }
+
+        [RegisterCommand(
+            Name = "status",
+            Help = "Applies a status to the player. Usage: status <type|index> [duration=5] [stacks=1] [tickInterval=1]. Use 'status list' for valid types.",
+            MinArgCount = 1,
+            MaxArgCount = 4)]
+        static void CommandStatus(CommandArg[] args) {
+            if (string.Equals(args[0].String, "list", StringComparison.OrdinalIgnoreCase)) {
+                if (args.Length != 1) {
+                    Shell.IssueErrorMessage("Usage: status list");
+                    return;
+                }
+
+                LogStatusTypes();
+                return;
+            }
+
+            if (!TryParseStatusType(args[0].String, out StatusEffectSystem.StatusType statusType)) {
+                Shell.IssueErrorMessage("Unknown status '{0}'. Use 'status list' for valid names and indexes.", args[0].String);
+                return;
+            }
+
+            float duration = 5f;
+            if (args.Length >= 2 && (!float.TryParse(args[1].String, out duration) || duration <= 0f || float.IsNaN(duration) || float.IsInfinity(duration))) {
+                Shell.IssueErrorMessage("Duration must be a finite number greater than 0.");
+                return;
+            }
+
+            int applications = 1;
+            if (args.Length >= 3 && (!int.TryParse(args[2].String, out applications) || applications < 1)) {
+                Shell.IssueErrorMessage("Stacks must be an integer of at least 1.");
+                return;
+            }
+
+            float tickInterval = 1f;
+            if (args.Length >= 4 && (!float.TryParse(args[3].String, out tickInterval) || tickInterval < 0f || float.IsNaN(tickInterval) || float.IsInfinity(tickInterval))) {
+                Shell.IssueErrorMessage("Tick interval must be a finite number of at least 0.");
+                return;
+            }
+
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null) {
+                Shell.IssueErrorMessage("No active GameObject tagged Player was found.");
+                return;
+            }
+
+            StatusEffectSystem statusEffects = player.GetComponent<StatusEffectSystem>();
+            if (statusEffects == null) {
+                Shell.IssueErrorMessage("The active player does not have a StatusEffectSystem component.");
+                return;
+            }
+
+            for (int i = 0; i < applications; i++)
+                statusEffects.AddStatus(statusType, duration, tickInterval, player);
+
+            Log(
+                "Applied {0} {1} time(s). Stacks: {2}/{3}, duration: {4:0.##}s.",
+                statusType,
+                applications,
+                statusEffects.GetStackCount(statusType),
+                statusEffects.GetMaxStacks(statusType),
+                statusEffects.GetRemainingTime(statusType));
+        }
+
+        static bool TryParseStatusType(string value, out StatusEffectSystem.StatusType statusType) {
+            if (int.TryParse(value, out int statusIndex) && Enum.IsDefined(typeof(StatusEffectSystem.StatusType), statusIndex)) {
+                statusType = (StatusEffectSystem.StatusType)statusIndex;
+                return true;
+            }
+
+            return Enum.TryParse(value, true, out statusType) && Enum.IsDefined(typeof(StatusEffectSystem.StatusType), statusType);
+        }
+
+        static void LogStatusTypes() {
+            var builder = new StringBuilder("Status types: ");
+            Array values = Enum.GetValues(typeof(StatusEffectSystem.StatusType));
+            for (int i = 0; i < values.Length; i++) {
+                var statusType = (StatusEffectSystem.StatusType)values.GetValue(i);
+                if (i > 0) builder.Append(", ");
+                builder.Append((int)statusType).Append('=').Append(statusType);
+            }
+
+            Log(builder.ToString());
         }
 
         [RegisterCommand(Name = "healthbars", Help = "Enables or disables HealthSystem health bars. Usage: healthbars <on|off>", MinArgCount = 1, MaxArgCount = 1)]

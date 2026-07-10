@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5728297336344357467}
   - component: {fileID: 1366379834712408547}
   - component: {fileID: 5981531140440891176}
+  - component: {fileID: 2847658931047265481}
   m_Layer: 6
   m_Name: Armor
   m_TagString: Untagged
@@ -44,10 +45,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: 
   displayName: Armor
-  baseDescription: +20 Armor
+  baseDescription: Gain +20 Armor. After taking direct damage, gain 100% increased
+    Armor for 3 seconds.
   icon: {fileID: 52960055443897715, guid: 3827f6494089b5e40816c76b734ebb2c, type: 3}
   upgradeProfile: {fileID: 11400000, guid: c7aae5f32de13eb44890ce29a32ec81b, type: 2}
   legacyStatsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
@@ -139,3 +141,18 @@ MonoBehaviour:
   - type: 4
     value: 20
   applied: 0
+--- !u!114 &2847658931047265481
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5770607654962526311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d7b8f2c1a604e07b39d6f5a8c2e9143, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Grim::RecentlyHitDefenseAccessory
+  stat: 0
+  increasedPercent: 1
+  recentHitDuration: 3

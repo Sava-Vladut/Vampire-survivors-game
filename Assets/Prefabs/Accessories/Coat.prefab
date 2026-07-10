@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8900478539449170272}
   - component: {fileID: 2455722500924274734}
   - component: {fileID: 6597631269849500999}
+  - component: {fileID: 8352947610483627194}
   m_Layer: 6
   m_Name: Coat
   m_TagString: Untagged
@@ -44,10 +45,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 10b325a2515afac4e899a190a295fe81, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: 
   displayName: Coat
-  baseDescription: +20 Evasion
+  baseDescription: Gain +20 Evasion. After taking direct damage, gain 100% increased
+    Evasion for 3 seconds.
   icon: {fileID: -1388866057315300545, guid: 059063c078d0ce246ab42105aec6a340, type: 3}
   upgradeProfile: {fileID: 11400000, guid: 240630999bd00eb418fa26212b6cbb70, type: 2}
   legacyStatsTextPrefab: {fileID: 1969562480182966257, guid: 890a4bca294df43468ac696383a99644, type: 3}
@@ -139,3 +141,18 @@ MonoBehaviour:
   - type: 6
     value: 20
   applied: 0
+--- !u!114 &8352947610483627194
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6225423114966541088}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d7b8f2c1a604e07b39d6f5a8c2e9143, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Grim::RecentlyHitDefenseAccessory
+  stat: 1
+  increasedPercent: 1
+  recentHitDuration: 3

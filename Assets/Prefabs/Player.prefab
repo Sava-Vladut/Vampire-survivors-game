@@ -4420,6 +4420,7 @@ MonoBehaviour:
   health: {fileID: 0}
   enableRegeneration: 1
   regenerationPerTick: 3
+  shockDamageTakenMultiplier: 2
   enableXpBoost: 1
   xpBoostMultiplier: 3
   speedMoveMultiplier: 2
@@ -4428,6 +4429,35 @@ MonoBehaviour:
   onslaughtMoveMultiplier: 1.1
   cursedHealingReceivedMultiplier: 0.5
   cursedStatusDurationMultiplier: 1.5
+  stackLimits:
+  - type: 0
+    maxStacks: 5
+  - type: 1
+    maxStacks: 1
+  - type: 2
+    maxStacks: 5
+  - type: 3
+    maxStacks: 5
+  - type: 4
+    maxStacks: 5
+  - type: 5
+    maxStacks: 5
+  - type: 6
+    maxStacks: 5
+  - type: 7
+    maxStacks: 1
+  - type: 8
+    maxStacks: 5
+  - type: 9
+    maxStacks: 5
+  - type: 10
+    maxStacks: 5
+  - type: 11
+    maxStacks: 1
+  - type: 12
+    maxStacks: 5
+  - type: 13
+    maxStacks: 5
   defaultDuration: 5
   defaultTickInterval: 1
 --- !u!81 &6608178519213617443

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
 using System.Collections.Generic;
+
 public class SimpleHealth : MonoBehaviour
 {
     public static event System.Action<DamageReportEntry> AnyDamageTaken;
@@ -23,6 +24,7 @@ public class SimpleHealth : MonoBehaviour
         public readonly bool WasLethal;
         public readonly int ArmorMitigatedAmount;
         public readonly int EvasionDodgedAmount;
+        public readonly bool WasMitigatable;
 
         public DamageReportEntry(
             SimpleHealth target,
@@ -34,7 +36,8 @@ public class SimpleHealth : MonoBehaviour
             float healthAfter,
             bool wasLethal,
             int armorMitigatedAmount = 0,
-            int evasionDodgedAmount = 0)
+            int evasionDodgedAmount = 0,
+            bool wasMitigatable = false)
         {
             Target = target;
             Amount = amount;
@@ -46,6 +49,7 @@ public class SimpleHealth : MonoBehaviour
             WasLethal = wasLethal;
             ArmorMitigatedAmount = Mathf.Max(0, armorMitigatedAmount);
             EvasionDodgedAmount = Mathf.Max(0, evasionDodgedAmount);
+            WasMitigatable = wasMitigatable;
         }
     }
 
@@ -167,6 +171,7 @@ public class SimpleHealth : MonoBehaviour
     private int runDamageTakenTotal = 0;
     private Snappy2DController movementController;
     private readonly System.Text.StringBuilder _statsBuilder = new System.Text.StringBuilder(256);
+    private readonly List<IPlayerDefenseIncreaseProvider> defenseIncreaseProviders = new();
 
     // Cached components for performance
     private DPSChecker _dpsChecker;
@@ -385,6 +390,8 @@ public class SimpleHealth : MonoBehaviour
     {
         statsDirty = false;
         float referenceDamage = Mathf.Max(1, lastDamageTaken);
+        float effectiveArmor = EffectiveArmor;
+        float effectiveEvasion = EffectiveEvasion;
         const string statColor = "#8888FF";
         const string healthColor = "#FF6666";
         const string currentHealthColor = "#80FF80";
@@ -408,11 +415,11 @@ public class SimpleHealth : MonoBehaviour
         // DEFENSE & RESISTANCES
         if (defenseStatsText != null)
         {
-            float mitigation = (armor > 0f && armorScaling > 0f)
-                ? Mathf.Min(armor / (armor + armorScaling * referenceDamage), maxMitigation)
+            float mitigation = (effectiveArmor > 0f && armorScaling > 0f)
+                ? Mathf.Min(effectiveArmor / (effectiveArmor + armorScaling * referenceDamage), maxMitigation)
                 : 0f;
-            float evasionChance = (evasion > 0f && evasionScaling > 0f)
-                ? Mathf.Min(evasion / (evasion + evasionScaling * referenceDamage), maxEvasion)
+            float evasionChance = (effectiveEvasion > 0f && evasionScaling > 0f)
+                ? Mathf.Min(effectiveEvasion / (effectiveEvasion + evasionScaling * referenceDamage), maxEvasion)
                 : 0f;
 
             _statsBuilder.Clear();
@@ -423,8 +430,8 @@ public class SimpleHealth : MonoBehaviour
             else
             {
                 _statsBuilder.AppendLine($"<b><color={statColor}>Defense</color></b>");
-                _statsBuilder.AppendLine($"Armor: <color={statColor}>{(int)armor}</color> (Mitigation: <color={statColor}>{mitigation * 100f:F1}%</color>)");
-                _statsBuilder.AppendLine($"Evasion: <color={statColor}>{(int)evasion}</color> (Chance: <color={statColor}>{evasionChance * 100f:F1}%</color>)");
+                _statsBuilder.AppendLine($"Armor: <color={statColor}>{Mathf.RoundToInt(effectiveArmor)}</color> (Mitigation: <color={statColor}>{mitigation * 100f:F1}%</color>)");
+                _statsBuilder.AppendLine($"Evasion: <color={statColor}>{Mathf.RoundToInt(effectiveEvasion)}</color> (Chance: <color={statColor}>{evasionChance * 100f:F1}%</color>)");
                 _statsBuilder.AppendLine($"Thorns: <color={statColor}>{thornsDamage}</color>");
                 _statsBuilder.AppendLine($"<color=#FF6600>Fire Res: {fireResist * 100f:F0}%</color>");
                 _statsBuilder.AppendLine($"<color=#4DB2FF>Cold Res: {coldResist * 100f:F0}%</color>");
@@ -632,7 +639,7 @@ public class SimpleHealth : MonoBehaviour
                         tmpUI.text = "Dodged";
                     }
                 }
-                RaiseDamageTaken(0, type, sourceObject, sourceDetail, 0, Mathf.RoundToInt(incomingDamage));
+                RaiseDamageTaken(0, type, sourceObject, sourceDetail, 0, Mathf.RoundToInt(incomingDamage), mitigatable);
                 return;
             }
 
@@ -652,10 +659,7 @@ public class SimpleHealth : MonoBehaviour
 
         // ailments
         if (_statusEffectSystem != null)
-        {
-            if (_statusEffectSystem.HasStatus(StatusEffectSystem.StatusType.Shock))
-                dmg *= 2;
-        }
+            dmg *= _statusEffectSystem.IncomingDamageMultiplier;
 
         int displayedDamage = Mathf.Max(1, Mathf.RoundToInt(dmg));
         lastDamageTaken = displayedDamage;
@@ -667,7 +671,7 @@ public class SimpleHealth : MonoBehaviour
 
         RegisterRunDamage(displayedDamage, type);
         currentHealth = Mathf.Clamp(currentHealth - dmg, 0, maxHealth);
-        RaiseDamageTaken(displayedDamage, type, sourceObject, sourceDetail, armorMitigatedAmount, 0);
+        RaiseDamageTaken(displayedDamage, type, sourceObject, sourceDetail, armorMitigatedAmount, 0, mitigatable);
         ApplyThorns();
         SyncSlider();
         UpdateVolume();
@@ -842,7 +846,8 @@ public class SimpleHealth : MonoBehaviour
         GameObject sourceObject,
         string sourceDetail,
         int armorMitigatedAmount = 0,
-        int evasionDodgedAmount = 0)
+        int evasionDodgedAmount = 0,
+        bool wasMitigatable = false)
     {
         DamageReportEntry entry = new DamageReportEntry(
             this,
@@ -854,7 +859,8 @@ public class SimpleHealth : MonoBehaviour
             currentHealth,
             !IsAlive,
             armorMitigatedAmount,
-            evasionDodgedAmount);
+            evasionDodgedAmount,
+            wasMitigatable);
 
         DamageTaken?.Invoke(entry);
         AnyDamageTaken?.Invoke(entry);
@@ -885,16 +891,18 @@ public class SimpleHealth : MonoBehaviour
 
     private bool TryEvade(float rawDamage)
     {
-        if (rawDamage <= 0 || evasion <= 0f || evasionScaling <= 0f) return false;
-        float chance = evasion / (evasion + evasionScaling * rawDamage);
+        float effectiveEvasion = EffectiveEvasion;
+        if (rawDamage <= 0 || effectiveEvasion <= 0f || evasionScaling <= 0f) return false;
+        float chance = effectiveEvasion / (effectiveEvasion + evasionScaling * rawDamage);
         chance = Mathf.Min(chance, maxEvasion);
         return Random.value < chance;
     }
 
     private float ApplyArmor(float rawDamage)
     {
-        if (rawDamage <= 0 || armor <= 0f || armorScaling <= 0f) return rawDamage;
-        float m = armor / (armor + armorScaling * rawDamage);
+        float effectiveArmor = EffectiveArmor;
+        if (rawDamage <= 0 || effectiveArmor <= 0f || armorScaling <= 0f) return rawDamage;
+        float m = effectiveArmor / (effectiveArmor + armorScaling * rawDamage);
         if (maxMitigation > 0f) m = Mathf.Min(m, maxMitigation);
         return Mathf.Max(0f, rawDamage * (1f - m));
     }
@@ -1169,6 +1177,48 @@ public class SimpleHealth : MonoBehaviour
         UpdateStatsText();
     }
 
+    public float EffectiveArmor => armor * (1f + GetDefenseIncrease(useArmor: true));
+    public float EffectiveEvasion => evasion * (1f + GetDefenseIncrease(useArmor: false));
+
+    public void RegisterDefenseIncreaseProvider(IPlayerDefenseIncreaseProvider provider)
+    {
+        if (provider == null || defenseIncreaseProviders.Contains(provider)) return;
+        defenseIncreaseProviders.Add(provider);
+        MarkStatsDirty();
+    }
+
+    public void UnregisterDefenseIncreaseProvider(IPlayerDefenseIncreaseProvider provider)
+    {
+        if (provider == null) return;
+        defenseIncreaseProviders.Remove(provider);
+        MarkStatsDirty();
+    }
+
+    public void NotifyDefenseModifiersChanged()
+    {
+        MarkStatsDirty();
+    }
+
+    private float GetDefenseIncrease(bool useArmor)
+    {
+        float increase = 0f;
+        for (int i = defenseIncreaseProviders.Count - 1; i >= 0; i--)
+        {
+            IPlayerDefenseIncreaseProvider provider = defenseIncreaseProviders[i];
+            if (provider is Object unityObject && unityObject == null)
+            {
+                defenseIncreaseProviders.RemoveAt(i);
+                continue;
+            }
+
+            if (provider is Behaviour behaviour && !behaviour.isActiveAndEnabled)
+                continue;
+
+            increase += Mathf.Max(0f, useArmor ? provider.ArmorIncrease : provider.EvasionIncrease);
+        }
+        return increase;
+    }
+
     public void GiveThorns(float amount)
     {
         int roundedAmount = Mathf.RoundToInt(amount);
@@ -1313,6 +1363,11 @@ public class SimpleHealth : MonoBehaviour
 
 }
 
+public interface IPlayerDefenseIncreaseProvider
+{
+    float ArmorIncrease { get; }
+    float EvasionIncrease { get; }
+}
 
 
 
