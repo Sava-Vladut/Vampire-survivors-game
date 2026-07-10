@@ -6,6 +6,9 @@ using UnityEngine;
 public class GeneratedUpgradeSettings : ScriptableObject
 {
     public const string ResourceName = "GeneratedUpgradeSettings";
+    public const float DefaultUpgradeWeight = 1f;
+    public const float MinUpgradeWeight = 0f;
+    public const float MaxUpgradeWeight = 10f;
 
     [Serializable]
     public class WeaponRange
@@ -26,6 +29,20 @@ public class GeneratedUpgradeSettings : ScriptableObject
     }
 
     [Serializable]
+    public class WeaponWeight
+    {
+        public WeaponUpgrades.UpgradeType type;
+        [Range(MinUpgradeWeight, MaxUpgradeWeight)] public float weight = DefaultUpgradeWeight;
+    }
+
+    [Serializable]
+    public class AccessoryWeight
+    {
+        public AccessoriesUpgrades.StatUpgradeType type;
+        [Range(MinUpgradeWeight, MaxUpgradeWeight)] public float weight = DefaultUpgradeWeight;
+    }
+
+    [Serializable]
     public class PowerUpRaritySetting
     {
         public PowerUpRarity rarity;
@@ -35,6 +52,8 @@ public class GeneratedUpgradeSettings : ScriptableObject
 
     public List<WeaponRange> weaponRanges = new();
     public List<AccessoryRange> accessoryRanges = new();
+    public List<WeaponWeight> weaponWeights = new();
+    public List<AccessoryWeight> accessoryWeights = new();
     public List<PowerUpRaritySetting> raritySettings = new();
 
     private static GeneratedUpgradeSettings cached;
@@ -48,13 +67,24 @@ public class GeneratedUpgradeSettings : ScriptableObject
 
     public void EnsureAllRanges()
     {
+        weaponRanges ??= new List<WeaponRange>();
+        accessoryRanges ??= new List<AccessoryRange>();
+        weaponWeights ??= new List<WeaponWeight>();
+        accessoryWeights ??= new List<AccessoryWeight>();
+
         foreach (WeaponUpgrades.UpgradeType type in Enum.GetValues(typeof(WeaponUpgrades.UpgradeType)))
         {
-            if (!WeaponUpgrades.IsGeneratedType(type) || !TryGetWeaponDefaults(type, out float min, out float max, out bool whole))
+            if (!WeaponUpgrades.IsGeneratedType(type))
                 continue;
-            if (weaponRanges.Exists(entry => entry.type == type))
-                continue;
-            weaponRanges.Add(new WeaponRange { type = type, min = min, max = max, wholeNumbers = whole });
+
+            if (!weaponWeights.Exists(entry => entry != null && entry.type == type))
+                weaponWeights.Add(new WeaponWeight { type = type, weight = DefaultUpgradeWeight });
+
+            if (TryGetWeaponDefaults(type, out float min, out float max, out bool whole) &&
+                !weaponRanges.Exists(entry => entry != null && entry.type == type))
+            {
+                weaponRanges.Add(new WeaponRange { type = type, min = min, max = max, wholeNumbers = whole });
+            }
         }
 
         foreach (AccessoriesUpgrades.StatUpgradeType type in Enum.GetValues(typeof(AccessoriesUpgrades.StatUpgradeType)))
@@ -62,9 +92,10 @@ public class GeneratedUpgradeSettings : ScriptableObject
             if (type == AccessoriesUpgrades.StatUpgradeType.None ||
                 !TryGetAccessoryDefaults(type, out float min, out float max, out bool whole))
                 continue;
-            if (accessoryRanges.Exists(entry => entry.type == type))
-                continue;
-            accessoryRanges.Add(new AccessoryRange { type = type, min = min, max = max, wholeNumbers = whole });
+            if (!accessoryRanges.Exists(entry => entry != null && entry.type == type))
+                accessoryRanges.Add(new AccessoryRange { type = type, min = min, max = max, wholeNumbers = whole });
+            if (!accessoryWeights.Exists(entry => entry != null && entry.type == type))
+                accessoryWeights.Add(new AccessoryWeight { type = type, weight = DefaultUpgradeWeight });
         }
 
         EnsureAllRarities();
@@ -89,10 +120,28 @@ public class GeneratedUpgradeSettings : ScriptableObject
     }
 
     public WeaponRange FindWeaponRange(WeaponUpgrades.UpgradeType type) =>
-        weaponRanges.Find(entry => entry.type == type);
+        weaponRanges?.Find(entry => entry != null && entry.type == type);
 
     public AccessoryRange FindAccessoryRange(AccessoriesUpgrades.StatUpgradeType type) =>
-        accessoryRanges.Find(entry => entry.type == type);
+        accessoryRanges?.Find(entry => entry != null && entry.type == type);
+
+    public WeaponWeight FindWeaponWeight(WeaponUpgrades.UpgradeType type) =>
+        weaponWeights?.Find(entry => entry != null && entry.type == type);
+
+    public AccessoryWeight FindAccessoryWeight(AccessoriesUpgrades.StatUpgradeType type) =>
+        accessoryWeights?.Find(entry => entry != null && entry.type == type);
+
+    public float GetWeaponWeight(WeaponUpgrades.UpgradeType type) =>
+        Mathf.Clamp(FindWeaponWeight(type)?.weight ?? DefaultUpgradeWeight, MinUpgradeWeight, MaxUpgradeWeight);
+
+    public float GetAccessoryWeight(AccessoriesUpgrades.StatUpgradeType type) =>
+        Mathf.Clamp(FindAccessoryWeight(type)?.weight ?? DefaultUpgradeWeight, MinUpgradeWeight, MaxUpgradeWeight);
+
+    public static float GetConfiguredWeaponWeight(WeaponUpgrades.UpgradeType type)
+    {
+        GeneratedUpgradeSettings settings = Load();
+        return settings != null ? settings.GetWeaponWeight(type) : DefaultUpgradeWeight;
+    }
 
     public PowerUpRaritySetting FindRaritySetting(PowerUpRarity rarity) =>
         raritySettings?.Find(entry => entry.rarity == rarity);
@@ -109,6 +158,19 @@ public class GeneratedUpgradeSettings : ScriptableObject
 
         value = Roll(range.min, range.max, range.wholeNumbers);
         return true;
+    }
+
+    public WeaponUpgradeDefinition PickWeaponUpgrade(IReadOnlyList<WeaponUpgradeDefinition> candidates)
+    {
+        int index = PickWeightedIndex(candidates, candidate => GetWeaponWeight(candidate.Type));
+        return index >= 0 ? candidates[index] : null;
+    }
+
+    public AccessoriesUpgrades.StatUpgradeType PickAccessoryUpgrade(
+        IReadOnlyList<AccessoriesUpgrades.StatUpgradeType> candidates)
+    {
+        int index = PickWeightedIndex(candidates, GetAccessoryWeight);
+        return index >= 0 ? candidates[index] : AccessoriesUpgrades.StatUpgradeType.None;
     }
 
     public static PowerUpRarity RollPowerUpRarity()
@@ -165,6 +227,36 @@ public class GeneratedUpgradeSettings : ScriptableObject
         float max = Mathf.Max(a, b);
         float rolled = Mathf.Approximately(min, max) ? min : UnityEngine.Random.Range(min, max);
         return wholeNumbers ? Mathf.Round(rolled) : rolled;
+    }
+
+    private static int PickWeightedIndex<T>(IReadOnlyList<T> candidates, Func<T, float> getWeight)
+    {
+        if (candidates == null || candidates.Count == 0)
+            return -1;
+
+        float total = 0f;
+        for (int i = 0; i < candidates.Count; i++)
+            total += Mathf.Max(0f, getWeight(candidates[i]));
+
+        if (total <= 0f)
+            return -1;
+
+        float roll = UnityEngine.Random.value * total;
+        float cumulative = 0f;
+        int lastPositiveIndex = -1;
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            float weight = Mathf.Max(0f, getWeight(candidates[i]));
+            if (weight <= 0f)
+                continue;
+
+            lastPositiveIndex = i;
+            cumulative += weight;
+            if (roll < cumulative)
+                return i;
+        }
+
+        return lastPositiveIndex;
     }
 
     public static float GetDefaultRarityFrequency(PowerUpRarity rarity)

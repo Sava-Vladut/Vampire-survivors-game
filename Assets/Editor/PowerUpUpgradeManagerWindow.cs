@@ -65,8 +65,8 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     {
         EditorGUILayout.LabelField("Generated Upgrade Manager", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
-            "Tune generated upgrade offers, item eligibility, rarity strength, and roll ranges. " +
-            "This tool edits the settings asset and loaded prefab contents; runtime roll rules are unchanged.",
+            "Tune generated upgrade offers, item eligibility, rarity strength, selection weights, and roll ranges. " +
+            "This tool edits the settings asset and loaded prefab contents; generated offers use these settings at runtime.",
             MessageType.Info);
     }
 
@@ -252,7 +252,10 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             DrawRaritySettings();
 
         EditorGUILayout.Space(8f);
-        DrawSectionTitle("Roll Ranges");
+        DrawSectionTitle("Upgrade Weights and Roll Ranges");
+        EditorGUILayout.LabelField(
+            "Weight controls how often an eligible upgrade is generated. 1 is the default; 0 disables it.",
+            EditorStyles.wordWrappedMiniLabel);
         using (new EditorGUILayout.HorizontalScope())
         {
             EditorGUILayout.LabelField("Search", GUILayout.Width(48f));
@@ -636,6 +639,7 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             EditorGUILayout.LabelField("Upgrade", EditorStyles.miniBoldLabel, GUILayout.MinWidth(220f));
             if (includeTarget)
                 EditorGUILayout.LabelField("Available For", EditorStyles.miniBoldLabel, GUILayout.Width(120f));
+            EditorGUILayout.LabelField("Weight", EditorStyles.miniBoldLabel, GUILayout.Width(150f));
             EditorGUILayout.LabelField("Min", EditorStyles.miniBoldLabel, GUILayout.Width(72f));
             EditorGUILayout.LabelField("Max", EditorStyles.miniBoldLabel, GUILayout.Width(72f));
             EditorGUILayout.LabelField("Whole", EditorStyles.miniBoldLabel, GUILayout.Width(48f));
@@ -646,17 +650,19 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private void DrawWeaponRangeRow(WeaponUpgrades.UpgradeType type, string displayName)
     {
         var range = settings.FindWeaponRange(type);
+        var weight = settings.FindWeaponWeight(type);
         bool percentage = IsPercentageWeapon(type);
 
         if (range == null)
         {
-            DrawRangeFallback(displayName, "Random enum value");
+            DrawRangeFallback(displayName, "Random enum value", weight);
             return;
         }
 
         using (new EditorGUILayout.HorizontalScope())
         {
             EditorGUILayout.LabelField(displayName, EditorStyles.miniLabel, GUILayout.MinWidth(220f));
+            DrawEditableWeight(weight);
             DrawEditableRange(range, percentage);
 
             if (GUILayout.Button("Reset", EditorStyles.miniButton, GUILayout.Width(52f)) &&
@@ -666,6 +672,8 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
                 range.min = min;
                 range.max = max;
                 range.wholeNumbers = whole;
+                if (weight != null)
+                    weight.weight = GeneratedUpgradeSettings.DefaultUpgradeWeight;
                 SaveSettingsChange();
             }
         }
@@ -674,17 +682,19 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
     private void DrawAccessoryRangeRow(AccessoriesUpgrades.StatUpgradeType type, string displayName)
     {
         var range = settings.FindAccessoryRange(type);
+        var weight = settings.FindAccessoryWeight(type);
         bool percentage = IsPercentageAccessory(type);
 
         if (range == null)
         {
-            DrawRangeFallback(displayName, "No configured range");
+            DrawRangeFallback(displayName, "No configured range", weight);
             return;
         }
 
         using (new EditorGUILayout.HorizontalScope())
         {
             EditorGUILayout.LabelField(displayName, EditorStyles.miniLabel, GUILayout.MinWidth(220f));
+            DrawEditableWeight(weight);
             DrawEditableRange(range, percentage);
 
             if (GUILayout.Button("Reset", EditorStyles.miniButton, GUILayout.Width(52f)) &&
@@ -694,18 +704,93 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
                 range.min = min;
                 range.max = max;
                 range.wholeNumbers = whole;
+                if (weight != null)
+                    weight.weight = GeneratedUpgradeSettings.DefaultUpgradeWeight;
                 SaveSettingsChange();
             }
         }
     }
 
-    private static void DrawRangeFallback(string name, string message)
+    private void DrawRangeFallback(
+        string name,
+        string message,
+        GeneratedUpgradeSettings.WeaponWeight weight)
     {
         using (new EditorGUILayout.HorizontalScope())
         {
             EditorGUILayout.LabelField(name, EditorStyles.miniLabel, GUILayout.MinWidth(220f));
+            DrawEditableWeight(weight);
             EditorGUILayout.LabelField(message, EditorStyles.miniLabel, GUILayout.MinWidth(190f));
+            if (GUILayout.Button("Reset", EditorStyles.miniButton, GUILayout.Width(52f)) && weight != null)
+            {
+                Undo.RecordObject(settings, "Reset Generated Upgrade Weight");
+                weight.weight = GeneratedUpgradeSettings.DefaultUpgradeWeight;
+                SaveSettingsChange();
+            }
         }
+    }
+
+    private void DrawRangeFallback(
+        string name,
+        string message,
+        GeneratedUpgradeSettings.AccessoryWeight weight)
+    {
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            EditorGUILayout.LabelField(name, EditorStyles.miniLabel, GUILayout.MinWidth(220f));
+            DrawEditableWeight(weight);
+            EditorGUILayout.LabelField(message, EditorStyles.miniLabel, GUILayout.MinWidth(190f));
+            if (GUILayout.Button("Reset", EditorStyles.miniButton, GUILayout.Width(52f)) && weight != null)
+            {
+                Undo.RecordObject(settings, "Reset Generated Upgrade Weight");
+                weight.weight = GeneratedUpgradeSettings.DefaultUpgradeWeight;
+                SaveSettingsChange();
+            }
+        }
+    }
+
+    private void DrawEditableWeight(GeneratedUpgradeSettings.WeaponWeight weight)
+    {
+        if (weight == null)
+        {
+            EditorGUILayout.LabelField("Missing", EditorStyles.miniLabel, GUILayout.Width(150f));
+            return;
+        }
+
+        EditorGUI.BeginChangeCheck();
+        float next = EditorGUILayout.Slider(
+            weight.weight,
+            GeneratedUpgradeSettings.MinUpgradeWeight,
+            GeneratedUpgradeSettings.MaxUpgradeWeight,
+            GUILayout.Width(150f));
+        if (!EditorGUI.EndChangeCheck())
+            return;
+
+        Undo.RecordObject(settings, "Change Generated Upgrade Weight");
+        weight.weight = next;
+        SaveSettingsChange();
+    }
+
+    private void DrawEditableWeight(GeneratedUpgradeSettings.AccessoryWeight weight)
+    {
+        if (weight == null)
+        {
+            EditorGUILayout.LabelField("Missing", EditorStyles.miniLabel, GUILayout.Width(150f));
+            return;
+        }
+
+        EditorGUI.BeginChangeCheck();
+        float next = EditorGUILayout.Slider(
+            weight.weight,
+            GeneratedUpgradeSettings.MinUpgradeWeight,
+            GeneratedUpgradeSettings.MaxUpgradeWeight,
+            GUILayout.Width(150f));
+        if (!EditorGUI.EndChangeCheck())
+            return;
+
+        Undo.RecordObject(settings, "Change Generated Upgrade Weight");
+        weight.weight = next;
+        SaveSettingsChange();
     }
 
     private void DrawEditableRange(GeneratedUpgradeSettings.WeaponRange range, bool percentage)
@@ -778,12 +863,16 @@ public class PowerUpUpgradeManagerWindow : EditorWindow
             AssetDatabase.CreateAsset(asset, SettingsPath);
         }
 
-        int weaponCount = asset.weaponRanges.Count;
-        int accessoryCount = asset.accessoryRanges.Count;
+        int weaponCount = asset.weaponRanges?.Count ?? 0;
+        int accessoryCount = asset.accessoryRanges?.Count ?? 0;
+        int weaponWeightCount = asset.weaponWeights?.Count ?? 0;
+        int accessoryWeightCount = asset.accessoryWeights?.Count ?? 0;
         int rarityCount = asset.raritySettings?.Count ?? 0;
         asset.EnsureAllRanges();
         if (weaponCount != asset.weaponRanges.Count ||
             accessoryCount != asset.accessoryRanges.Count ||
+            weaponWeightCount != asset.weaponWeights.Count ||
+            accessoryWeightCount != asset.accessoryWeights.Count ||
             rarityCount != asset.raritySettings.Count)
         {
             EditorUtility.SetDirty(asset);

@@ -130,7 +130,13 @@ public class WeaponUpgrades : MonoBehaviour, IPowerUpSelectionEffect, IPowerUpOf
         if (candidates.Count == 0)
             return false;
 
-        WeaponUpgradeDefinition selected = candidates[Random.Range(0, candidates.Count)];
+        GeneratedUpgradeSettings settings = GeneratedUpgradeSettings.Load();
+        WeaponUpgradeDefinition selected = settings != null
+            ? settings.PickWeaponUpgrade(candidates)
+            : candidates[Random.Range(0, candidates.Count)];
+        if (selected == null)
+            return false;
+
         PowerUpRarity rarity = PowerUp.RollRandomRarity();
         float rolledValue = selected.RollBaseValue(target);
         return ConfigureAsOffer(selected.Type, rolledValue, rarity, applyRarityMultiplier: true);

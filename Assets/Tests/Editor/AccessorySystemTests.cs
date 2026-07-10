@@ -320,6 +320,61 @@ public sealed class AccessorySystemTests
         Assert.That(result[2], Is.SameAs(upgrade));
     }
 
+    [Test]
+    public void GeneratedUpgradeWeights_ZeroWeightDisablesCandidate()
+    {
+        GeneratedUpgradeSettings settings = Track(ScriptableObject.CreateInstance<GeneratedUpgradeSettings>());
+
+        Assert.That(WeaponUpgradeCatalog.TryGet(
+            WeaponUpgrades.UpgradeType.KnifeDamageFlat,
+            out WeaponUpgradeDefinition disabledWeapon), Is.True);
+        Assert.That(WeaponUpgradeCatalog.TryGet(
+            WeaponUpgrades.UpgradeType.KnifeDamagePercent,
+            out WeaponUpgradeDefinition enabledWeapon), Is.True);
+
+        settings.weaponWeights.Add(new GeneratedUpgradeSettings.WeaponWeight
+        {
+            type = disabledWeapon.Type,
+            weight = 0f,
+        });
+        settings.weaponWeights.Add(new GeneratedUpgradeSettings.WeaponWeight
+        {
+            type = enabledWeapon.Type,
+            weight = 1f,
+        });
+
+        Assert.That(
+            settings.PickWeaponUpgrade(new[] { disabledWeapon, enabledWeapon }),
+            Is.SameAs(enabledWeapon));
+
+        settings.FindWeaponWeight(enabledWeapon.Type).weight = 0f;
+        Assert.That(
+            settings.PickWeaponUpgrade(new[] { disabledWeapon, enabledWeapon }),
+            Is.Null);
+
+        var disabledAccessory = AccessoriesUpgrades.StatUpgradeType.MaxHealthFlat;
+        var enabledAccessory = AccessoriesUpgrades.StatUpgradeType.ArmorFlat;
+        settings.accessoryWeights.Add(new GeneratedUpgradeSettings.AccessoryWeight
+        {
+            type = disabledAccessory,
+            weight = 0f,
+        });
+        settings.accessoryWeights.Add(new GeneratedUpgradeSettings.AccessoryWeight
+        {
+            type = enabledAccessory,
+            weight = 1f,
+        });
+
+        Assert.That(
+            settings.PickAccessoryUpgrade(new[] { disabledAccessory, enabledAccessory }),
+            Is.EqualTo(enabledAccessory));
+
+        settings.FindAccessoryWeight(enabledAccessory).weight = 0f;
+        Assert.That(
+            settings.PickAccessoryUpgrade(new[] { disabledAccessory, enabledAccessory }),
+            Is.EqualTo(AccessoriesUpgrades.StatUpgradeType.None));
+    }
+
     private T Track<T>(T value) where T : Object
     {
         cleanup.Add(value);

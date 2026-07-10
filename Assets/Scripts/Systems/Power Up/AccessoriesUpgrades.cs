@@ -146,7 +146,13 @@ public class AccessoriesUpgrades : MonoBehaviour, IPowerUpSelectionEffect, IPowe
         }
         if (allowed.Count == 0) return false;
 
-        upgradeType = allowed[Random.Range(0, allowed.Count)];
+        GeneratedUpgradeSettings settings = GeneratedUpgradeSettings.Load();
+        upgradeType = settings != null
+            ? settings.PickAccessoryUpgrade(allowed)
+            : allowed[Random.Range(0, allowed.Count)];
+        if (upgradeType == StatUpgradeType.None)
+            return false;
+
         PowerUpRarity rarity = PowerUp.RollRandomRarity();
         value = GetRandomValueForType(upgradeType) * PowerUp.GetRarityMultiplier(rarity);
 

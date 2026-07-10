@@ -36,6 +36,10 @@ public sealed class FirstOnHitStatusOfferSource : IPowerUpOfferSource
         if (CountApplied(weapon.transform) >= WeaponUpgrades.MaxUpgrades)
             return;
 
+        float selectionWeight = GeneratedUpgradeSettings.GetConfiguredWeaponWeight(type);
+        if (selectionWeight <= 0f)
+            return;
+
         GameObject offerObject = context.CreateOfferObject(weapon.transform, "Generated On-Hit Status Upgrade");
         var upgrade = offerObject.AddComponent<WeaponUpgrades>();
         PowerUpRarity rarity = PowerUp.RollRandomRarity();
@@ -48,6 +52,7 @@ public sealed class FirstOnHitStatusOfferSource : IPowerUpOfferSource
         }
 
         upgrade.ConfigureStatusChanceSeed(context.FirstOnHitBaseChance);
+        upgrade.Upgrade.weight = selectionWeight;
         upgrade.Upgrade.powerUpIcon = icon;
         upgrade.RefreshPresentation();
 
