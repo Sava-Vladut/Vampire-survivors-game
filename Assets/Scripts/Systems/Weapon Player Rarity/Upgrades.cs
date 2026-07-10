@@ -15,6 +15,7 @@ public sealed class WeaponContext
     public Rarity rarity;
     public TierSystem tiers;
     public UpgradeRanges ranges;
+    public bool isPreview;
     public GameObject sourceObject;
     public StatusEffectSystem ownerStatusEffects;
 
@@ -350,6 +351,11 @@ public sealed class KnifeOnslaughtOnKillUpgrade : IUpgrade
     {
         var r = c.tiers.Scale(c.ranges.knifeOnslaughtOnKillChance, c.tiers.knifeOnslaughtOnKill);
         float chance = Mathf.Clamp01(c.RangeFloat(r.x, r.y));
+        notes.AppendLine($"{chance * 100f:F0}% Onslaught on kill ({c.Roman(c.tiers.knifeOnslaughtOnKill)})");
+
+        if (c.isPreview)
+            return () => { };
+
         GameObject source = c.sourceObject;
         StatusEffectSystem statusEffects = c.ownerStatusEffects;
 
@@ -365,7 +371,6 @@ public sealed class KnifeOnslaughtOnKillUpgrade : IUpgrade
         }
 
         SimpleHealth.AnyDamageTaken += HandleDamageTaken;
-        notes.AppendLine($"{chance * 100f:F0}% Onslaught on kill ({c.Roman(c.tiers.knifeOnslaughtOnKill)})");
 
         return () => SimpleHealth.AnyDamageTaken -= HandleDamageTaken;
     }

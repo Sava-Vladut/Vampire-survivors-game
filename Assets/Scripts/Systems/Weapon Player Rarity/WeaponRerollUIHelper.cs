@@ -15,7 +15,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
     public Button nextButton;
 
     [Header("Action Buttons (Optional, in order)")]
-    [Tooltip("0=Reroll Rarity+Stats, 1=Reroll Stats, 2=Reroll Random Stat, 3=Reroll Into Another, 4=Reroll All Tiers, 5=Upgrade Rarity (keep stats, add unique), 6=Remove Random Upgrade, 7=Add Random Upgrade, 8=Tier Upgrade")]
+    [Tooltip("0=Reroll Rarity+Stats, 1=Reroll Stats, 2=Reroll Random Stat, 3=Reroll Into Another, 4=Reroll All Tiers, 5=Upgrade Rarity (keep stats, add unique), 6=Remove Random Upgrade, 7=Add Random Upgrade, 8=Tier Upgrade, 9=Choose 1 of 3 Modifiers")]
     public Button[] actionButtons;
 
     [Header("Labels & Icon (Optional)")]
@@ -23,17 +23,29 @@ public class WeaponRerollUIHelper : MonoBehaviour
     public TMP_Text selectedExtraLabel;
     public Image selectedIcon; // will display weaponSprite if available
 
+    [Header("Modifier Choice (Optional)")]
+    public GameObject modifierChoicePanel;
+    public Button[] modifierChoiceButtons;
+    public TMP_Text[] modifierChoiceNameLabels;
+    public TMP_Text[] modifierChoiceDescriptionLabels;
+    public Button modifierChoiceCancelButton;
+
     // Cached active controllers
     private readonly List<WeaponRarityController> controllers = new List<WeaponRarityController>();
     private int index = -1;
     private bool showRanges;
     private Coroutine changeAnimation;
     private Vector3 extraLabelBaseScale = Vector3.one;
+    private readonly List<ModifierOffer> modifierOffers = new List<ModifierOffer>();
+    private WeaponRarityController modifierOfferTarget;
 
     private static readonly Regex RichTextTag = new Regex("<.*?>", RegexOptions.Compiled);
 
     private void Awake()
     {
+        if (modifierChoicePanel != null)
+            modifierChoicePanel.SetActive(false);
+
         if (selectedExtraLabel != null)
             extraLabelBaseScale = selectedExtraLabel.rectTransform.localScale;
 
@@ -57,6 +69,7 @@ public class WeaponRerollUIHelper : MonoBehaviour
         }
 
         WireActions();
+        WireModifierChoices();
 
         if (controllers.Count > 0)
             index = 0;
@@ -117,6 +130,18 @@ public class WeaponRerollUIHelper : MonoBehaviour
     {
         RefreshControllers();
 
+        if (modifierOfferTarget == null || !modifierOfferTarget.isActiveAndEnabled)
+        {
+            if (modifierOffers.Count > 0)
+                CloseModifierChoices(false);
+        }
+        else
+        {
+            RenderModifierOffers();
+            if (modifierChoicePanel != null)
+                modifierChoicePanel.SetActive(true);
+        }
+
         // Auto-select if nothing selected but we have weapons
         if (index < 0 && controllers.Count > 0)
             index = 0;
@@ -125,7 +150,10 @@ public class WeaponRerollUIHelper : MonoBehaviour
 
     }
 
-    private void OnDisable() => StopChangeAnimation();
+    private void OnDisable()
+    {
+        StopChangeAnimation();
+    }
 
     public void SelectPrev()
     {
@@ -184,12 +212,21 @@ public class WeaponRerollUIHelper : MonoBehaviour
 
         // --- Buttons ---
         bool hasTarget = target != null;
+        bool choosingModifier = modifierOfferTarget != null;
+
+        if (prevButton != null)
+            prevButton.interactable = hasTarget && !choosingModifier;
+        if (nextButton != null)
+            nextButton.interactable = hasTarget && !choosingModifier;
 
 
         if (actionButtons != null)
         {
             foreach (var b in actionButtons)
-                if (b != null) b.interactable = hasTarget;
+                if (b != null) b.interactable = hasTarget && !choosingModifier;
+
+            if (actionButtons.Length > 9 && actionButtons[9] != null)
+                actionButtons[9].interactable = hasTarget && !choosingModifier && target.HasAvailableModifierOffer;
         }
     }
 
@@ -224,7 +261,115 @@ public class WeaponRerollUIHelper : MonoBehaviour
             () => RunAnimatedAction(target => target.RemoveRandomUpgrade()),
             () => RunAnimatedAction(target => target.AddRandomUpgrade()),
             () => RunAnimatedAction(target => target.UpgradeAppliedModifierTiers()),
+            OpenModifierChoices,
         };
+    }
+
+    private void WireModifierChoices()
+    {
+        if (modifierChoiceButtons != null)
+        {
+            for (int i = 0; i < modifierChoiceButtons.Length; i++)
+            {
+                Button button = modifierChoiceButtons[i];
+                if (button == null) continue;
+
+                int slot = i;
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() => SelectModifierOffer(slot));
+            }
+        }
+
+        if (modifierChoiceCancelButton != null)
+        {
+            modifierChoiceCancelButton.onClick.RemoveAllListeners();
+            modifierChoiceCancelButton.onClick.AddListener(() => CloseModifierChoices(true));
+        }
+    }
+
+    private void OpenModifierChoices()
+    {
+        RefreshControllers();
+        WeaponRarityController target = CurrentTarget();
+        if (target == null) return;
+
+        if (modifierChoicePanel == null || modifierChoiceButtons == null || modifierChoiceButtons.Length == 0)
+        {
+            Debug.LogWarning("[WeaponRerollUIHelper] Modifier choice UI is not configured.", this);
+            return;
+        }
+
+        IReadOnlyList<ModifierOffer> offers = target.CreateModifierOffers(3);
+        if (offers.Count == 0)
+        {
+            UpdateSelectionUI();
+            return;
+        }
+
+        StopChangeAnimation();
+        modifierOffers.Clear();
+        for (int i = 0; i < offers.Count; i++)
+            modifierOffers.Add(offers[i]);
+
+        modifierOfferTarget = target;
+        RenderModifierOffers();
+        modifierChoicePanel.SetActive(true);
+        UpdateSelectionUI();
+    }
+
+    private void RenderModifierOffers()
+    {
+        if (modifierChoiceButtons == null) return;
+
+        for (int i = 0; i < modifierChoiceButtons.Length; i++)
+        {
+            bool hasOffer = i < modifierOffers.Count;
+            ModifierOffer offer = hasOffer ? modifierOffers[i] : null;
+            Button button = modifierChoiceButtons[i];
+
+            if (modifierChoiceNameLabels != null && i < modifierChoiceNameLabels.Length && modifierChoiceNameLabels[i] != null)
+                modifierChoiceNameLabels[i].text = offer?.DisplayName ?? string.Empty;
+
+            if (modifierChoiceDescriptionLabels != null && i < modifierChoiceDescriptionLabels.Length && modifierChoiceDescriptionLabels[i] != null)
+                modifierChoiceDescriptionLabels[i].text = offer?.PreviewText ?? string.Empty;
+
+            if (button != null)
+            {
+                button.interactable = hasOffer;
+                button.gameObject.SetActive(hasOffer);
+            }
+        }
+    }
+
+    private void SelectModifierOffer(int slot)
+    {
+        if (slot < 0 || slot >= modifierOffers.Count || modifierOfferTarget == null)
+        {
+            CloseModifierChoices(true);
+            return;
+        }
+
+        string before = WeaponRerollTargetDisplay.GetExtraText(modifierOfferTarget);
+        bool appliedOffer = modifierOfferTarget.TryApplyModifierOffer(modifierOffers[slot]);
+
+        CloseModifierChoices(false);
+        RefreshControllers();
+        UpdateSelectionUI();
+
+        if (appliedOffer)
+            AnimateSelectionChange(before);
+    }
+
+    private void CloseModifierChoices(bool updateSelection)
+    {
+        if (modifierChoicePanel != null)
+            modifierChoicePanel.SetActive(false);
+
+        modifierOffers.Clear();
+        modifierOfferTarget = null;
+
+        if (updateSelection)
+            UpdateSelectionUI();
     }
 
     private void RunAnimatedAction(Action<WeaponRarityController> action)
@@ -236,6 +381,12 @@ public class WeaponRerollUIHelper : MonoBehaviour
         string before = WeaponRerollTargetDisplay.GetExtraText(target);
         action(target);
         UpdateSelectionUI();
+
+        AnimateSelectionChange(before);
+    }
+
+    private void AnimateSelectionChange(string before)
+    {
 
         if (selectedExtraLabel == null || showRanges) return;
 

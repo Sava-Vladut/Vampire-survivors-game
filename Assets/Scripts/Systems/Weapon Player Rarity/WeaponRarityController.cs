@@ -3,6 +3,42 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
+public sealed class ModifierOffer
+{
+    public UpgradeType Type { get; }
+    public string DisplayName { get; }
+    public string PreviewText { get; }
+    public int Tier { get; }
+
+    internal WeaponRarityController Owner { get; }
+    internal IUpgrade Upgrade { get; }
+    internal int Seed { get; }
+    internal int ModifierRevision { get; }
+    internal int Generation { get; }
+
+    internal ModifierOffer(
+        WeaponRarityController owner,
+        IUpgrade upgrade,
+        UpgradeType type,
+        string displayName,
+        string previewText,
+        int tier,
+        int seed,
+        int modifierRevision,
+        int generation)
+    {
+        Owner = owner;
+        Upgrade = upgrade;
+        Type = type;
+        DisplayName = displayName ?? string.Empty;
+        PreviewText = previewText ?? string.Empty;
+        Tier = tier;
+        Seed = seed;
+        ModifierRevision = modifierRevision;
+        Generation = generation;
+    }
+}
+
 [DisallowMultipleComponent]
 public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
 {
@@ -32,6 +68,8 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
     private IUITextSink uiSink;
     private System.Random rng;
     private bool isAccessory;
+    private int modifierRevision;
+    private int offerGeneration;
 
     public int Order => 100;
 
@@ -57,6 +95,16 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
     [SerializeField] private List<AppliedUpgrade> applied = new();
 
     public int SelectedUpgradeCount => applied.Count;
+
+    public IReadOnlyList<UpgradeType> SelectedUpgradeTypes
+    {
+        get
+        {
+            var list = new List<UpgradeType>(applied.Count);
+            for (int i = 0; i < applied.Count; i++) list.Add(applied[i].type);
+            return list;
+        }
+    }
 
     public IReadOnlyList<string> SelectedUpgradeNotes
     {
@@ -88,6 +136,85 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         if (rollOnAwake && !isAccessory) RerollRarityAndStats();
     }
 
+    public bool HasAvailableModifierOffer => BuildEligibleModifierCandidates().Count > 0;
+
+    public IReadOnlyList<ModifierOffer> CreateModifierOffers(int count = 3)
+    {
+        EnsureRng();
+        offerGeneration++;
+
+        if (count <= 0)
+            return Array.Empty<ModifierOffer>();
+
+        var candidates = BuildEligibleModifierCandidates();
+        if (candidates.Count == 0)
+            return Array.Empty<ModifierOffer>();
+
+        var picked = UpgradeSelectionService.Pick(
+            candidates,
+            Mathf.Min(count, candidates.Count),
+            upgradeWeights,
+            rng);
+
+        var offers = new List<ModifierOffer>(picked.Count);
+        for (int i = 0; i < picked.Count; i++)
+        {
+            IUpgrade upgrade = picked[i];
+            if (!UpgradeMetadata.TryGet(upgrade, out var metadata)) continue;
+
+            int seed = rng.Next();
+            string preview = BuildModifierPreview(upgrade, seed);
+            int tier = GetOfferTier(metadata.Type, preview);
+            offers.Add(new ModifierOffer(
+                this,
+                upgrade,
+                metadata.Type,
+                metadata.Label,
+                preview,
+                tier,
+                seed,
+                modifierRevision,
+                offerGeneration));
+        }
+
+        return offers;
+    }
+
+    public bool TryApplyModifierOffer(ModifierOffer offer)
+    {
+        EnsureRng();
+        if (offer == null || offer.Owner != this) return false;
+        if (offer.ModifierRevision != modifierRevision || offer.Generation != offerGeneration) return false;
+        if (offer.Upgrade == null || HasAppliedType(offer.Type)) return false;
+        if (upgradeWeights != null && upgradeWeights.weights.Get(offer.Type) <= 0f) return false;
+
+        var seededContext = BuildContext(new System.Random(offer.Seed));
+        if (!offer.Upgrade.IsApplicable(seededContext)) return false;
+
+        int previousCount = applied.Count;
+        bool wasFull = previousCount >= RarityRollRules.RollsFor(current);
+        AppliedUpgrade added = ApplyUpgrade(seededContext, offer.Upgrade);
+        applied.Add(added);
+
+        if (wasFull && previousCount > 0)
+        {
+            int removedIndex = NextInt(rng, 0, previousCount);
+            applied[removedIndex].undo?.Invoke();
+
+            // Keep the chosen modifier in the randomly selected victim's slot.
+            // This makes every existing position replaceable instead of always
+            // displaying the new modifier at the end of the list.
+            applied[removedIndex] = added;
+            applied.RemoveAt(applied.Count - 1);
+        }
+
+        if (!string.Equals(added.note, offer.PreviewText, StringComparison.Ordinal))
+            Debug.LogWarning($"{name}: Applied modifier result differed from its preview.", this);
+
+        FinishAppliedChange();
+        return true;
+    }
+
     public bool TryEquip(AccessoryEquipContext context)
     {
         if (!isAccessory) return true;
@@ -113,6 +240,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         if (candidates.Count == 0)
         {
             applied.Clear();
+            InvalidateModifierOffers();
             var noUpgradeLines = new List<string>
             {
                 WeaponContext.FormatRarity(current)
@@ -273,6 +401,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
 
         if (applied.Count == 0)
         {
+            InvalidateModifierOffers();
             RebuildUIFromApplied();
             RestartTickIfPlaying();
             return true;
@@ -382,6 +511,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
 
     private void FinishAppliedChange()
     {
+        InvalidateModifierOffers();
         RebuildUIFromApplied();
         RestartTickIfPlaying();
     }
@@ -423,14 +553,14 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         applied.Clear();
     }
 
-    private WeaponContext BuildContext()
+    private WeaponContext BuildContext(System.Random random = null)
     {
         IDamageModule damage = knife != null ? knife : shooter != null ? shooter : null;
         ICritModule crit = knife != null ? knife : shooter != null ? shooter : null;
 
         return new WeaponContext
         {
-            rng = rng,
+            rng = random ?? rng,
             rarity = current,
             tiers = tiers,
             ranges = ranges,
@@ -445,6 +575,99 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
             ui = uiSink,
             tickAdapter = tick,
         };
+    }
+
+    private List<UpgradeWeightProvider.Candidate> BuildEligibleModifierCandidates()
+    {
+        var ctx = BuildContext();
+        var candidates = BuildCandidatesWithoutAoe(ctx);
+        var existing = new HashSet<UpgradeType>();
+        for (int i = 0; i < applied.Count; i++)
+            existing.Add(applied[i].type);
+
+        candidates.RemoveAll(candidate =>
+            candidate.upgrade == null ||
+            existing.Contains(candidate.type) ||
+            !candidate.upgrade.IsApplicable(ctx) ||
+            (upgradeWeights != null && upgradeWeights.weights.Get(candidate.type) <= 0f));
+
+        return candidates;
+    }
+
+    private string BuildModifierPreview(IUpgrade upgrade, int seed)
+    {
+        var notes = new StringBuilder();
+        upgrade.Apply(BuildPreviewContext(seed), notes);
+        return notes.ToString().Trim();
+    }
+
+    private WeaponContext BuildPreviewContext(int seed)
+    {
+        WeaponContext live = BuildContext();
+        var preview = new PreviewModules(live);
+
+        return new WeaponContext
+        {
+            rng = new System.Random(seed),
+            rarity = current,
+            tiers = tiers,
+            ranges = ranges,
+            isPreview = true,
+            sourceObject = gameObject,
+            ownerStatusEffects = live.ownerStatusEffects,
+            damage = live.damage != null ? preview : null,
+            crit = live.crit != null ? preview : null,
+            attack = live.attack != null ? preview : null,
+            knife = live.knife != null ? preview : null,
+            shooter = live.shooter != null ? preview : null,
+            health = live.health != null ? preview : null,
+            ui = null,
+            tickAdapter = null,
+        };
+    }
+
+    private int GetOfferTier(UpgradeType type, string previewText)
+    {
+        return type switch
+        {
+            UpgradeType.DamageFlat => tiers.damageFlat,
+            UpgradeType.DamagePercentAsFlat => tiers.damagePercent,
+            UpgradeType.AttackSpeed => tiers.attackSpeed,
+            UpgradeType.Crit when previewText.IndexOf("Crit Chance", StringComparison.OrdinalIgnoreCase) >= 0 => tiers.critChance,
+            UpgradeType.Crit => tiers.critMultiplier,
+            UpgradeType.KnifeRadius => tiers.knifeRadius,
+            UpgradeType.KnifeSplash => tiers.knifeSplashRadius,
+            UpgradeType.KnifeOnslaughtOnKill => tiers.knifeOnslaughtOnKill,
+            UpgradeType.ShooterRange => tiers.shooterForce,
+            UpgradeType.ShooterAccuracy => tiers.shooterAccuracy,
+            UpgradeType.HpFlat => tiers.hpFlat,
+            UpgradeType.HpPercent => tiers.hpPercent,
+            UpgradeType.HpRegen => tiers.regen,
+            UpgradeType.Armor => tiers.armor,
+            UpgradeType.Evasion => tiers.evasion,
+            UpgradeType.ArmorPercent => tiers.armorPercent,
+            UpgradeType.EvasionPercent => tiers.evasionPercent,
+            UpgradeType.FireResist or UpgradeType.ColdResist or UpgradeType.LightningResist or UpgradeType.PoisonResist => tiers.resist,
+            _ => 1,
+        };
+    }
+
+    private bool HasAppliedType(UpgradeType type)
+    {
+        for (int i = 0; i < applied.Count; i++)
+            if (applied[i].type == type) return true;
+        return false;
+    }
+
+    private void EnsureRng()
+    {
+        rng ??= rngSeed == 0 ? new System.Random() : new System.Random(rngSeed);
+    }
+
+    private void InvalidateModifierOffers()
+    {
+        modifierRevision++;
+        offerGeneration++;
     }
 
     private static List<UpgradeWeightProvider.Candidate> BuildCandidatesWithoutAoe(WeaponContext ctx)
@@ -489,4 +712,95 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         => r.Next(minInclusive, maxExclusive);
 
     private bool IsValidIndex(int index) => (uint)index < (uint)applied.Count;
+
+    private sealed class PreviewModules :
+        IDamageModule,
+        ICritModule,
+        IAttackSpeedModule,
+        IKnifeModule,
+        IShooterModule,
+        IHealthModule
+    {
+        private int minDamage;
+        private int maxDamage;
+
+        public PreviewModules(WeaponContext source)
+        {
+            if (source.damage != null)
+            {
+                minDamage = source.damage.MinDamage;
+                maxDamage = source.damage.MaxDamage;
+            }
+
+            if (source.crit != null)
+            {
+                CritChance = source.crit.CritChance;
+                CritMultiplier = source.crit.CritMultiplier;
+            }
+
+            if (source.attack != null)
+                Interval = source.attack.Interval;
+
+            if (source.knife != null)
+            {
+                LifestealPercent = source.knife.LifestealPercent;
+                Radius = source.knife.Radius;
+                SplashRadius = source.knife.SplashRadius;
+                MaxTargetsPerTick = source.knife.MaxTargetsPerTick;
+            }
+
+            if (source.shooter != null)
+            {
+                BulletLifetime = source.shooter.BulletLifetime;
+                ShootForce = source.shooter.ShootForce;
+                ProjectileCount = source.shooter.ProjectileCount;
+                SpreadAngle = source.shooter.SpreadAngle;
+            }
+
+            if (source.health != null)
+            {
+                MaxHealth = source.health.MaxHealth;
+                RegenRate = source.health.RegenRate;
+                Armor = source.health.Armor;
+                Evasion = source.health.Evasion;
+                FireResist = source.health.FireResist;
+                ColdResist = source.health.ColdResist;
+                LightningResist = source.health.LightningResist;
+                PoisonResist = source.health.PoisonResist;
+            }
+        }
+
+        public int Damage { get => MaxDamage; set => MaxDamage = value; }
+        public int MinDamage
+        {
+            get => minDamage;
+            set
+            {
+                minDamage = Mathf.Max(0, value);
+                maxDamage = Mathf.Max(minDamage, maxDamage);
+            }
+        }
+        public int MaxDamage { get => maxDamage; set => maxDamage = Mathf.Max(minDamage, value); }
+        public float CritChance { get; set; }
+        public float CritMultiplier { get; set; }
+        public float Interval { get; set; }
+        public float LifestealPercent { get; set; }
+        public float Radius { get; set; }
+        public float SplashRadius { get; set; }
+        public int MaxTargetsPerTick { get; set; }
+        public float BulletLifetime { get; set; }
+        public float ShootForce { get; set; }
+        public int ProjectileCount { get; set; }
+        public float SpreadAngle { get; set; }
+        public int MaxHealth { get; set; }
+        public float RegenRate { get; set; }
+        public float Armor { get; set; }
+        public float Evasion { get; set; }
+        public float FireResist { get; set; }
+        public float ColdResist { get; set; }
+        public float LightningResist { get; set; }
+        public float PoisonResist { get; set; }
+
+        public void IncreaseMaxHealth(int delta) => MaxHealth = Mathf.Max(1, MaxHealth + delta);
+    }
 }
