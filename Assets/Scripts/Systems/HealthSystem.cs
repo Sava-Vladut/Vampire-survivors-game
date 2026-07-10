@@ -493,19 +493,28 @@ public class SimpleHealth : MonoBehaviour
         if (healthStatsText != null)
         {
             _statsBuilder.Clear();
-            _statsBuilder.AppendLine($"<b><color={healthColor}><sprite name=\"heart_0\"> Health</color></b>");
-            _statsBuilder.AppendLine($"<sprite name=\"heart_0\"> Max Health: <color={healthColor}>{maxHealth}</color>");
+            _statsBuilder.AppendLine($"<align=center><b><color={healthColor}>Health</color></b>");
+            AppendStatLine();
+            _statsBuilder.AppendLine($"Max Health: <color={healthColor}>{maxHealth}</color>");
             if (_playerMana != null)
-                _statsBuilder.AppendLine($"<sprite name=\"power\"> Max Mana: <color={manaColor}>{_playerMana.MaxMana:F0}</color>");
-            _statsBuilder.Append($"<sprite name=\"heart_0\"> Current: <color={currentHealthColor}>{CurrentHealth}</color>");
+            {
+                AppendStatLine();
+                _statsBuilder.AppendLine($"Max Mana: <color={manaColor}>{_playerMana.MaxMana:F0}</color>");
+            }
+            AppendStatLine();
+            _statsBuilder.Append($"Current: <color={currentHealthColor}>{CurrentHealth}</color>");
             if (enableTemporaryHealth && currentTemporaryHealth > 0)
             {
                 _statsBuilder.Append($" <color=#64C8FF>+{Mathf.RoundToInt(currentTemporaryHealth)}</color>");
             }
             _statsBuilder.AppendLine(); // New line
-            _statsBuilder.AppendLine($"<sprite name=\"heart_0\"> Health Regen: <color={currentHealthColor}>{regenRate:F2}</color>/s");
+            AppendStatLine();
+            _statsBuilder.AppendLine($"Health Regen: <color={currentHealthColor}>{regenRate:F2}</color>/s");
             if (_playerMana != null)
-                _statsBuilder.AppendLine($"<sprite name=\"power\"> Mana Regen: <color={manaColor}>{_playerMana.RegenerationPerSecond:F1}</color>/s");
+            {
+                AppendStatLine();
+                _statsBuilder.AppendLine($"Mana Regen: <color={manaColor}>{_playerMana.RegenerationPerSecond:F1}</color>/s");
+            }
             healthStatsText.text = _statsBuilder.ToString();
         }
 
@@ -526,14 +535,22 @@ public class SimpleHealth : MonoBehaviour
             }
             else
             {
-                _statsBuilder.AppendLine($"<b><color={statColor}>Defense</color></b>");
+                _statsBuilder.AppendLine($"<align=center><b><color={statColor}>Defense</color></b>");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"Armor: <color={statColor}>{Mathf.RoundToInt(effectiveArmor)}</color> (Mitigation: <color={statColor}>{mitigation * 100f:F1}%</color>)");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"Evasion: <color={statColor}>{Mathf.RoundToInt(effectiveEvasion)}</color> (Chance: <color={statColor}>{evasionChance * 100f:F1}%</color>)");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"Thorns: <color={statColor}>{thornsDamage}</color>");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"<color=#FF6600>Fire Res: {fireResist * 100f:F0}%</color>");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"<color=#4DB2FF>Cold Res: {coldResist * 100f:F0}%</color>");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"<color=#FFFF4D>Lightning Res: {lightningResist * 100f:F0}%</color>");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"<color=#80FF80>Poison Res: {poisonResist * 100f:F0}%</color>");
+                AppendStatLine();
                 _statsBuilder.AppendLine($"Last Hit: <color={statColor}>{lastDamageTaken}</color> ({ColorDamageType(lastDamageType)})");
             }
             defenseStatsText.text = _statsBuilder.ToString();
@@ -543,10 +560,14 @@ public class SimpleHealth : MonoBehaviour
         if (movementStatsText != null && movementController != null)
         {
             _statsBuilder.Clear();
-            _statsBuilder.AppendLine($"<b><color={statColor}>Movement</color></b>");
+            _statsBuilder.AppendLine($"<align=center><b><color={statColor}>Movement</color></b>");
+            AppendStatLine();
             _statsBuilder.AppendLine($"Move Speed: <color={statColor}>{movementController.MoveSpeed:F2}</color>");
+            AppendStatLine();
             _statsBuilder.AppendLine($"Dash Speed: <color={statColor}>{movementController.DashSpeed:F2}</color>");
+            AppendStatLine();
             _statsBuilder.AppendLine($"Dash Duration: <color={statColor}>{movementController.DashDuration:F2}</color>s");
+            AppendStatLine();
             _statsBuilder.AppendLine($"Dash Cooldown: <color={statColor}>{movementController.DashCooldown:F2}</color>s");
             movementStatsText.text = _statsBuilder.ToString();
         }
@@ -567,16 +588,24 @@ public class SimpleHealth : MonoBehaviour
 
     private void AppendRunDamageStats(string statColor)
     {
-        _statsBuilder.AppendLine($"<b><color={statColor}>Run Damage</color></b>");
+        _statsBuilder.AppendLine($"<align=center><b><color={statColor}>Run Damage</color></b>");
+        AppendStatLine();
         _statsBuilder.AppendLine($"Total: <color={statColor}>{runDamageTakenTotal}</color>");
 
         foreach (DamageType type in DamageTypeOrder)
         {
             int amount = runDamageTakenByType[(int)type];
+            AppendStatLine();
             _statsBuilder.AppendLine($"{ColorDamageType(type)}: <color={statColor}>{amount}</color>");
         }
 
+        AppendStatLine();
         _statsBuilder.AppendLine($"Last Hit: <color={statColor}>{lastDamageTaken}</color> ({ColorDamageType(lastDamageType)})");
+    }
+
+    private void AppendStatLine()
+    {
+        _statsBuilder.Append("<align=left><indent=8%>");
     }
 
     private void RegisterRunDamage(int amount, DamageType type)

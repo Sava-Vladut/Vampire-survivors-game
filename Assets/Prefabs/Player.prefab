@@ -17680,8 +17680,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetingMode: 0
   radius: 0.8
-  minDamage: 8
-  damage: 26
+  minDamage: 4
+  damage: 13
   damageType: 3
   damageSourceName: Lightning Strike
   targetMask:
