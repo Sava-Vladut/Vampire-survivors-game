@@ -293,14 +293,19 @@ public class SimpleShooter : MonoBehaviour
                     baseDir.x * sin + baseDir.y * cos
                 );
 
-                int finalDamage = RollHitDamage();
+                int finalDamage = RollHitDamage(out bool isCritical);
 
-                SpawnProjectile(origin.position, shootDir, finalDamage);
+                SpawnProjectile(origin.position, shootDir, finalDamage, isCritical: isCritical);
             }
         }
     }
 
     public void TrySpawnForkOnHit(Vector3 hitPosition, Vector2 incomingDirection, int hitDamage)
+    {
+        TrySpawnForkOnHit(hitPosition, incomingDirection, hitDamage, false);
+    }
+
+    public void TrySpawnForkOnHit(Vector3 hitPosition, Vector2 incomingDirection, int hitDamage, bool isCritical)
     {
         if (bulletPrefab == null || forkShotChance <= 0f || Random.value > Mathf.Clamp01(forkShotChance))
             return;
@@ -312,11 +317,11 @@ public class SimpleShooter : MonoBehaviour
 
         int forkDamage = Mathf.Max(1, Mathf.RoundToInt(hitDamage * Mathf.Clamp01(forkShotDamagePercent)));
         float forkAngle = Mathf.Max(0f, forkShotAngle);
-        SpawnProjectile(hitPosition, Rotate(incomingDirection, -forkAngle), forkDamage, false);
-        SpawnProjectile(hitPosition, Rotate(incomingDirection, forkAngle), forkDamage, false);
+        SpawnProjectile(hitPosition, Rotate(incomingDirection, -forkAngle), forkDamage, false, isCritical);
+        SpawnProjectile(hitPosition, Rotate(incomingDirection, forkAngle), forkDamage, false, isCritical);
     }
 
-    private void SpawnProjectile(Vector3 originPosition, Vector2 shootDir, int finalDamage, bool canTriggerForkShot = true)
+    private void SpawnProjectile(Vector3 originPosition, Vector2 shootDir, int finalDamage, bool canTriggerForkShot = true, bool isCritical = false)
     {
         var bullet = Instantiate(bulletPrefab, originPosition, Quaternion.identity);
         int configuredChainHits = ConfigureChainHits(bullet);
@@ -327,6 +332,7 @@ public class SimpleShooter : MonoBehaviour
         if (bullet.TryGetComponent<BulletDamageTrigger>(out var bulletDamage))
         {
             bulletDamage.damageAmount = finalDamage;
+            bulletDamage.isCritical = isCritical;
             bulletDamage.damageType = damageType;
             bulletDamage.penetration = configuredChainHits > 0
                 ? Mathf.Max(GetEffectivePenetration(), configuredChainHits + 1)
@@ -347,6 +353,7 @@ public class SimpleShooter : MonoBehaviour
             explosionDamage.damageType = damageType;
             explosionDamage.sourceObject = gameObject;
             explosionDamage.sourceDetail = "Projectile Explosion";
+            explosionDamage.isCritical = isCritical;
         }
 
         if (bullet.TryGetComponent<Rigidbody2D>(out var rb))
@@ -411,9 +418,15 @@ public class SimpleShooter : MonoBehaviour
 
     public int RollHitDamage()
     {
+        return RollHitDamage(out _);
+    }
+
+    private int RollHitDamage(out bool isCritical)
+    {
         int baseDamage = RollBaseDamage();
         int finalDamage;
-        if (Random.value < GetEffectiveCritChance())
+        isCritical = Random.value < GetEffectiveCritChance();
+        if (isCritical)
             finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * GetEffectiveCritMultiplier()));
         else
             finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);

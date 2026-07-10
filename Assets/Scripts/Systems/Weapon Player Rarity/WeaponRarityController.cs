@@ -109,7 +109,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         UndoAllApplied();
 
         var ctx = BuildContext();
-        var candidates = UpgradeCatalog.BuildCandidates(ctx);
+        var candidates = BuildCandidatesWithoutAoe(ctx);
         if (candidates.Count == 0)
         {
             applied.Clear();
@@ -193,7 +193,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         }
 
         var ctx = BuildContext();
-        var candidates = UpgradeCatalog.BuildCandidates(ctx);
+        var candidates = BuildCandidatesWithoutAoe(ctx);
         if (candidates == null || candidates.Count == 0) return false;
 
         IUpgrade picked = UpgradeSelectionService.PickUnique(candidates, AppliedUpgradeTypes(), ctx, upgradeWeights, rng, out bool hasEligibleUnique);
@@ -227,7 +227,7 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
         if (!IsValidIndex(index)) return false;
 
         var ctx = BuildContext();
-        var candidates = UpgradeCatalog.BuildCandidates(ctx);
+        var candidates = BuildCandidatesWithoutAoe(ctx);
         if (candidates == null || candidates.Count == 0) return false;
 
         Type currentType = applied[index].upgrade?.GetType();
@@ -445,6 +445,13 @@ public class WeaponRarityController : MonoBehaviour, IAccessoryEquipEffect
             ui = uiSink,
             tickAdapter = tick,
         };
+    }
+
+    private static List<UpgradeWeightProvider.Candidate> BuildCandidatesWithoutAoe(WeaponContext ctx)
+    {
+        var candidates = UpgradeCatalog.BuildCandidates(ctx);
+        candidates.RemoveAll(candidate => candidate.type == UpgradeType.KnifeSplash);
+        return candidates;
     }
 
     private List<IUpgrade> CurrentUpgradeInstances()

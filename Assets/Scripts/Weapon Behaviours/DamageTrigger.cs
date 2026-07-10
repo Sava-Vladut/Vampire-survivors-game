@@ -10,6 +10,7 @@ public class BulletDamageTrigger : MonoBehaviour
     [Header("Damage")]
     [SerializeField] public SimpleHealth.DamageType damageType;
     [SerializeField] public int damageAmount = 10;
+    [HideInInspector] public bool isCritical;
     [HideInInspector] public GameObject sourceObject;
     [Tooltip("How many successful damage hits this bullet can apply before it is destroyed.")]
     [SerializeField] public int penetration = 1;
@@ -92,7 +93,7 @@ public class BulletDamageTrigger : MonoBehaviour
         if (cull)
             health.TakeDamage(health.CurrentHealth, damageType, false, false, GetDamageSource(), "Cull");
         else
-            health.TakeDamage(damageAmount, damageType, true, true, GetDamageSource(), "Projectile");
+            health.TakeDamage(damageAmount, damageType, true, true, GetDamageSource(), "Projectile", isCritical);
 
         if (knockbackForce > 0f)
             ApplyKnockback(other);
@@ -146,6 +147,7 @@ public class BulletDamageTrigger : MonoBehaviour
             explosionInstance.damageType = damageType;
             explosionInstance.sourceObject = GetDamageSource();
             explosionInstance.sourceDetail = "Projectile Explosion";
+            explosionInstance.isCritical = isCritical;
         }
     }
 
@@ -159,7 +161,7 @@ public class BulletDamageTrigger : MonoBehaviour
         if (shooter == null)
             return;
 
-        shooter.TrySpawnForkOnHit(GetImpactPosition(other, transform.position), GetTravelDirection(), damageAmount);
+        shooter.TrySpawnForkOnHit(GetImpactPosition(other, transform.position), GetTravelDirection(), damageAmount, isCritical);
     }
 
     private Vector3 GetImpactPosition(Collider2D other, Vector3 fallback)

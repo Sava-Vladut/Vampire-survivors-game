@@ -572,7 +572,8 @@ public class SimpleHealth : MonoBehaviour
         bool mitigatable = true,
         bool applyAilments = true,
         GameObject sourceObject = null,
-        string sourceDetail = null)
+        string sourceDetail = null,
+        bool isCritical = false)
     {
         if (amount <= 0 || IsProtectedBySafeZone() || isInvulnerable || !IsAlive) return;
 
@@ -679,11 +680,20 @@ public class SimpleHealth : MonoBehaviour
             _activeDamagePopups.TryGetValue(type, out var activeText);
             if (activeText != null)
             {
-                int currentVal = 0;
-                if (!int.TryParse(activeText.text, out currentVal)) currentVal = 0;
-                currentVal += displayedDamage;
-                activeText.text = currentVal.ToString();
-                activeText.color = popupColor;
+                DamagePopup2D damagePopup = activeText.GetComponentInParent<DamagePopup2D>();
+                if (damagePopup != null)
+                {
+                    damagePopup.AddDamage(displayedDamage, popupColor, isCritical);
+                }
+                else
+                {
+                    bool containsCriticalHit = isCritical || activeText.text.EndsWith("!");
+                    string currentText = activeText.text.TrimEnd('!');
+                    if (!int.TryParse(currentText, out int currentVal)) currentVal = 0;
+                    currentVal += displayedDamage;
+                    activeText.text = containsCriticalHit ? $"{currentVal}!" : currentVal.ToString();
+                    activeText.color = popupColor;
+                }
             }
             else
             {
@@ -701,8 +711,14 @@ public class SimpleHealth : MonoBehaviour
                 }
                 if (tmp != null)
                 {
-                    tmp.text = displayedDamage.ToString();
-                    tmp.color = popupColor;
+                    DamagePopup2D damagePopup = tmp.GetComponentInParent<DamagePopup2D>();
+                    if (damagePopup != null)
+                        damagePopup.SetDamage(displayedDamage, popupColor, isCritical);
+                    else
+                    {
+                        tmp.text = isCritical ? $"{displayedDamage}!" : displayedDamage.ToString();
+                        tmp.color = popupColor;
+                    }
                     _activeDamagePopups[type] = tmp;
                 }
             }

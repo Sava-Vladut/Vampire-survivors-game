@@ -126,10 +126,123 @@ public class Knife : MonoBehaviour
     private WeaponTick wt;
     private WeaponSwingAnimator swingAnimator;
     private PlayerAccessoryStats accessoryStats;
+    private Transform[] fallbackOrigins;
+    private readonly List<Collider2D> hitsBuffer = new List<Collider2D>(32);
+    private readonly List<Collider2D> splashHitsBuffer = new List<Collider2D>(32);
+    private readonly List<TargetCandidate> candidates = new List<TargetCandidate>(32);
+    private readonly HashSet<Collider2D> processed = new HashSet<Collider2D>();
+    private readonly System.Text.StringBuilder sb = new System.Text.StringBuilder(256);
+    private ContactFilter2D contactFilter;
+    private WeaponUpgrades[] wu = new WeaponUpgrades[0];
+    private bool weaponUpgradesDirty = true;
+    private StatsSnapshot statsSnapshot;
+    private bool hasStatsSnapshot;
+
+    private static readonly System.Comparison<TargetCandidate> closestComparison = CompareClosest;
+    private static readonly System.Comparison<TargetCandidate> furthestComparison = CompareFurthest;
+    private static readonly System.Comparison<TargetCandidate> moreHpComparison = CompareMoreHp;
+    private static readonly System.Comparison<TargetCandidate> lessHpComparison = CompareLessHp;
+    private static readonly Stack<SplashCircleFade> splashCirclePool = new Stack<SplashCircleFade>();
+
+    private readonly struct TargetCandidate
+    {
+        public readonly Collider2D col;
+        public readonly SimpleHealth hp;
+        public readonly float dist;
+
+        public TargetCandidate(Collider2D col, SimpleHealth hp, float dist)
+        {
+            this.col = col;
+            this.hp = hp;
+            this.dist = dist;
+        }
+    }
+
+    private readonly struct EffectiveValues
+    {
+        public readonly float effectiveRadius;
+        public readonly float effectiveSplashRadius;
+        public readonly float effectiveCritChance;
+        public readonly float effectiveCritMultiplier;
+        public readonly float effectiveKnockback;
+        public readonly float effectiveStatusChance;
+        public readonly float effectiveStatusDuration;
+
+        public EffectiveValues(
+            float effectiveRadius,
+            float effectiveSplashRadius,
+            float effectiveCritChance,
+            float effectiveCritMultiplier,
+            float effectiveKnockback,
+            float effectiveStatusChance,
+            float effectiveStatusDuration)
+        {
+            this.effectiveRadius = effectiveRadius;
+            this.effectiveSplashRadius = effectiveSplashRadius;
+            this.effectiveCritChance = effectiveCritChance;
+            this.effectiveCritMultiplier = effectiveCritMultiplier;
+            this.effectiveKnockback = effectiveKnockback;
+            this.effectiveStatusChance = effectiveStatusChance;
+            this.effectiveStatusDuration = effectiveStatusDuration;
+        }
+    }
+
+    private struct StatsSnapshot
+    {
+        public string weaponName;
+        public int enabledCount;
+        public int minDamage;
+        public int damage;
+        public SimpleHealth.DamageType damageType;
+        public float effectiveRadius;
+        public float effectiveSplashRadius;
+        public float splashDamagePercent;
+        public bool hasDelay;
+        public float delay;
+        public float lifestealPercent;
+        public float effectiveCritChance;
+        public float effectiveCritMultiplier;
+        public float echoStrikeChance;
+        public float echoStrikeDamagePercent;
+        public float effectiveKnockback;
+        public int maxTargetsPerTick;
+        public bool applyStatusEffectOnHit;
+        public float effectiveStatusChance;
+        public StatusEffectSystem.StatusType statusEffectOnHit;
+        public float effectiveStatusDuration;
+        public string extraTextField;
+
+        public bool Matches(StatsSnapshot other)
+        {
+            return weaponName == other.weaponName &&
+                   enabledCount == other.enabledCount &&
+                   minDamage == other.minDamage &&
+                   damage == other.damage &&
+                   damageType == other.damageType &&
+                   effectiveRadius == other.effectiveRadius &&
+                   effectiveSplashRadius == other.effectiveSplashRadius &&
+                   splashDamagePercent == other.splashDamagePercent &&
+                   hasDelay == other.hasDelay &&
+                   delay == other.delay &&
+                   lifestealPercent == other.lifestealPercent &&
+                   effectiveCritChance == other.effectiveCritChance &&
+                   effectiveCritMultiplier == other.effectiveCritMultiplier &&
+                   echoStrikeChance == other.echoStrikeChance &&
+                   echoStrikeDamagePercent == other.echoStrikeDamagePercent &&
+                   effectiveKnockback == other.effectiveKnockback &&
+                   maxTargetsPerTick == other.maxTargetsPerTick &&
+                   applyStatusEffectOnHit == other.applyStatusEffectOnHit &&
+                   effectiveStatusChance == other.effectiveStatusChance &&
+                   statusEffectOnHit == other.statusEffectOnHit &&
+                   effectiveStatusDuration == other.effectiveStatusDuration &&
+                   extraTextField == other.extraTextField;
+        }
+    }
 
     private void Awake()
     {
         shootSource = GetComponent<AudioSource>();
+        fallbackOrigins = new[] { transform };
 
         if (transform.parent != null && transform.parent.parent != null)
             parentHealth = transform.parent.parent.GetComponent<SimpleHealth>();
@@ -179,7 +292,7 @@ public class Knife : MonoBehaviour
 
     private void Update()
     {
-        UpdateStatsText();
+        RefreshStatsText(false);
 
         if (autoScaleRangeVisual)
             UpdateRangeVisual();
@@ -187,66 +300,108 @@ public class Knife : MonoBehaviour
 
     public void UpdateStatsText()
     {
-        if (statsTextInstance != null)
+        RefreshWeaponUpgrades();
+        RefreshStatsText(true);
+    }
+
+    private void RefreshStatsText(bool force)
+    {
+        if (statsTextInstance == null)
+            return;
+
+        if (weaponUpgradesDirty)
+            RefreshWeaponUpgrades();
+
+        int enabledCount = 0;
+        for (int i = 0; i < wu.Length; i++)
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            const string numColor = "#8888FF";
-            WeaponUpgrades[] wu = GetComponentsInChildren<WeaponUpgrades>(true);
-            float effectiveRadius = GetEffectiveRadius();
-            float effectiveSplashRadius = GetEffectiveSplashRadius();
-            float effectiveCritChance = GetEffectiveCritChance();
-            float effectiveCritMultiplier = GetEffectiveCritMultiplier();
-            float effectiveKnockback = GetEffectiveKnockback();
-            float effectiveStatusChance = GetEffectiveStatusChance();
-            float effectiveStatusDuration = GetEffectiveStatusDuration();
-
-            sb.AppendLine($"<b>{transform.name}</b>");
-
-            // ✅ Count enabled upgrades vs total
-            int enabledCount = 0;
-            foreach (var upgrade in wu)
-            {
-                if (upgrade != null && upgrade.gameObject.activeInHierarchy && upgrade.enabled)
-                    enabledCount++;
-            }
-            if (enabledCount > 0)
-                sb.AppendLine($"Upg: <color={numColor}>{enabledCount}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
-
-            string damageColor = GetDamageTypeHex(damageType);
-            sb.AppendLine($"DMG: <color={damageColor}>{GetDamageRangeText()}</color>");
-            if (damageType != SimpleHealth.DamageType.Physical)
-                sb.AppendLine($"Type: <color={damageColor}>{damageType}</color>");
-            sb.AppendLine($"Range: <color={numColor}>{effectiveRadius:F2}</color>");
-            if (effectiveSplashRadius > 0f && splashDamagePercent > 0f)
-                sb.AppendLine($"AOE: <color={numColor}>{effectiveSplashRadius:F2}</color> (<color={numColor}>{splashDamagePercent * 100f:F0}</color>% dmg)");
-
-            if (wt != null)
-                sb.AppendLine($"Delay: <color={numColor}>{wt.EffectiveInterval:F1}</color>s");
-
-            if (lifestealPercent > 0f)
-                sb.AppendLine($"Steal: <color={numColor}>{(lifestealPercent * 100f):F0}</color>%");
-            if (effectiveCritChance > 0f)
-                sb.AppendLine($"Crit: <color={numColor}>{(effectiveCritChance * 100f):F0}</color>% x<color={numColor}>{effectiveCritMultiplier:F2}</color>");
-            if (echoStrikeChance > 0f)
-                sb.AppendLine($"Echo: <color={numColor}>{echoStrikeChance * 100f:F0}</color>% for <color={numColor}>{echoStrikeDamagePercent * 100f:F0}</color>% dmg");
-            if (effectiveKnockback > 0f)
-                sb.AppendLine($"KB: <color={numColor}>{effectiveKnockback:F1}</color>");
-            if (maxTargetsPerTick > 0)
-                sb.AppendLine($"Targets: <color={numColor}>{maxTargetsPerTick}</color>");
-
-            if (applyStatusEffectOnHit)
-            {
-                sb.AppendLine($"Proc: <color={numColor}>{effectiveStatusChance * 100f:F0}</color>%");
-                sb.AppendLine($"Hit: {statusEffectOnHit} (<color={numColor}>{effectiveStatusDuration:F1}</color>s)");
-            }
-
-
-
-            if (!string.IsNullOrWhiteSpace(extraTextField))
-                sb.AppendLine(extraTextField);
-
-            statsTextInstance.text = sb.ToString();
+            var upgrade = wu[i];
+            if (upgrade != null && upgrade.gameObject.activeInHierarchy && upgrade.enabled)
+                enabledCount++;
         }
+
+        EffectiveValues effectiveValues = GetEffectiveValues(GetAccessoryStats());
+        StatsSnapshot currentSnapshot = new StatsSnapshot
+        {
+            weaponName = transform.name,
+            enabledCount = enabledCount,
+            minDamage = minDamage,
+            damage = damage,
+            damageType = damageType,
+            effectiveRadius = effectiveValues.effectiveRadius,
+            effectiveSplashRadius = effectiveValues.effectiveSplashRadius,
+            splashDamagePercent = splashDamagePercent,
+            hasDelay = wt != null,
+            delay = wt != null ? wt.EffectiveInterval : 0f,
+            lifestealPercent = lifestealPercent,
+            effectiveCritChance = effectiveValues.effectiveCritChance,
+            effectiveCritMultiplier = effectiveValues.effectiveCritMultiplier,
+            echoStrikeChance = echoStrikeChance,
+            echoStrikeDamagePercent = echoStrikeDamagePercent,
+            effectiveKnockback = effectiveValues.effectiveKnockback,
+            maxTargetsPerTick = maxTargetsPerTick,
+            applyStatusEffectOnHit = applyStatusEffectOnHit,
+            effectiveStatusChance = effectiveValues.effectiveStatusChance,
+            statusEffectOnHit = statusEffectOnHit,
+            effectiveStatusDuration = effectiveValues.effectiveStatusDuration,
+            extraTextField = extraTextField
+        };
+
+        if (!force && hasStatsSnapshot && statsSnapshot.Matches(currentSnapshot))
+            return;
+
+        const string numColor = "#8888FF";
+        sb.Clear();
+        sb.AppendLine($"<b>{currentSnapshot.weaponName}</b>");
+
+        if (currentSnapshot.enabledCount > 0)
+            sb.AppendLine($"Upg: <color={numColor}>{currentSnapshot.enabledCount}</color>/<color={numColor}>{WeaponUpgrades.MaxUpgrades}</color>");
+
+        string damageColor = GetDamageTypeHex(currentSnapshot.damageType);
+        sb.AppendLine($"DMG: <color={damageColor}>{GetDamageRangeText()}</color>");
+        if (currentSnapshot.damageType != SimpleHealth.DamageType.Physical)
+            sb.AppendLine($"Type: <color={damageColor}>{currentSnapshot.damageType}</color>");
+        sb.AppendLine($"Range: <color={numColor}>{currentSnapshot.effectiveRadius:F2}</color>");
+        if (currentSnapshot.effectiveSplashRadius > 0f && currentSnapshot.splashDamagePercent > 0f)
+            sb.AppendLine($"AOE: <color={numColor}>{currentSnapshot.effectiveSplashRadius:F2}</color> (<color={numColor}>{currentSnapshot.splashDamagePercent * 100f:F0}</color>% dmg)");
+
+        if (currentSnapshot.hasDelay)
+            sb.AppendLine($"Delay: <color={numColor}>{currentSnapshot.delay:F1}</color>s");
+
+        if (currentSnapshot.lifestealPercent > 0f)
+            sb.AppendLine($"Steal: <color={numColor}>{currentSnapshot.lifestealPercent * 100f:F0}</color>%");
+        if (currentSnapshot.effectiveCritChance > 0f)
+            sb.AppendLine($"Crit: <color={numColor}>{currentSnapshot.effectiveCritChance * 100f:F0}</color>% x<color={numColor}>{currentSnapshot.effectiveCritMultiplier:F2}</color>");
+        if (currentSnapshot.echoStrikeChance > 0f)
+            sb.AppendLine($"Echo: <color={numColor}>{currentSnapshot.echoStrikeChance * 100f:F0}</color>% for <color={numColor}>{currentSnapshot.echoStrikeDamagePercent * 100f:F0}</color>% dmg");
+        if (currentSnapshot.effectiveKnockback > 0f)
+            sb.AppendLine($"KB: <color={numColor}>{currentSnapshot.effectiveKnockback:F1}</color>");
+        if (currentSnapshot.maxTargetsPerTick > 0)
+            sb.AppendLine($"Targets: <color={numColor}>{currentSnapshot.maxTargetsPerTick}</color>");
+
+        if (currentSnapshot.applyStatusEffectOnHit)
+        {
+            sb.AppendLine($"Proc: <color={numColor}>{currentSnapshot.effectiveStatusChance * 100f:F0}</color>%");
+            sb.AppendLine($"Hit: {currentSnapshot.statusEffectOnHit} (<color={numColor}>{currentSnapshot.effectiveStatusDuration:F1}</color>s)");
+        }
+
+        if (!string.IsNullOrWhiteSpace(currentSnapshot.extraTextField))
+            sb.AppendLine(currentSnapshot.extraTextField);
+
+        statsTextInstance.text = sb.ToString();
+        statsSnapshot = currentSnapshot;
+        hasStatsSnapshot = true;
+    }
+
+    private void RefreshWeaponUpgrades()
+    {
+        wu = GetComponentsInChildren<WeaponUpgrades>(true);
+        weaponUpgradesDirty = false;
+    }
+
+    private void OnTransformChildrenChanged()
+    {
+        weaponUpgradesDirty = true;
     }
 
 
@@ -268,7 +423,9 @@ public class Knife : MonoBehaviour
             Instantiate(selfSfxObject, transform.position, Quaternion.identity);
 
         // choose origins (fallback to self)
-        Transform[] origins = (hitOrigins != null && hitOrigins.Length > 0) ? hitOrigins : new Transform[] { transform };
+        if (fallbackOrigins == null)
+            fallbackOrigins = new[] { transform };
+        Transform[] origins = (hitOrigins != null && hitOrigins.Length > 0) ? hitOrigins : fallbackOrigins;
 
         if (shootClip != null) shootSource?.PlayOneShot(shootClip);
 
@@ -276,32 +433,40 @@ public class Knife : MonoBehaviour
         bool swingStarted = false;
         int targetsHit = 0;
         int targetCap = (maxTargetsPerTick > 0) ? maxTargetsPerTick : int.MaxValue;
-        HashSet<Collider2D> processed = new HashSet<Collider2D>();
-        float effectiveRadius = GetEffectiveRadius();
-        float effectiveSplashRadius = GetEffectiveSplashRadius();
-        float effectiveStatusChance = GetEffectiveStatusChance();
-        float effectiveStatusDuration = GetEffectiveStatusDuration();
-        float effectiveKnockback = GetEffectiveKnockback();
+        processed.Clear();
+        contactFilter.SetLayerMask(targetMask);
+        contactFilter.useTriggers = Physics2D.queriesHitTriggers;
+
+        EffectiveValues effectiveValues = GetEffectiveValues(GetAccessoryStats());
+        float effectiveRadius = effectiveValues.effectiveRadius;
+        float effectiveSplashRadius = effectiveValues.effectiveSplashRadius;
+        float effectiveStatusChance = effectiveValues.effectiveStatusChance;
+        float effectiveStatusDuration = effectiveValues.effectiveStatusDuration;
+        float effectiveKnockback = effectiveValues.effectiveKnockback;
+        float effectiveEchoStrikeChance = Mathf.Clamp01(echoStrikeChance);
+        float effectiveEchoStrikeDamagePercent = Mathf.Clamp01(echoStrikeDamagePercent);
 
         for (int oi = 0; oi < origins.Length; oi++)
         {
             var origin = origins[oi];
             if (origin == null) continue;
 
-            Collider2D[] hits = Physics2D.OverlapCircleAll(origin.position, effectiveRadius, targetMask);
+            hitsBuffer.Clear();
+            Physics2D.OverlapCircle(origin.position, effectiveRadius, contactFilter, hitsBuffer);
 
             // Order/select targets based on targeting mode and remaining capacity
-            List<Collider2D> selected = OrderTargets(hits, origin, targetingMode, processed, targetCap - targetsHit);
+            int selected = OrderTargets(hitsBuffer, origin, targetingMode, processed, targetCap - targetsHit);
 
-            if (selected.Count > 0 && !anyHit)
+            if (selected > 0 && !anyHit)
             {
                 anyHit = true;
                 if (stabClip != null) shootSource?.PlayOneShot(stabClip);
             }
 
-            for (int hi = 0; hi < selected.Count; hi++)
+            for (int hi = 0; hi < selected; hi++)
             {
-                var col = selected[hi];
+                TargetCandidate candidate = candidates[hi];
+                var col = candidate.col;
                 if (col == null) continue;
 
                 if (!swingStarted && swingAnimator != null)
@@ -315,30 +480,31 @@ public class Knife : MonoBehaviour
                 if (slashEffect != null)
                     Instantiate(slashEffect, col.transform.position, Quaternion.identity);
 
-                SimpleHealth health = col.GetComponent<SimpleHealth>();
-                StatusEffectSystem splashStatus = col.GetComponent<StatusEffectSystem>();
+                SimpleHealth health = candidate.hp;
 
                 if (health != null && health.IsAlive && !health.IsInvulnerable)
                 {
                     // status on hit
-                    if (splashStatus != null && applyStatusEffectOnHit && Random.Range(0f, 1f) <= effectiveStatusChance)
+                    if (applyStatusEffectOnHit)
                     {
-                        splashStatus.AddStatus(statusEffectOnHit, effectiveStatusDuration, 1f, gameObject);
+                        StatusEffectSystem splashStatus = col.GetComponent<StatusEffectSystem>();
+                        if (splashStatus != null && Random.Range(0f, 1f) <= effectiveStatusChance)
+                            splashStatus.AddStatus(statusEffectOnHit, effectiveStatusDuration, 1f, gameObject);
                     }
 
                     // main hit
-                    int dealt = RollHitDamage();
+                    int dealt = RollHitDamage(effectiveValues.effectiveCritChance, effectiveValues.effectiveCritMultiplier, out bool isCritical);
 
                     bool cull = cullThreshold > 0f && health.CurrentHealth <= health.MaxHealth * cullThreshold;
                     if (cull)
                         health.TakeDamage(health.CurrentHealth, damageType, false, false, gameObject, "Cull");
                     else
-                        health.TakeDamage(dealt, damageType, true, true, gameObject, "Knife");
+                        health.TakeDamage(dealt, damageType, true, true, gameObject, "Knife", isCritical);
 
-                    if (!cull && echoStrikeChance > 0f && health.IsAlive && Random.value <= Mathf.Clamp01(echoStrikeChance))
+                    if (!cull && echoStrikeChance > 0f && health.IsAlive && Random.value <= effectiveEchoStrikeChance)
                     {
-                        int echoDamage = Mathf.Max(1, Mathf.RoundToInt(dealt * Mathf.Clamp01(echoStrikeDamagePercent)));
-                        health.TakeDamage(echoDamage, damageType, true, true, gameObject, "Echo Strike");
+                        int echoDamage = Mathf.Max(1, Mathf.RoundToInt(dealt * effectiveEchoStrikeDamagePercent));
+                        health.TakeDamage(echoDamage, damageType, true, true, gameObject, "Echo Strike", isCritical);
                         if (slashEffect != null)
                             Instantiate(slashEffect, col.transform.position, Quaternion.identity);
                     }
@@ -358,18 +524,17 @@ public class Knife : MonoBehaviour
                     if (effectiveSplashRadius > 0f && splashDamagePercent > 0f)
                     {
                         SpawnSplashCircle(col.transform.position, effectiveSplashRadius);
-                        Collider2D[] splashHits = Physics2D.OverlapCircleAll(col.transform.position, effectiveSplashRadius, targetMask);
-                        for (int si = 0; si < splashHits.Length; si++)
+                        int splashDamage = Mathf.RoundToInt(dealt * splashDamagePercent);
+                        splashHitsBuffer.Clear();
+                        Physics2D.OverlapCircle(col.transform.position, effectiveSplashRadius, contactFilter, splashHitsBuffer);
+                        for (int si = 0; si < splashHitsBuffer.Count; si++)
                         {
-                            var splashCol = splashHits[si];
+                            var splashCol = splashHitsBuffer[si];
                             if (splashCol == null || splashCol == col || splashCol.gameObject == gameObject) continue;
 
                             SimpleHealth splashHealth = splashCol.GetComponent<SimpleHealth>();
                             if (splashHealth != null && splashHealth.IsAlive && !splashHealth.IsInvulnerable)
-                            {
-                                int splashDamage = Mathf.RoundToInt(dealt * splashDamagePercent);
-                                splashHealth.TakeDamage(splashDamage, damageType, true, true, gameObject, "Knife Splash");
-                            }
+                                splashHealth.TakeDamage(splashDamage, damageType, true, true, gameObject, "Knife Splash", isCritical);
                         }
                     }
 
@@ -399,18 +564,42 @@ public class Knife : MonoBehaviour
         if (!showSplashCircle || effectRadius <= 0f || splashCircleColor.a <= 0f)
             return;
 
-        var go = new GameObject("Knife Splash Circle");
+        SplashCircleFade splashCircle = GetSplashCircle();
+        var go = splashCircle.gameObject;
+        go.name = "Knife Splash Circle";
         go.transform.position = center;
         go.transform.localScale = Vector3.one * (effectRadius * 2f);
 
-        var spriteRenderer = go.AddComponent<SpriteRenderer>();
+        var spriteRenderer = splashCircle.Renderer;
         spriteRenderer.sprite = GetSplashCircleSprite();
         spriteRenderer.color = splashCircleColor;
         spriteRenderer.sortingOrder = splashCircleSortingOrder;
-        if (rangeRenderer != null)
-            spriteRenderer.sortingLayerID = rangeRenderer.sortingLayerID;
+        spriteRenderer.sortingLayerID = rangeRenderer != null ? rangeRenderer.sortingLayerID : 0;
+        spriteRenderer.enabled = true;
 
-        go.AddComponent<SplashCircleFade>().Init(spriteRenderer, splashCircleColor, splashCircleDuration);
+        splashCircle.Init(spriteRenderer, splashCircleColor, splashCircleDuration);
+    }
+
+    private static SplashCircleFade GetSplashCircle()
+    {
+        while (splashCirclePool.Count > 0)
+        {
+            SplashCircleFade splashCircle = splashCirclePool.Pop();
+            if (splashCircle != null)
+                return splashCircle;
+        }
+
+        var go = new GameObject("Knife Splash Circle");
+        var spriteRenderer = go.AddComponent<SpriteRenderer>();
+        SplashCircleFade created = go.AddComponent<SplashCircleFade>();
+        created.SetRenderer(spriteRenderer);
+        return created;
+    }
+
+    private static void ReturnSplashCircle(SplashCircleFade splashCircle)
+    {
+        if (splashCircle != null)
+            splashCirclePool.Push(splashCircle);
     }
 
     private void ApplyKnockback(Collider2D col, Vector3 originPosition, float strength)
@@ -443,10 +632,17 @@ public class Knife : MonoBehaviour
 
     public int RollHitDamage()
     {
+        EffectiveValues effectiveValues = GetEffectiveValues(GetAccessoryStats());
+        return RollHitDamage(effectiveValues.effectiveCritChance, effectiveValues.effectiveCritMultiplier, out _);
+    }
+
+    private int RollHitDamage(float effectiveCritChance, float effectiveCritMultiplier, out bool isCritical)
+    {
         int baseDamage = RollBaseDamage();
         int finalDamage;
-        if (Random.value < GetEffectiveCritChance())
-            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * GetEffectiveCritMultiplier()));
+        isCritical = Random.value < effectiveCritChance;
+        if (isCritical)
+            finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, Mathf.RoundToInt(baseDamage * effectiveCritMultiplier));
         else
             finalDamage = PlayerDamageMultiplierUtility.Apply(gameObject, baseDamage);
 
@@ -460,13 +656,26 @@ public class Knife : MonoBehaviour
         return accessoryStats;
     }
 
-    private float GetEffectiveRadius() => radius * (GetAccessoryStats() != null ? accessoryStats.WeaponAreaMultiplier : 1f);
-    private float GetEffectiveSplashRadius() => splashRadius * (GetAccessoryStats() != null ? accessoryStats.WeaponAreaMultiplier : 1f);
-    private float GetEffectiveCritChance() => Mathf.Clamp01(critChance + (GetAccessoryStats() != null ? accessoryStats.CriticalChanceBonus : 0f));
-    private float GetEffectiveCritMultiplier() => Mathf.Max(1f, critMultiplier + (GetAccessoryStats() != null ? accessoryStats.CriticalDamageBonus : 0f));
-    private float GetEffectiveKnockback() => Mathf.Max(0f, knockbackForce + (GetAccessoryStats() != null ? accessoryStats.KnockbackStrengthBonus : 0f));
-    private float GetEffectiveStatusChance() => Mathf.Clamp01(statusApplyChance + (GetAccessoryStats() != null ? accessoryStats.StatusApplicationChanceBonus : 0f));
-    private float GetEffectiveStatusDuration() => Mathf.Max(0f, statusEffectDuration * (GetAccessoryStats() != null ? accessoryStats.StatusDurationMultiplier : 1f));
+    private EffectiveValues GetEffectiveValues(PlayerAccessoryStats stats)
+    {
+        float weaponAreaMultiplier = stats != null ? stats.WeaponAreaMultiplier : 1f;
+        return new EffectiveValues(
+            radius * weaponAreaMultiplier,
+            splashRadius * weaponAreaMultiplier,
+            Mathf.Clamp01(critChance + (stats != null ? stats.CriticalChanceBonus : 0f)),
+            Mathf.Max(1f, critMultiplier + (stats != null ? stats.CriticalDamageBonus : 0f)),
+            Mathf.Max(0f, knockbackForce + (stats != null ? stats.KnockbackStrengthBonus : 0f)),
+            Mathf.Clamp01(statusApplyChance + (stats != null ? stats.StatusApplicationChanceBonus : 0f)),
+            Mathf.Max(0f, statusEffectDuration * (stats != null ? stats.StatusDurationMultiplier : 1f)));
+    }
+
+    private float GetEffectiveRadius() => GetEffectiveValues(GetAccessoryStats()).effectiveRadius;
+    private float GetEffectiveSplashRadius() => GetEffectiveValues(GetAccessoryStats()).effectiveSplashRadius;
+    private float GetEffectiveCritChance() => GetEffectiveValues(GetAccessoryStats()).effectiveCritChance;
+    private float GetEffectiveCritMultiplier() => GetEffectiveValues(GetAccessoryStats()).effectiveCritMultiplier;
+    private float GetEffectiveKnockback() => GetEffectiveValues(GetAccessoryStats()).effectiveKnockback;
+    private float GetEffectiveStatusChance() => GetEffectiveValues(GetAccessoryStats()).effectiveStatusChance;
+    private float GetEffectiveStatusDuration() => GetEffectiveValues(GetAccessoryStats()).effectiveStatusDuration;
 
     private string GetDamageRangeText()
     {
@@ -522,11 +731,20 @@ public class Knife : MonoBehaviour
         private float duration;
         private float elapsed;
 
+        public SpriteRenderer Renderer => spriteRenderer;
+
+        public void SetRenderer(SpriteRenderer renderer)
+        {
+            spriteRenderer = renderer;
+        }
+
         public void Init(SpriteRenderer renderer, Color color, float lifetime)
         {
             spriteRenderer = renderer;
             startColor = color;
             duration = Mathf.Max(0.01f, lifetime);
+            elapsed = 0f;
+            gameObject.SetActive(true);
         }
 
         private void Update()
@@ -542,7 +760,10 @@ public class Knife : MonoBehaviour
             }
 
             if (t >= 1f)
-                Destroy(gameObject);
+            {
+                gameObject.SetActive(false);
+                ReturnSplashCircle(this);
+            }
         }
     }
 
@@ -566,8 +787,13 @@ public class Knife : MonoBehaviour
         float scaleX = desiredDiameter / baseW;
         float scaleY = desiredDiameter / baseH;
 
-        rangeRenderer.transform.localScale = new Vector3(scaleX, scaleY, 1f);
-        rangeRenderer.enabled = desiredDiameter > 0.0001f;
+        Vector3 currentScale = rangeRenderer.transform.localScale;
+        if (currentScale.x != scaleX || currentScale.y != scaleY || currentScale.z != 1f)
+            rangeRenderer.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+
+        bool shouldBeEnabled = desiredDiameter > 0.0001f;
+        if (rangeRenderer.enabled != shouldBeEnabled)
+            rangeRenderer.enabled = shouldBeEnabled;
     }
 
 #if UNITY_EDITOR
@@ -623,13 +849,35 @@ public class Knife : MonoBehaviour
         }
     }
 
-    // Orders and selects targets from hits based on the chosen mode.
-    private List<Collider2D> OrderTargets(Collider2D[] hits, Transform origin, TargetingMode mode, HashSet<Collider2D> alreadyChosen, int takeCount)
+    private static int CompareClosest(TargetCandidate a, TargetCandidate b)
     {
-        List<(Collider2D col, SimpleHealth hp, float dist)> candidates = new List<(Collider2D, SimpleHealth, float)>();
+        return a.dist.CompareTo(b.dist);
+    }
+
+    private static int CompareFurthest(TargetCandidate a, TargetCandidate b)
+    {
+        return b.dist.CompareTo(a.dist);
+    }
+
+    private static int CompareMoreHp(TargetCandidate a, TargetCandidate b)
+    {
+        int cmp = b.hp.CurrentHealth.CompareTo(a.hp.CurrentHealth);
+        return cmp != 0 ? cmp : a.dist.CompareTo(b.dist);
+    }
+
+    private static int CompareLessHp(TargetCandidate a, TargetCandidate b)
+    {
+        int cmp = a.hp.CurrentHealth.CompareTo(b.hp.CurrentHealth);
+        return cmp != 0 ? cmp : a.dist.CompareTo(b.dist);
+    }
+
+    // Orders and selects targets from hits based on the chosen mode.
+    private int OrderTargets(List<Collider2D> hits, Transform origin, TargetingMode mode, HashSet<Collider2D> alreadyChosen, int takeCount)
+    {
+        candidates.Clear();
         Vector3 o = origin != null ? origin.position : transform.position;
 
-        for (int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < hits.Count; i++)
         {
             var c = hits[i];
             if (c == null || c.gameObject == gameObject) continue;
@@ -639,33 +887,23 @@ public class Knife : MonoBehaviour
             if (h == null || !h.IsAlive || h.IsInvulnerable) continue;
 
             float d = Vector2.Distance(o, c.transform.position);
-            candidates.Add((c, h, d));
+            candidates.Add(new TargetCandidate(c, h, d));
         }
 
         // Sort by mode
         switch (mode)
         {
             case TargetingMode.Closest:
-                candidates.Sort((a, b) => a.dist.CompareTo(b.dist));
+                candidates.Sort(closestComparison);
                 break;
             case TargetingMode.Furthest:
-                candidates.Sort((a, b) => b.dist.CompareTo(a.dist));
+                candidates.Sort(furthestComparison);
                 break;
             case TargetingMode.MoreHP:
-                candidates.Sort((a, b) =>
-                {
-                    int cmp = b.hp.CurrentHealth.CompareTo(a.hp.CurrentHealth);
-                    if (cmp != 0) return cmp;
-                    return a.dist.CompareTo(b.dist);
-                });
+                candidates.Sort(moreHpComparison);
                 break;
             case TargetingMode.LessHP:
-                candidates.Sort((a, b) =>
-                {
-                    int cmp = a.hp.CurrentHealth.CompareTo(b.hp.CurrentHealth);
-                    if (cmp != 0) return cmp;
-                    return a.dist.CompareTo(b.dist);
-                });
+                candidates.Sort(lessHpComparison);
                 break;
             case TargetingMode.Random:
                 // Fisher-Yates shuffle
@@ -680,9 +918,6 @@ public class Knife : MonoBehaviour
         }
 
         int toTake = Mathf.Clamp(takeCount <= 0 ? int.MaxValue : takeCount, 0, candidates.Count);
-        List<Collider2D> result = new List<Collider2D>(toTake);
-        for (int i = 0; i < toTake; i++)
-            result.Add(candidates[i].col);
-        return result;
+        return toTake;
     }
 }
